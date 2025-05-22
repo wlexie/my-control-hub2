@@ -7,6 +7,13 @@ import { Bell, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion"; // added
 import { useRouter } from "next/navigation";
 
+interface TopNavProps {
+  user: {
+    firstName: string;
+    lastName: string;
+  } | null;
+}
+
 const navItems = [
   { label: "Overview", href: "/backoffice/dashboard" },
   {
@@ -23,8 +30,13 @@ const navItems = [
     href: "/backoffice/operational-efficiency",
   },
 ];
+const getInitials = (firstName: string, lastName: string): string => {
+  const f = firstName?.charAt(0) || "";
+  const l = lastName?.charAt(0) || "";
+  return (f + l).toUpperCase();
+};
 
-function TopNav() {
+function TopNav({ user }: TopNavProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
@@ -85,11 +97,9 @@ function TopNav() {
         {/* Right - Icons */}
         <div className="flex items-center space-x-4">
           <Bell size={24} className="text-white" />
-          <img
-            src="https://i.pravatar.cc/40?img=4"
-            alt="User"
-            className="w-10 h-10 rounded-full"
-          />
+          <div className="w-10 h-10 rounded-full bg-white text-blue-600 flex items-center justify-center font-semibold text-sm">
+            {user ? getInitials(user.firstName, user.lastName) : "?"}
+          </div>
         </div>
       </div>
 

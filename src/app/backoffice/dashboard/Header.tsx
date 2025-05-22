@@ -61,7 +61,7 @@ export default function Header({
 
   return (
     <div className="relative bg-gradient-to-br to-[#15449d] from-[#0162ff] text-white pb-8 ">
-      <TopNav />
+      <TopNav user={user} />
       <HeroSection currency={currency} onCurrencyChange={onCurrencyChange} />
 
       <div className="absolute -bottom-4 left-4 z-50" ref={dropdownRef}>

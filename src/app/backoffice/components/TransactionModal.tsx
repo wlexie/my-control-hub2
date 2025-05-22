@@ -1,113 +1,20 @@
+"use client";
+
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Transaction } from "../types/transactions";
-import {
-  PDFDownloadLink,
-  Document,
-  Page,
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  Font,
-} from "@react-pdf/renderer";
+import dynamic from "next/dynamic";
+
+// Dynamically import PDF receipt component (client-side only)
+const ReceiptPDFViewer = dynamic(() => import("./ReceiptPDFViewer"), {
+  ssr: false,
+});
 
 type TransactionModalProps = {
   isOpen: boolean;
   onClose: () => void;
   transaction: Transaction | null;
 };
-
-// Register fonts (this should be done once at app startup)
-Font.register({
-  family: "Inter",
-  fonts: [
-    {
-      src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZg.ttf",
-      fontWeight: 400,
-    },
-    {
-      src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYMZg.ttf",
-      fontWeight: 700,
-    },
-  ],
-});
-
-// Define styles for the PDF
-const styles = StyleSheet.create({
-  page: {
-    padding: 40,
-    fontFamily: "Inter",
-  },
-  section: {
-    marginBottom: 20,
-  },
-  header: {
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  logo: {
-    width: 40,
-    height: 40,
-    marginBottom: 10,
-    alignSelf: "center",
-  },
-  amount: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 5,
-  },
-  successText: {
-    textAlign: "center",
-    color: "#666",
-    marginBottom: 5,
-  },
-  boldText: {
-    fontWeight: "bold",
-    color: "#000",
-  },
-  detailSection: {
-    backgroundColor: "#f5f5f5",
-    padding: 15,
-    borderRadius: 5,
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontWeight: "bold",
-    marginBottom: 10,
-    fontSize: 14,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 5,
-    fontSize: 12,
-  },
-  label: {
-    color: "#666",
-  },
-  value: {
-    color: "#000",
-  },
-  divider: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-    marginVertical: 10,
-  },
-  footer: {
-    textAlign: "center",
-    marginTop: 16,
-    fontSize: 10,
-  },
-  footerText: {
-    marginBottom: 5,
-  },
-  link: {
-    color: "blue",
-    textDecoration: "none",
-  },
-});
 
 const getStatusDetails = (status: string, errorMessage?: string) => {
   const baseDetails = {
@@ -166,122 +73,12 @@ const getStatusDetails = (status: string, errorMessage?: string) => {
   );
 };
 
-// PDF Document Component
-const ReceiptPDF = ({
-  transaction,
-  formatDateEAT,
-  formatDateTime,
-}: // formatChannelName,
-{
-  transaction: Transaction;
-  formatDateTime: (date: string) => string;
-  formatDateEAT: (date: string) => string;
-  formatChannelName: (channel: string) => string;
-}) => {
-  return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Image
-            src="/backoffice/tuma-logo.png"
-            style={styles.logo}
-            cache={false}
-          />
-          <Text style={styles.amount}>
-            {transaction.currencyIso3a}{" "}
-            {Number(transaction.senderAmount).toFixed(0)}
-          </Text>
-          <Text style={styles.successText}>
-            Successfully sent to{" "}
-            <Text style={styles.boldText}>{transaction.receiverName}</Text>
-          </Text>
-          <Text style={styles.successText}>
-            on{" "}
-            <Text style={styles.boldText}>
-              {formatDateTime(transaction.date)}
-            </Text>
-          </Text>
-        </View>
-
-        {/* Details */}
-        <View style={styles.detailSection}>
-          <Text style={styles.sectionTitle}>Transaction Summary</Text>
-          {[
-            ["Transaction ID", transaction.transactionId],
-            ["User ID", transaction.userId || "N/A"],
-            ["Exchange Rate (KES)", transaction.exchangeRate || "N/A"],
-            ["Tuma Reference", transaction.transactionKey || "N/A"],
-            ["Trust Payment", transaction.tpReference || "N/A"],
-            ["Settlement Reference", transaction.settlementReference || "N/A"],
-            ["MPESA Reference", transaction.mpesaReference || "N/A"],
-            ["Bank Name", transaction.bankName || "N/A"],
-            ["Origin", "UK"],
-            ["Destination", "Kenya"],
-            ["Transfer Fee", "0.00"],
-          ].map(([label, value], idx) => (
-            <View style={styles.detailRow} key={idx}>
-              <Text style={styles.label}>{label}</Text>
-              <Text style={styles.value}>{value}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.detailSection}>
-          <Text style={styles.sectionTitle}>Sender Details</Text>
-          {[
-            ["Name", transaction.senderName || "N/A"],
-            ["Email", transaction.senderEmail || "N/A"],
-            ["Phone", transaction.senderPhone || "N/A"],
-          ].map(([label, value], idx) => (
-            <View style={styles.detailRow} key={idx}>
-              <Text style={styles.label}>{label}</Text>
-              <Text style={styles.value}>{value}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.detailSection}>
-          <Text style={styles.sectionTitle}>Receiver Details</Text>
-          {[
-            ["Name", transaction.receiverName || "N/A"],
-            ["Phone", transaction.receiverPhone || "N/A"],
-            [
-              "Amount Received",
-              `${transaction.receiverCurrencyIso3a} ${Number(
-                transaction.recipientAmount
-              ).toFixed(0)}`,
-            ],
-            ["Received At", formatDateEAT(transaction.date) || "N/A"],
-          ].map(([label, value], idx) => (
-            <View style={styles.detailRow} key={idx}>
-              <Text style={styles.label}>{label}</Text>
-              <Text style={styles.value}>{value}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Thank you for using Tuma!</Text>
-          <Text style={styles.footerText}>For help, contact us:</Text>
-          <Text style={styles.footerText}>support@tuma.com</Text>
-          <Text style={styles.footerText}>+447-778-024-995</Text>
-          <Text style={[styles.footerText, styles.link]}>https://tuma.com</Text>
-        </View>
-      </Page>
-    </Document>
-  );
-};
-
 const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
   transaction,
 }) => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  // Add loading overlay when generating PDF
-  if (isGeneratingPdf) {
-    return <div className=""></div>;
-  }
 
   if (!isOpen || !transaction) return null;
 
@@ -289,6 +86,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     transaction.status,
     transaction.errorMessage
   );
+
   const formatDateTime = (dateString: string): string => {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, "0");
@@ -302,13 +100,11 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   const formatDateEAT = (dateString: string): string => {
     const date = new Date(dateString);
     date.setHours(date.getHours() + 3); // Add 3 hours for EAT
-
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
     const hours = String(date.getHours()).padStart(2, "0");
     const minutes = String(date.getMinutes()).padStart(2, "0");
-
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
@@ -423,9 +219,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                     <p className="truncate">{transaction.senderName}</p>
 
                     <p className="text-gray-500">Email:</p>
-                    <p className="break-all overflow-hidden text-ellipsis">
-                      {transaction.senderEmail}
-                    </p>
+                    <p className="break-all">{transaction.senderEmail}</p>
 
                     <p className="text-gray-500">Number:</p>
                     <p className="truncate">{transaction.senderPhone}</p>
@@ -455,30 +249,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
             <div className="sticky bottom-0 left-0 right-0 bg-white p-4 border-t flex justify-between items-center">
               {transaction.status === "Success" && (
                 <div className="text-blue-600 font-semibold flex items-center gap-2">
-                  <PDFDownloadLink
-                    document={
-                      <ReceiptPDF
-                        transaction={transaction}
-                        formatDateTime={formatDateTime}
-                        formatDateEAT={formatDateEAT}
-                        formatChannelName={formatChannelName}
-                      />
-                    }
-                    fileName={`Receipt_${transaction.transactionId}.pdf`}
-                    className="flex items-center gap-2"
-                    onClick={() => setIsGeneratingPdf(true)}
-                  >
-                    {({ loading }) => (
-                      <>
-                        <img
-                          src="/backoffice/icons/download.svg"
-                          alt="a-download-icon"
-                          className="w-4 h-4"
-                        />
-                        {loading ? "Generating..." : "Download Receipt"}
-                      </>
-                    )}
-                  </PDFDownloadLink>
+                  <ReceiptPDFViewer
+                    transaction={transaction}
+                    formatDateTime={formatDateTime}
+                    formatDateEAT={formatDateEAT}
+                    formatChannelName={formatChannelName}
+                  />
                 </div>
               )}
               <button
