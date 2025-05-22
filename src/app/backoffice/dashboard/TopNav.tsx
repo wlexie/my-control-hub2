@@ -22,15 +22,6 @@ const navItems = [
     label: "Operational Efficiency",
     href: "/backoffice/operational-efficiency",
   },
-  { label: "Customer Analytics", href: "/backoffice/customer-analytics" },
-  {
-    label: "Compliance & Risk Management",
-    href: "/backoffice/compliance-risk",
-  },
-  {
-    label: "Operational Efficiency",
-    href: "/backoffice/operational-efficiency",
-  },
 ];
 
 function TopNav() {

@@ -1,4 +1,3 @@
-// StatCardRow.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -28,16 +27,19 @@ interface ApiResponse {
   analyticsByTransactionType: AnalyticsItem[];
 }
 
-export default function StatCardsRow({ currency }: Props) {
+export default function StatCardsRow({ currency, startDate, endDate }: Props) {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const formattedStart = startDate.toISOString().split("T")[0];
+  const formattedEnd = endDate.toISOString().split("T")[0];
 
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
       try {
         const res = await fetch(
-          `https://api.tuma-app.com/api/analytics/transaction-type-summary?currency=${currency}`
+          `https://api.tuma-app.com/api/analytics/transaction-type-summary?currency=GBP&startDate=${formattedStart}&endDate=${formattedEnd}`
         );
         const json = await res.json();
         setData(json);
@@ -49,13 +51,14 @@ export default function StatCardsRow({ currency }: Props) {
     };
 
     fetchStats();
-  }, [currency]);
+  }, [formattedStart, formattedEnd]);
 
   const getAmount = (type: string) => {
     const item = data?.analyticsByTransactionType.find(
       (d) => d.transactionType === type
     );
     if (!item) return 0;
+
     if (currency === "GBP") return item.totalSenderAmount;
     const receiverAmount = item.receiverBreakdown[currency];
     return receiverAmount ?? 0;

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getInitials, getPastelColor, statusStyles } from "./constants";
+import Link from "next/link";
 
 interface Props {
   userId: number;
@@ -241,9 +242,12 @@ export default function UserDetailsModal({
                       <span className="text-gray-600">Total transactions</span>
                       <span className="font-medium">
                         {totalTransactions ? (
-                          <a href="#" className="text-blue-600 underline">
+                          <Link
+                            href={`/backoffice/transactions?userId=${userId}`}
+                            className="text-blue-600 underline"
+                          >
                             {totalTransactions}
-                          </a>
+                          </Link>
                         ) : (
                           "—"
                         )}

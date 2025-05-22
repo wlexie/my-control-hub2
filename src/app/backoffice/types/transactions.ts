@@ -20,7 +20,7 @@ export interface Transaction {
     mpesaReference:string;
     tpReference:string;
     errorMessage:string;
-    userID: number | null;
+    userId: number | null;
     bankName: string | null;
   }
   

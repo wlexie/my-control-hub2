@@ -14,16 +14,29 @@ import DateFilter from "@/app/backoffice/components/DateFilter";
 export default function Dashboard() {
   const [currency, setCurrency] = useState("GBP");
 
-  // Date filter state
-  const [startDate, setStartDate] = useState<Date>(
-    new Date(new Date().setDate(new Date().getDate() - 7))
-  );
+  const [startDate, setStartDate] = useState<Date>(new Date("01-01-2020"));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
+  const [dateLabel, setDateLabel] = useState("All Time");
 
   const handleDateChange = (start: Date, end: Date) => {
     setStartDate(start);
     setEndDate(end);
+
+    const diffInDays =
+      Math.floor((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+
+    if (diffInDays <= 7) setDateLabel("Weekly");
+    else if (diffInDays <= 31) setDateLabel("Monthly");
+    else setDateLabel("Custom");
+  };
+
+  const handleClearDates = () => {
+    const allTimeStart = new Date("2020-01-01");
+    const today = new Date();
+    setStartDate(allTimeStart);
+    setEndDate(today);
+    setDateLabel("All Time");
   };
 
   return (
@@ -34,6 +47,7 @@ export default function Dashboard() {
         startDate={startDate}
         endDate={endDate}
         onDateFilterOpen={() => setIsDateFilterOpen(true)}
+        dateLabel={dateLabel}
       />
 
       <div className="px-4 sm:px-6 md:px-12 relative z-10 space-y-8">
@@ -79,6 +93,7 @@ export default function Dashboard() {
             isOpen={isDateFilterOpen}
             onClose={() => setIsDateFilterOpen(false)}
             onChange={handleDateChange}
+            onClear={handleClearDates}
             initialStartDate={startDate}
             initialEndDate={endDate}
           />

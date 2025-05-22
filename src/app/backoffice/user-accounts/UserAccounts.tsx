@@ -299,7 +299,8 @@ export default function UserAccounts() {
             Previous
           </button>
           <span className="text-sm">
-            Page {currentPage} of {totalPages}
+            Page {currentPage} of {totalPages} — {allUsers.length} customer
+            {allUsers.length !== 1 && "s"}
           </span>
           <button
             onClick={() =>

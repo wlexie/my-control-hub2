@@ -22,6 +22,7 @@ interface HeaderProps {
   startDate: Date;
   endDate: Date;
   onDateFilterOpen: () => void;
+  dateLabel: string;
 }
 
 export default function Header({
@@ -30,6 +31,7 @@ export default function Header({
   startDate,
   endDate,
   onDateFilterOpen,
+  dateLabel,
 }: HeaderProps) {
   const pathname = usePathname();
   const isDashboard = pathname === "/backoffice/dashboard";
@@ -126,7 +128,7 @@ export default function Header({
             onClick={onDateFilterOpen}
             className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-2 rounded-md border border-white/20 text-sm text-white"
           >
-            Weekly <ChevronDown size={14} />
+            {dateLabel} <ChevronDown size={14} />
           </button>
         </div>
       </div>

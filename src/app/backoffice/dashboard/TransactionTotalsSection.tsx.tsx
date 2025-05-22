@@ -42,14 +42,13 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
       setLoading(true);
       try {
         const res = await fetch(
-          `https://api.tuma-app.com/api/analytics/transaction-type-summary?currency=${currency}&startDate=${formattedStart}&endDate=${formattedEnd}`
+          `https://api.tuma-app.com/api/analytics/transaction-type-summary?currency=GBP&startDate=${formattedStart}&endDate=${formattedEnd}`
         );
         const json: ApiResponse = await res.json();
         setData(json);
       } catch (err) {
         console.error("Error fetching totals:", err);
-        setError("Failed to fetch transaction totals."); // Set an error message
-        // You could also check
+        setError("Failed to fetch transaction totals.");
       } finally {
         setLoading(false);
       }

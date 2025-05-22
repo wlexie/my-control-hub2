@@ -171,8 +171,8 @@ const ReceiptPDF = ({
   transaction,
   formatDateEAT,
   formatDateTime,
- // formatChannelName,
-}: {
+}: // formatChannelName,
+{
   transaction: Transaction;
   formatDateTime: (date: string) => string;
   formatDateEAT: (date: string) => string;
@@ -182,7 +182,11 @@ const ReceiptPDF = ({
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Image src="/backoffice/tuma-logo.png" style={styles.logo} cache={false} />
+          <Image
+            src="/backoffice/tuma-logo.png"
+            style={styles.logo}
+            cache={false}
+          />
           <Text style={styles.amount}>
             {transaction.currencyIso3a}{" "}
             {Number(transaction.senderAmount).toFixed(0)}
@@ -204,7 +208,7 @@ const ReceiptPDF = ({
           <Text style={styles.sectionTitle}>Transaction Summary</Text>
           {[
             ["Transaction ID", transaction.transactionId],
-            ["User ID", transaction.userID || "N/A"],
+            ["User ID", transaction.userId || "N/A"],
             ["Exchange Rate (KES)", transaction.exchangeRate || "N/A"],
             ["Tuma Reference", transaction.transactionKey || "N/A"],
             ["Trust Payment", transaction.tpReference || "N/A"],
@@ -275,13 +279,9 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
 }) => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   // Add loading overlay when generating PDF
-if (isGeneratingPdf) {
-  return (
-    <div className="">
-     
-    </div>
-  );
-}
+  if (isGeneratingPdf) {
+    return <div className=""></div>;
+  }
 
   if (!isOpen || !transaction) return null;
 
@@ -397,7 +397,7 @@ if (isGeneratingPdf) {
                     <p className="text-gray-400">Transaction ID:</p>
                     <p>{transaction.transactionId}</p>
                     <p className="text-gray-400">User ID:</p>
-                    <p>{transaction.userID || "N/A"}</p>
+                    <p>{transaction.userId || "N/A"}</p>
                     <p className="text-gray-400">Tuma Reference:</p>
                     <p>{transaction.transactionKey || "N/A"}</p>
                     <p className="text-gray-400">Trust Payment:</p>

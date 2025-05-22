@@ -8,13 +8,15 @@ import DateFilter from "../components/DateFilter";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import TransactionModal from "../components/TransactionModal";
-import {Transaction}  from "../types/transactions";
+import { Transaction } from "../types/transactions";
 import * as XLSX from "xlsx";
 import api from "../../../hooks/useApi";
-
-
+import { useSearchParams } from "next/navigation";
 
 const TransactionsPage = () => {
+  const searchParams = useSearchParams();
+  const userIdFilter = searchParams.get("userId");
+
   const { get } = api();
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<
@@ -78,21 +80,23 @@ const TransactionsPage = () => {
         let page = 1;
         let allData: Transaction[] = [];
         let hasMore = true;
-    
+
         while (hasMore) {
-          const result = await get<Transaction[]>(
-            `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`
-          );
-    
+          const endpoint = userIdFilter
+            ? `/transfer/user-transactions?userId=${userIdFilter}&page=${page}&size=${rowsPerPage}`
+            : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
+
+          const result = await get<Transaction[]>(endpoint);
+
           if (!result || !Array.isArray(result)) {
             throw new Error("Invalid API response format.");
           }
-    
+
           if (result.length === 0) {
             hasMore = false;
             continue;
           }
-    
+
           // Explicitly type the formatted transactions
           const formattedTransactions: Transaction[] = result.map((tx) => ({
             transactionReference: tx.transactionReference || "N/A",
@@ -125,7 +129,7 @@ const TransactionsPage = () => {
             receiverPhone: tx.receiverPhone || "N/A",
             senderPhone: tx.senderPhone || "N/A",
             transactionKey: tx.transactionKey || "N/A",
-            accountNumber: Number(tx.accountNumber) || 0, 
+            accountNumber: Number(tx.accountNumber) || 0,
             settlementReference: tx.settlementReference || "N/A",
             recipientAmount: tx.recipientAmount || 0,
             senderEmail: tx.senderEmail || "N/A",
@@ -133,21 +137,25 @@ const TransactionsPage = () => {
             mpesaReference: tx.mpesaReference || "N/A",
             tpReference: tx.tpReference || "N/A",
             errorMessage: tx.errorMessage || "N/A",
-            userID: tx.userID !== undefined && tx.userID !== null && !isNaN(Number(tx.userID))
-            ? Number(tx.userID)
-            : null,
-                      bankName: tx.bankName || "N/A",
+            userId:
+              tx.userId !== undefined &&
+              tx.userId !== null &&
+              !isNaN(Number(tx.userId))
+                ? Number(tx.userId)
+                : null,
+
+            bankName: tx.bankName || "N/A",
           }));
-    
+
           allData = [...allData, ...formattedTransactions];
           page++;
-    
+
           if (page > 50) {
             console.warn("Reached maximum page limit (50)");
             hasMore = false;
           }
         }
-    
+
         setAllTransactions(allData);
         setFilteredTransactions(allData);
       } catch (err) {
@@ -161,10 +169,9 @@ const TransactionsPage = () => {
         setLoading(false);
       }
     };
-  
+
     fetchAllTransactions();
-  }, [ rowsPerPage]); 
-       
+  }, [rowsPerPage, userIdFilter]);
 
   // Filter transactions
   useEffect(() => {
@@ -199,7 +206,7 @@ const TransactionsPage = () => {
 
     setFilteredTransactions(filtered);
     setCurrentPage(1);
-  }, [searchQuery, allTransactions, statusFilter, dateRange]);
+  }, [searchQuery, allTransactions, statusFilter, dateRange, userIdFilter]);
 
   const handleDateChange = (startDate: Date, endDate: Date) => {
     setDateRange({ startDate, endDate });
@@ -244,7 +251,7 @@ const TransactionsPage = () => {
     return filteredTransactions.map((transaction) => ({
       "Transaction Reference": transaction.transactionReference,
       "Transaction ID": transaction.transactionId,
-      "User ID": transaction.userID,
+      "User ID": transaction.userId,
       Sender: transaction.senderName,
       "Sender's Number": transaction.senderPhone,
       "Sender's Email": transaction.senderEmail,
