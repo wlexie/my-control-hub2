@@ -118,7 +118,7 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
           </h1>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-black whitespace-nowrap">
             {formatAmount(totalAmount)}
           </h1>

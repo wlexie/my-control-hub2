@@ -1,39 +1,53 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
 import { getInitials, getPastelColor, statusStyles } from "./constants";
 
-interface User {
-  accountId: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  country: string | null;
-  accountStatus: string;
-  registrationDate: string;
-  gender?: string | null;
-  dob?: string | null;
-  lastTransactionDate?: string | null;
-  totalTransactions?: string | number | null;
-  totalValue?: string | null;
-  lastLogin?: string | null;
-}
-
 interface Props {
-  user: User;
+  userId: number;
   onClose: () => void;
   open: boolean;
 }
 
 export default function UserDetailsModal({
-  user,
+  userId,
   onClose,
   open: isOpen,
 }: Props) {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isOpen && userId) {
+      const fetchUserDetails = async () => {
+        try {
+          setLoading(true);
+          const res = await fetch(
+            `https://api.tuma-app.com/api/account/client-profile?userId=${userId}`
+          );
+          if (!res.ok) throw new Error("Failed to fetch user details");
+          const data = await res.json();
+          setUser(data);
+        } catch (error) {
+          console.error("Error fetching user details:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchUserDetails();
+    }
+  }, [isOpen, userId]);
+
+  if (!user) return null;
+
   const fullName = `${user.firstName.trim()} ${user.lastName.trim()}`.trim();
+  const document = user.documents?.[0];
+  const totalTransactions = user.transaction?.totalTransactions
+    ? user.transaction.totalTransactions.successfulTransactions +
+      user.transaction.totalTransactions.failedTransactions
+    : 0;
 
   const getCountryDisplay = (code: string | null) => {
     if (code === "Kenya") {
@@ -95,123 +109,212 @@ export default function UserDetailsModal({
                 </button>
               </div>
 
-              {/* User Info */}
-              <div className="flex flex-col items-center bg-gray-50 rounded-xl p-4 mb-4">
-                <div
-                  className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-lg text-gray-800 ${getPastelColor(
-                    fullName
-                  )}`}
-                >
-                  {getInitials(fullName)}
+              {loading ? (
+                <div className="flex justify-center items-center h-64">
+                  <p>Loading user details...</p>
                 </div>
-                <p className="font-semibold text-lg mt-3">{fullName}</p>
-                <p className="text-sm text-gray-600">{user.phone}</p>
-                <p className="text-sm text-gray-600">{user.email}</p>
-              </div>
-
-              {/* Status */}
-              <div className="flex gap-4 mb-4">
-                <div className="bg-white border px-4 py-2 rounded-xl flex-1">
-                  <p className="text-sm font-semibold">KYC status</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        statusStyles[user.accountStatus]?.dot || "bg-gray-300"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm font-medium ${
-                        statusStyles[user.accountStatus]?.text ||
-                        "text-gray-600"
-                      }`}
+              ) : (
+                <>
+                  {/* User Info */}
+                  <div className="flex flex-col items-center bg-gray-50 rounded-xl p-4 mb-4">
+                    <div
+                      className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-lg text-gray-800 ${getPastelColor(
+                        fullName
+                      )}`}
                     >
-                      {user.accountStatus}
-                    </span>
+                      {getInitials(fullName)}
+                    </div>
+                    <p className="font-semibold text-lg mt-3">{fullName}</p>
+                    <p className="text-sm text-gray-600">{user.phone}</p>
+                    <p className="text-sm text-gray-600">{user.email}</p>
                   </div>
-                </div>
-                <div className="bg-white border px-4 py-2 rounded-xl flex-1">
-                  <p className="text-sm font-semibold">Account status</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        statusStyles[user.accountStatus]?.dot || "bg-gray-300"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm font-medium ${
-                        statusStyles[user.accountStatus]?.text ||
-                        "text-gray-600"
-                      }`}
-                    >
-                      {user.accountStatus}
-                    </span>
+
+                  {/* Status */}
+                  <div className="flex gap-4 mb-4">
+                    <div className="bg-white border px-4 py-2 rounded-xl flex-1">
+                      <p className="text-sm font-semibold">KYC status</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            statusStyles[user.step]?.dot || "bg-gray-300"
+                          }`}
+                        />
+                        <span
+                          className={`text-sm font-medium ${
+                            statusStyles[user.step]?.text || "text-gray-600"
+                          }`}
+                        >
+                          {user.step}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-white border px-4 py-2 rounded-xl flex-1">
+                      <p className="text-sm font-semibold">Account status</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            statusStyles[user.accountStatus]?.dot ||
+                            "bg-gray-300"
+                          }`}
+                        />
+                        <span
+                          className={`text-sm font-medium ${
+                            statusStyles[user.accountStatus]?.text ||
+                            "text-gray-600"
+                          }`}
+                        >
+                          {user.accountStatus}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Profile Info */}
-              <div className="bg-gray-50 p-4 rounded-xl mb-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Gender</span>
-                  <span className="font-medium">{user.gender || "—"}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Date of Birth</span>
-                  <span className="font-medium">{user.dob || "—"}</span>
-                </div>
-                <div className="flex justify-between text-sm items-center">
-                  <span className="text-gray-600">Country of Residence</span>
-                  <span className="flex items-center gap-1 font-medium">
-                    {getCountryDisplay(user.country)}
-                  </span>
-                </div>
-              </div>
+                  {/* Profile Info */}
+                  <div className="bg-gray-50 p-4 rounded-xl mb-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Gender</span>
+                      <span className="font-medium">
+                        {document?.gender || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Date of Birth</span>
+                      <span className="font-medium">
+                        {document?.dateOfBirth
+                          ? new Date(document.dateOfBirth).toLocaleDateString(
+                              "en-GB"
+                            )
+                          : "—"}
+                      </span>
+                    </div>
 
-              {/* Transactions */}
-              <div className="bg-gray-50 p-4 rounded-xl mb-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Last transaction Date</span>
-                  <span className="font-medium">
-                    {user.lastTransactionDate || "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total transactions</span>
-                  <span className="font-medium">
-                    <a href="#" className="text-blue-600 underline">
-                      View
-                    </a>{" "}
-                    {user.totalTransactions || "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">
-                    Total value of transactions
-                  </span>
-                  <span className="font-medium">{user.totalValue || "—"}</span>
-                </div>
-              </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Nationality</span>
+                      <span className="font-medium">
+                        {document?.nationality || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">ID Document Type</span>
+                      <span className="font-medium">
+                        {document?.type
+                          ? document.type.replace(/_/g, " ")
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm items-center">
+                      <span className="text-gray-600">Issuing Country</span>
+                      <span className="flex items-center gap-1 font-medium">
+                        {document?.issuingCountry}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">ID Document Number</span>
+                      <span className="font-medium">
+                        {document?.documentNumber || "—"}
+                      </span>
+                    </div>
+                  </div>
 
-              {/* Other Info */}
-              <div className="bg-gray-50 p-4 rounded-xl text-sm space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Date of registration</span>
-                  <span className="font-medium">
-                    {new Date(user.registrationDate).toLocaleString("en-GB", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                    })}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Last login date</span>
-                  <span className="font-medium">{user.lastLogin || "—"}</span>
-                </div>
-              </div>
+                  {/* Transactions */}
+                  <div className="bg-gray-50 p-4 rounded-xl mb-4 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        Last transaction Date
+                      </span>
+                      <span className="font-medium">
+                        {user.transaction?.lastTransactionDate
+                          ? new Date(
+                              user.transaction.lastTransactionDate
+                            ).toLocaleString("en-GB", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: false,
+                            })
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total transactions</span>
+                      <span className="font-medium">
+                        {totalTransactions ? (
+                          <a href="#" className="text-blue-600 underline">
+                            {totalTransactions}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        Successful transactions
+                      </span>
+                      <span className="font-medium">
+                        {user.transaction?.totalTransactions
+                          ?.successfulTransactions || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Failed transactions</span>
+                      <span className="font-medium">
+                        {user.transaction?.totalTransactions
+                          ?.failedTransactions || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        Total value of transactions
+                      </span>
+                      <span className="font-medium">
+                        {user.transaction?.totalTransactionsValue
+                          ? ` KES ${user.transaction.totalTransactionsValue.toFixed(
+                              2
+                            )}`
+                          : "—"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Other Info */}
+                  <div className="bg-gray-50 p-4 rounded-xl text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">User ID</span>
+                      <span className="font-medium">{userId}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Account Key</span>
+                      <span className="font-medium">{user.accountKey}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Onfido Applicant ID</span>
+                      <span className="font-medium">
+                        {user.onfidoApplicantId || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        Date of registration
+                      </span>
+                      <span className="font-medium">
+                        {new Date(user.createdAt).toLocaleString("en-GB", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
         </>
