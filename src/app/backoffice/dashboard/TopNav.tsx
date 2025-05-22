@@ -9,14 +9,14 @@ import { useRouter } from 'next/navigation';
 
 
 const navItems = [
-  { label: "Overview", href: "/dashboard" },
+  { label: "Overview", href: "/backoffice/dashboard" },
   {
     label: "Financial Metrics & Revenue Performance",
-    href: "/financial-metrics",
+    href: "/backoffice/financial-metrics",
   },
-  { label: "Customer Analytics", href: "/customer-analytics" },
-  { label: "Compliance & Risk Management", href: "/compliance-risk" },
-  { label: "Operational Efficiency", href: "/operational-efficiency" },
+  { label: "Customer Analytics", href: "/backoffice/customer-analytics" },
+  { label: "Compliance & Risk Management", href: "/backoffice/compliance-risk" },
+  { label: "Operational Efficiency", href: "/backoffice/operational-efficiency" },
 ];
 
 function TopNav() {

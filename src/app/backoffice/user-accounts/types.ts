@@ -1,22 +1,48 @@
+// types.ts
 export interface User {
-    // From API
-    accountId: number;
-    accountKey: string;
-    firstName: string;
-    lastName: string;
-    phone: string;
-    email: string;
-    country: string; // Changed from string | null to string
-    accountStatus: string;
-    registrationDate: string;
-    
-    
-    
-    // Optional fields expected by modal
-    gender?: string;
-    dob?: string;
-    lastTransactionDate?: string;
-    totalTransactions?: number;
-    totalValue?: string;
-    lastLogin?: string;
-  }
+  // From API
+  userId: number;
+  accountKey: string;
+  onfidoApplicantId?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  step: string; // KYC status
+  accountStatus: string;
+  createdAt: string;
+  country: string | null;
+  documents?: Document[];
+  transaction?: Transaction;
+}
+
+export interface Document {
+  id: number;
+  onfidoId: string;
+  firstName: string;
+  lastName: string;
+  type: string;
+  documentNumber: string;
+  side: string;
+  issuingCountry: string;
+  href: string;
+  downloadHref: string;
+  gender: string;
+  issuingAuthority: string | null;
+  issuingDate: string;
+  dateOfBirth: string;
+  dateOfExpiry: string | null;
+  nationality: string | null;
+  personalNumber: string;
+  placeOfBirth: string | null;
+  createdAt: string;
+}
+
+export interface Transaction {
+  lastTransactionDate: string | null;
+  totalTransactions: {
+    successfulTransactions: number;
+    failedTransactions: number;
+  };
+  totalTransactionsValue: number;
+}

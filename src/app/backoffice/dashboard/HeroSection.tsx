@@ -5,10 +5,10 @@ import CurrencyDropdown from "./CurrencyDropdown";
 
 const pathMap: Record<string, string> = {
   "/backoffice/dashboard": "Overview",
-  "/financial-metrics": "Financial Metrics & Revenue Performance",
-  "/customer-analytics": "Customer Analytics",
-  "/compliance-risk": "Compliance & Risk Management",
-  "/operational-efficiency": "Operational Efficiency",
+  "/backoffice/financial-metrics": "Financial Metrics & Revenue Performance",
+  "/backoffice/customer-analytics": "Customer Analytics",
+  "/backoffice/compliance-risk": "Compliance & Risk Management",
+  "/backoffice/operational-efficiency": "Operational Efficiency",
 };
 
 interface HeroSectionProps {

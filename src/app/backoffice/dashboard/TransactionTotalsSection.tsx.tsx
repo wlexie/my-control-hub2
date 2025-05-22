@@ -5,7 +5,12 @@ import { Separator } from "../../../components/ui/separator";
 import { FaWallet } from "react-icons/fa6";
 import { BsCalendar2DateFill, BsFillBarChartLineFill } from "react-icons/bs";
 import { TrendingUp } from "lucide-react";
+<<<<<<< HEAD
 import { CountryTransactions } from "./CountryTransactions";
+=======
+import { CountryTransactions } from "./CountryTransactions"; 
+import useApi from '../../../hooks/useApi'; 
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
 
 interface Props {
   currency: string;
@@ -13,6 +18,7 @@ interface Props {
   endDate: Date;
 }
 
+<<<<<<< HEAD
 interface ReceiverBreakdown {
   [key: string]: number;
 }
@@ -46,14 +52,32 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
         );
         const json: ApiResponse = await res.json();
         setData(json);
+=======
+function TransactionTotalsSection() {
+  const { get } = useApi(); // Destructure the 'get' method from our hook
+  const [data, setData] = useState<TransactionData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // Optional: for error display
+
+  useEffect(() => {
+    const fetchTotals = async () => {
+      setLoading(true);
+      setError(null); // Reset error state
+      try {
+        // so you only need the endpoint path.
+        const responseData = await get<TransactionData>("/analytics/totals");
+        setData(responseData);
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
       } catch (err) {
         console.error("Error fetching totals:", err);
-        setError("Failed to load transaction data");
+        setError("Failed to fetch transaction totals."); // Set an error message
+        // You could also check 
       } finally {
         setLoading(false);
       }
     };
 
+<<<<<<< HEAD
     fetchTransactionData();
   }, [currency, formattedStart, formattedEnd]);
 
@@ -72,6 +96,10 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
       }, 0);
     }
   };
+=======
+    fetchTotals();
+  }, [] ); 
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
 
   const formatAmount = (amount: number) =>
     `${currency === "GBP" ? "£" : "KES"} ${amount.toLocaleString(undefined, {
@@ -79,6 +107,7 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
       maximumFractionDigits: 2,
     })}`;
 
+<<<<<<< HEAD
   const formatDisplayDate = (date: Date) =>
     date.toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -94,9 +123,11 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
     );
   }
 
+=======
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
   if (error) {
     return (
-      <div className="flex justify-center items-center h-64 text-red-500">
+      <div className="flex items-center justify-center h-64 text-red-500">
         {error}
       </div>
     );
@@ -119,12 +150,19 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
 
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-black whitespace-nowrap">
+<<<<<<< HEAD
             {formatAmount(totalAmount)}
+=======
+            {loading ? "Loading..." : data ? formatAmount(data.totalAmountTransacted) : "N/A"}
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
           </h1>
-          <span className="flex bg-green-100 text-green-600 text-sm rounded-full px-2 py-1 items-center gap-1">
-            <TrendingUp className="text-green-600 text-sm" />
-            13%
-          </span>
+          {/* Kept the static growth percentage for now, you might want to fetch this too */}
+          {!loading && data && (
+             <span className="flex bg-green-100 text-green-600 text-sm rounded-full px-2 py-1 items-center gap-1">
+                <TrendingUp className="text-green-600 text-sm" />
+                13% {/* This is static, consider making it dynamic if needed */}
+             </span>
+          )}
         </div>
 
         <div className="flex flex-col gap-6 mt-10">
@@ -137,6 +175,10 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
               <p className="text-gray-400 font-normal text-xs">
                 For the period
               </p>
+<<<<<<< HEAD
+=======
+              {/* This period is static, consider making it dynamic if needed */}
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
               <p className="text-gray-800 font-medium text-xs">
                 {formatDisplayDate(startDate)} - {formatDisplayDate(endDate)}
               </p>
@@ -153,7 +195,7 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
                 No. of Transactions
               </p>
               <p className="text-gray-800 font-medium text-xs">
-                {data?.transactionsCount.toLocaleString() ?? "N/A"}
+                {loading ? "Loading..." : data ? data.transactionsCount.toLocaleString() : "N/A"}
               </p>
             </div>
           </div>

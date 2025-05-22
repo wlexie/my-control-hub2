@@ -213,7 +213,6 @@ export default function UserAccounts() {
             </button>
           </div>
         </div>
-
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50 text-gray-500 text-left">
@@ -291,7 +290,6 @@ export default function UserAccounts() {
             </tbody>
           </table>
         </div>
-
         <div className="flex justify-center items-center mt-6 gap-4">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -317,7 +315,7 @@ export default function UserAccounts() {
         <AnimatePresence>
           {showModal && selectedUser && (
             <UserDetailsModal
-              user={selectedUser}
+              userId={selectedUser.accountId}
               open={showModal}
               onClose={() => setShowModal(false)}
             />
