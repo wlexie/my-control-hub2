@@ -5,8 +5,8 @@ import { Separator } from "../../../components/ui/separator";
 import { FaWallet } from "react-icons/fa6";
 import { BsCalendar2DateFill, BsFillBarChartLineFill } from "react-icons/bs";
 import { TrendingUp } from "lucide-react";
-import { CountryTransactions } from "./CountryTransactions";
-import useApi from "../../../hooks/useApi";
+import { CountryTransactions } from "./CountryTransactions"; 
+import useApi from '../../../hooks/useApi'; 
 
 interface TransactionData {
   totalAmountTransacted: number;
@@ -14,26 +14,30 @@ interface TransactionData {
 }
 
 function TransactionTotalsSection() {
+  const { get } = useApi(); // Destructure the 'get' method from our hook
   const [data, setData] = useState<TransactionData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { get } = useApi();
+  const [error, setError] = useState<string | null>(null); // Optional: for error display
 
   useEffect(() => {
-    const fetchTransactionData = async () => {
+    const fetchTotals = async () => {
+      setLoading(true);
+      setError(null); // Reset error state
       try {
-        const response = await get<TransactionData>("/analytics/totals");
-        setData(response);
+        // so you only need the endpoint path.
+        const responseData = await get<TransactionData>("/analytics/totals");
+        setData(responseData);
       } catch (err) {
         console.error("Error fetching totals:", err);
-        setError("Failed to load transaction data");
+        setError("Failed to fetch transaction totals."); // Set an error message
+        // You could also check 
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTransactionData();
-  }, [get]);
+    fetchTotals();
+  }, [] ); 
 
   const formatAmount = (amount: number) =>
     `£ ${amount.toLocaleString(undefined, {
@@ -41,17 +45,9 @@ function TransactionTotalsSection() {
       maximumFractionDigits: 2,
     })}`;
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
-      <div className="flex justify-center items-center h-64 text-red-500">
+      <div className="flex items-center justify-center h-64 text-red-500">
         {error}
       </div>
     );
@@ -74,12 +70,15 @@ function TransactionTotalsSection() {
         {/* Amount and Growth */}
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-black whitespace-nowrap">
-            {data ? formatAmount(data.totalAmountTransacted) : "N/A"}
+            {loading ? "Loading..." : data ? formatAmount(data.totalAmountTransacted) : "N/A"}
           </h1>
-          <span className="flex bg-green-100 text-green-600 text-sm rounded-full px-2 py-1 items-center gap-1">
-            <TrendingUp className="text-green-600 text-sm" />
-            13%
-          </span>
+          {/* Kept the static growth percentage for now, you might want to fetch this too */}
+          {!loading && data && (
+             <span className="flex bg-green-100 text-green-600 text-sm rounded-full px-2 py-1 items-center gap-1">
+                <TrendingUp className="text-green-600 text-sm" />
+                13% {/* This is static, consider making it dynamic if needed */}
+             </span>
+          )}
         </div>
 
         {/* Period and No. of Transactions */}
@@ -90,7 +89,10 @@ function TransactionTotalsSection() {
               <BsCalendar2DateFill className="text-yellow-500 text-lg" />
             </span>
             <div className="flex flex-col">
-              <p className="text-gray-400 font-normal text-xs">For the period</p>
+              <p className="text-gray-400 font-normal text-xs">
+                For the period
+              </p>
+              {/* This period is static, consider making it dynamic if needed */}
               <p className="text-gray-800 font-medium text-xs">
                 Jan 25th 2023 - Apr 8th 2025
               </p>
@@ -107,7 +109,7 @@ function TransactionTotalsSection() {
                 No. of Transactions
               </p>
               <p className="text-gray-800 font-medium text-xs">
-                {data?.transactionsCount.toLocaleString() ?? "N/A"}
+                {loading ? "Loading..." : data ? data.transactionsCount.toLocaleString() : "N/A"}
               </p>
             </div>
           </div>
