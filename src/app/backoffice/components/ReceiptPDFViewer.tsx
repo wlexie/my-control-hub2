@@ -165,6 +165,10 @@ const ReceiptPDF = ({
             ["Name", transaction.senderName || "N/A"],
             ["Email", transaction.senderEmail || "N/A"],
             ["Phone", transaction.senderPhone || "N/A"],
+            [
+              "Channel",
+              formatChannelName(transaction.transactionType) || "N/A",
+            ],
           ].map(([label, value], idx) => (
             <View style={styles.detailRow} key={idx}>
               <Text style={styles.label}>{label}</Text>
