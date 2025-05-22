@@ -7,7 +7,7 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "../../../components/ui/chart";
+} from "@/components/ui/chart";
 
 // Define JSON data inline
 const customerData = [
@@ -25,19 +25,19 @@ const customerData = [
 const chartConfig = {
   active: {
     label: "Active Customers",
-    color: "hsl(var(--chart-1))",
+    color: "#3b82f6", // Tailwind's blue-500
   },
   inactive: {
     label: "Inactive Customers",
-    color: "hsl(var(--chart-2))",
+    color: "#ef4444", // red-500
   },
   highNetWorth: {
     label: "High Net Worth",
-    color: "hsl(var(--chart-3))",
+    color: "#10b981", // green-500
   },
   dormant: {
     label: "Dormant Customers",
-    color: "hsl(var(--chart-4))",
+    color: "#f59e0b", // yellow-500
   },
 } satisfies ChartConfig;
 
@@ -49,7 +49,6 @@ const CustomerSegmentation = () => {
   }, []);
 
   if (!mounted) return null;
-
 
   // Prepare legend data
   const legendData = [
@@ -138,29 +137,25 @@ const CustomerSegmentation = () => {
                 dataKey="active"
                 stackId="a"
                 cornerRadius={10}
-                fill="var(--color-active)"
-                className="stroke-transparent stroke-2"
+                fill={chartConfig.active.color}
               />
               <RadialBar
                 dataKey="inactive"
                 stackId="a"
                 cornerRadius={10}
-                fill="var(--color-inactive)"
-                className="stroke-transparent stroke-2"
+                fill={chartConfig.inactive.color}
               />
               <RadialBar
                 dataKey="highNetWorth"
                 stackId="a"
                 cornerRadius={10}
-                fill="var(--color-highNetWorth)"
-                className="stroke-transparent stroke-2"
+                fill={chartConfig.highNetWorth.color}
               />
               <RadialBar
                 dataKey="dormant"
                 stackId="a"
                 cornerRadius={10}
-                fill="var(--color-dormant)"
-                className="stroke-transparent stroke-2"
+                fill={chartConfig.dormant.color}
               />
             </RadialBarChart>
           </ChartContainer>

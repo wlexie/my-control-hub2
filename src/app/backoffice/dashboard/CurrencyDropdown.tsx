@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-const CurrencyDropdown = () => {
+interface Props {
+  selectedCurrency: string;
+  onCurrencyChange: (code: string) => void;
+}
+
+const CurrencyDropdown = ({ selectedCurrency, onCurrencyChange }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState({
-    code: "GBP",
-    name: "Great British Pounds",
-    flag: "/backoffice/uk-flag.png",
-  });
 
   const currencies = [
     {
@@ -22,12 +22,14 @@ const CurrencyDropdown = () => {
     },
   ];
 
+  const selected =
+    currencies.find((c) => c.code === selectedCurrency) || currencies[0];
+
   const toggleDropdown = () => setIsOpen(!isOpen);
 
-  const selectCurrency = (currency: (typeof currencies)[0]) => {
-    setSelectedCurrency(currency);
+  const selectCurrency = (currencyCode: string) => {
+    onCurrencyChange(currencyCode);
     setIsOpen(false);
-    // You can add additional logic here when currency changes
   };
 
   return (
@@ -38,11 +40,11 @@ const CurrencyDropdown = () => {
       >
         <span className="flex items-center space-x-1">
           <img
-            src={selectedCurrency.flag}
-            alt={`${selectedCurrency.code} Flag`}
+            src={selected.flag}
+            alt={`${selected.code} Flag`}
             className="w-4 h-4 rounded-sm"
           />
-          <span>{selectedCurrency.code}</span>
+          <span>{selected.code}</span>
         </span>
         <ChevronDown
           size={18}
@@ -55,9 +57,9 @@ const CurrencyDropdown = () => {
           {currencies.map((currency) => (
             <button
               key={currency.code}
-              onClick={() => selectCurrency(currency)}
+              onClick={() => selectCurrency(currency.code)}
               className={`flex items-center w-full px-3 py-2 text-sm space-x-2 hover:bg-white/20 ${
-                selectedCurrency.code === currency.code
+                selectedCurrency === currency.code
                   ? "bg-white/30 text-black/70"
                   : ""
               }`}

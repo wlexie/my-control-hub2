@@ -5,14 +5,54 @@ import { Separator } from "../../../components/ui/separator";
 import { FaWallet } from "react-icons/fa6";
 import { BsCalendar2DateFill, BsFillBarChartLineFill } from "react-icons/bs";
 import { TrendingUp } from "lucide-react";
+<<<<<<< HEAD
+import { CountryTransactions } from "./CountryTransactions";
+=======
 import { CountryTransactions } from "./CountryTransactions"; 
 import useApi from '../../../hooks/useApi'; 
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
 
-interface TransactionData {
-  totalAmountTransacted: number;
-  transactionsCount: number;
+interface Props {
+  currency: string;
+  startDate: Date;
+  endDate: Date;
 }
 
+<<<<<<< HEAD
+interface ReceiverBreakdown {
+  [key: string]: number;
+}
+
+interface AnalyticsItem {
+  transactionType: string;
+  totalSenderAmount: number;
+  receiverBreakdown: ReceiverBreakdown;
+}
+
+interface ApiResponse {
+  transactionsCount: number;
+  senderCurrency: string;
+  analyticsByTransactionType: AnalyticsItem[];
+}
+
+function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
+  const [data, setData] = useState<ApiResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const formattedStart = startDate.toISOString().split("T")[0];
+  const formattedEnd = endDate.toISOString().split("T")[0];
+
+  useEffect(() => {
+    const fetchTransactionData = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `https://api.tuma-app.com/api/analytics/transaction-type-summary?currency=${currency}&startDate=${formattedStart}&endDate=${formattedEnd}`
+        );
+        const json: ApiResponse = await res.json();
+        setData(json);
+=======
 function TransactionTotalsSection() {
   const { get } = useApi(); // Destructure the 'get' method from our hook
   const [data, setData] = useState<TransactionData | null>(null);
@@ -27,6 +67,7 @@ function TransactionTotalsSection() {
         // so you only need the endpoint path.
         const responseData = await get<TransactionData>("/analytics/totals");
         setData(responseData);
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
       } catch (err) {
         console.error("Error fetching totals:", err);
         setError("Failed to fetch transaction totals."); // Set an error message
@@ -36,15 +77,54 @@ function TransactionTotalsSection() {
       }
     };
 
+<<<<<<< HEAD
+    fetchTransactionData();
+  }, [currency, formattedStart, formattedEnd]);
+
+  const getTotalAmount = () => {
+    if (!data) return 0;
+
+    if (currency === "GBP") {
+      return data.analyticsByTransactionType.reduce(
+        (sum, item) => sum + item.totalSenderAmount,
+        0
+      );
+    } else {
+      return data.analyticsByTransactionType.reduce((sum, item) => {
+        const received = item.receiverBreakdown[currency];
+        return sum + (received ?? 0);
+      }, 0);
+    }
+  };
+=======
     fetchTotals();
   }, [] ); 
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
 
   const formatAmount = (amount: number) =>
-    `£ ${amount.toLocaleString(undefined, {
+    `${currency === "GBP" ? "£" : "KES"} ${amount.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
 
+<<<<<<< HEAD
+  const formatDisplayDate = (date: Date) =>
+    date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+=======
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
   if (error) {
     return (
       <div className="flex items-center justify-center h-64 text-red-500">
@@ -53,11 +133,12 @@ function TransactionTotalsSection() {
     );
   }
 
+  const totalAmount = getTotalAmount();
+
   return (
     <div className="flex flex-col lg:flex-row items-center justify-between px-4 gap-8 lg:gap-16 w-full">
       {/* Left Section */}
       <div className="space-y-6 w-full lg:w-auto">
-        {/* Title and Icon */}
         <div className="flex items-center gap-4">
           <span className="bg-blue-100 rounded-lg p-3">
             <FaWallet className="text-blue-700 text-xl" />
@@ -67,10 +148,13 @@ function TransactionTotalsSection() {
           </h1>
         </div>
 
-        {/* Amount and Growth */}
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-black whitespace-nowrap">
+<<<<<<< HEAD
+            {formatAmount(totalAmount)}
+=======
             {loading ? "Loading..." : data ? formatAmount(data.totalAmountTransacted) : "N/A"}
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
           </h1>
           {/* Kept the static growth percentage for now, you might want to fetch this too */}
           {!loading && data && (
@@ -81,9 +165,8 @@ function TransactionTotalsSection() {
           )}
         </div>
 
-        {/* Period and No. of Transactions */}
         <div className="flex flex-col gap-6 mt-10">
-          {/* Period */}
+          {/* Date Period */}
           <div className="flex items-center gap-3">
             <span className="bg-yellow-100 rounded-lg p-2">
               <BsCalendar2DateFill className="text-yellow-500 text-lg" />
@@ -92,14 +175,17 @@ function TransactionTotalsSection() {
               <p className="text-gray-400 font-normal text-xs">
                 For the period
               </p>
+<<<<<<< HEAD
+=======
               {/* This period is static, consider making it dynamic if needed */}
+>>>>>>> 09ac05369e9cbbcb07bb8c8528d18818fa2e3c52
               <p className="text-gray-800 font-medium text-xs">
-                Jan 25th 2023 - Apr 8th 2025
+                {formatDisplayDate(startDate)} - {formatDisplayDate(endDate)}
               </p>
             </div>
           </div>
 
-          {/* Number of Transactions */}
+          {/* Transaction Count */}
           <div className="flex items-center gap-3">
             <span className="bg-purple-100 rounded-lg p-2">
               <BsFillBarChartLineFill className="text-purple-800 text-lg" />
@@ -116,13 +202,13 @@ function TransactionTotalsSection() {
         </div>
       </div>
 
-      {/* Separator (Desktop only) */}
+      {/* Vertical Divider */}
       <Separator
         orientation="vertical"
         className="hidden lg:block h-64 w-[2px] bg-gray-300"
       />
 
-      {/* Right Section - Chart */}
+      {/* Right Section - Placeholder or Graph */}
       <div className="flex justify-center lg:justify-start w-full lg:w-auto">
         <CountryTransactions />
       </div>

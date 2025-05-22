@@ -1,69 +1,86 @@
+// StatCardRow.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import {
-  FaBuilding,
-  FaDollarSign,
-  FaPhone,
-  FaReceipt,
-  FaWallet,
-} from "react-icons/fa";
-import useApi from "../../../hooks/useApi";
+import { FaPhone, FaReceipt, FaSimCard, FaWallet } from "react-icons/fa";
+import { FaBuildingColumns } from "react-icons/fa6";
 
-interface StatCardData {
-  totalMpesaAmount: number;
-  totalPayBillAmount: number;
-  totalBankAmount: number;
-  totalCardAmount: number;
+interface Props {
+  currency: string;
+  startDate: Date;
+  endDate: Date;
 }
 
-interface StatCard {
-  label: string;
-  amount: string;
-  change: string;
-  positive: boolean;
-  icon: React.ReactNode;
+interface ReceiverBreakdown {
+  [key: string]: number;
 }
 
-export default function StatCardsRow() {
-  const [data, setData] = useState<StatCardData | null>(null);
+interface AnalyticsItem {
+  transactionType: string;
+  totalSenderAmount: number;
+  receiverBreakdown: ReceiverBreakdown;
+}
+
+interface ApiResponse {
+  transactionsCount: number;
+  senderCurrency: string;
+  analyticsByTransactionType: AnalyticsItem[];
+}
+
+export default function StatCardsRow({ currency }: Props) {
+  const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const { get } = useApi();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchStats = async () => {
+      setLoading(true);
       try {
-        const response = await get<StatCardData>("/analytics/totals");
-        setData(response);
+        const res = await fetch(
+          `https://api.tuma-app.com/api/analytics/transaction-type-summary?currency=${currency}`
+        );
+        const json = await res.json();
+        setData(json);
       } catch (err) {
-        console.error("Error fetching totals:", err);
+        console.error("Failed to fetch transaction summary:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [get]);
+    fetchStats();
+  }, [currency]);
+
+  const getAmount = (type: string) => {
+    const item = data?.analyticsByTransactionType.find(
+      (d) => d.transactionType === type
+    );
+    if (!item) return 0;
+    if (currency === "GBP") return item.totalSenderAmount;
+    const receiverAmount = item.receiverBreakdown[currency];
+    return receiverAmount ?? 0;
+  };
 
   const formatAmount = (amount: number) =>
-    `£ ${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+    `${currency === "GBP" ? "£" : "KES"} ${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+    })}`;
 
-  const cards: StatCard[] = [
+  const cards = [
     {
       label: "MPESA",
-      amount: data ? formatAmount(data.totalMpesaAmount) : "Loading...",
+      amount: formatAmount(getAmount("CARD_TO_MPESA")),
       change: "-24%",
       positive: false,
       icon: (
-        <span className="bg-orange-100 rounded-lg p-3 mb-2">
-          <FaDollarSign className="text-orange-700 text-xl" />
+        <span className="bg-orange-100 rounded-lg p-3 mb-2 flex items-center justify-center">
+          <FaSimCard className="text-orange-400 text-xl" />
         </span>
       ),
     },
     {
-      label: "PAYBILL",
-      amount: data ? formatAmount(data.totalPayBillAmount) : "Loading...",
+      label: "Paybill",
+      amount: formatAmount(getAmount("CARD_TO_PAYBILL")),
       change: "+27%",
       positive: true,
       icon: (
@@ -73,19 +90,19 @@ export default function StatCardsRow() {
       ),
     },
     {
-      label: "BANK",
-      amount: data ? formatAmount(data.totalBankAmount) : "Loading...",
+      label: "Bank",
+      amount: formatAmount(getAmount("CARD_TO_BANK")),
       change: "+17%",
       positive: true,
       icon: (
         <span className="bg-green-100 rounded-lg p-3 mb-2">
-          <FaBuilding className="text-green-700 text-xl" />
+          <FaBuildingColumns className="text-green-700 text-xl" />
         </span>
       ),
     },
     {
-      label: "CARD",
-      amount: data ? formatAmount(data.totalCardAmount) : "Loading...",
+      label: "Card",
+      amount: formatAmount(getAmount("CARD_TO_CARD")),
       change: "+13%",
       positive: true,
       icon: (
@@ -95,8 +112,8 @@ export default function StatCardsRow() {
       ),
     },
     {
-      label: "TILL",
-      amount: "£ 17,009.00",
+      label: "Till Number",
+      amount: formatAmount(0),
       change: "-09%",
       positive: false,
       icon: (
@@ -118,14 +135,15 @@ export default function StatCardsRow() {
           key={i}
           className="bg-white p-10 rounded-xl shadow-sm flex flex-col justify-between"
         >
-          <div className="flex justify-between items-center mb-2">
-            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center">
               {card.icon}
             </div>
-            <div className="text-gray-700 text-lg font-medium text-center">
+            <div className="text-gray-700 text-base font-medium ml-4">
               {card.label}
             </div>
           </div>
+
           <div className="text-2xl font-semibold text-gray-800">
             {card.amount}
           </div>

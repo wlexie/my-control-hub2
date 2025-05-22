@@ -12,10 +12,36 @@ import {
 import { TrendingDown, TrendingUp, ChevronDown } from "lucide-react";
 import useApi from "../../../hooks/useApi"; // Import your middleware hook
 
+interface Props {
+  startDate: Date;
+  endDate: Date;
+}
+
 type ApiDataItem = {
   day: string;
   success: number;
   failed: number;
+};
+
+type ApiResponse = {
+  daily: ApiDataItem[];
+  totals: {
+    thisWeek: {
+      success: number;
+      failed: number;
+      failedPercent: number;
+    };
+    lastWeek: {
+      success: number;
+      failed: number;
+      failedPercent: number;
+    };
+    changePercent: {
+      success: number;
+      failed: number;
+      failedPercent: number;
+    };
+  };
 };
 
 const chartConfig = {
@@ -29,10 +55,13 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function TransactionStatuses() {
+export function TransactionStatuses({ startDate, endDate }: Props) {
   const api = useApi(); // Initialize your API middleware
   const [selectedChannel, setSelectedChannel] = useState("MPESA");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [changeSuccess, setChangeSuccess] = useState(0);
+  const [changeFailed, setChangeFailed] = useState(0);
+
   const [chartData, setChartData] = useState<
     Array<{
       day: string;
@@ -63,32 +92,23 @@ export function TransactionStatuses() {
       try {
         setLoading(true);
         const { startDate, endDate } = getDateRange();
-        
-        // Use your API middleware instead of fetch
-        const apiData: ApiDataItem[] = await api.get<ApiDataItem[]>(
+
+        const response: ApiResponse = await api.get<ApiResponse>(
           `/analytics/weekly?startDate=${startDate}&endDate=${endDate}`
         );
 
-        // Transform API data to match your chart structure
-        const transformedData = apiData.map((item: ApiDataItem) => ({
-          day: item.day.substring(0, 3), // Shorten day names (e.g., "Sunday" -> "Sun")
+        const transformedData = response.daily.map((item: ApiDataItem) => ({
+          day: item.day.substring(0, 3), // "Sunday" → "Sun"
           successful: item.success,
           failed: item.failed,
         }));
 
         setChartData(transformedData);
-
-        // Calculate totals for stats
-        const successTotal = apiData.reduce(
-          (sum: number, item: ApiDataItem) => sum + item.success,
-          0
-        );
-        const failedTotal = apiData.reduce(
-          (sum: number, item: ApiDataItem) => sum + item.failed,
-          0
-        );
-        setTotalSuccess(successTotal);
-        setTotalFailed(failedTotal);
+        setChangeSuccess(response.totals.changePercent.success);
+        setChangeFailed(response.totals.changePercent.failed);
+        setTotalSuccess(response.totals.thisWeek.success);
+        setTotalFailed(response.totals.thisWeek.failed);
+        // You can also store lastWeek and changePercent if needed
       } catch (err: unknown) {
         if (err instanceof Error) {
           setError(err.message);
@@ -177,7 +197,7 @@ export function TransactionStatuses() {
           <div className="text-sm text-black font-medium">{totalSuccess}</div>
           <span className="flex bg-red-100 text-red-600 text-xs font-medium rounded-full px-2 py-0.5 items-center gap-1">
             <TrendingDown className="w-3 h-3" />
-            16%
+            {Math.abs(changeSuccess)}%
           </span>
           <span className="text-gray-400 text-xs">Compared to Last Week</span>
         </div>
@@ -188,7 +208,7 @@ export function TransactionStatuses() {
           <div className="text-sm text-black font-medium">{totalFailed}</div>
           <span className="flex bg-green-100 text-green-600 text-xs font-medium rounded-full px-2 py-0.5 items-center gap-1">
             <TrendingUp className="w-3 h-3" />
-            56%
+            {Math.abs(changeFailed)}%
           </span>
           <span className="text-gray-400 text-xs">Compared to Last Week</span>
         </div>

@@ -8,7 +8,7 @@ import { sidebarMenuItems } from "../constants/sidebarMenuItems";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "../../../store/store"; 
+import { RootState } from "../../../store/store";
 
 interface SidebarMenuItem {
   href: string;
@@ -16,17 +16,29 @@ interface SidebarMenuItem {
   icon?: React.ReactNode;
 }
 
-export default function Header() {
+interface HeaderProps {
+  currency: string;
+  onCurrencyChange: (code: string) => void;
+  startDate: Date;
+  endDate: Date;
+  onDateFilterOpen: () => void;
+}
+
+export default function Header({
+  currency,
+  onCurrencyChange,
+  startDate,
+  endDate,
+  onDateFilterOpen,
+}: HeaderProps) {
   const pathname = usePathname();
   const isDashboard = pathname === "/backoffice/dashboard";
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
-  // Get user from Redux store
+
   const user = useSelector((state: RootState) => state.auth.user);
   const userName = user ? `${user.firstName} ${user.lastName}` : null;
 
-  // Close dropdown when clicked outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -47,17 +59,19 @@ export default function Header() {
 
   return (
     <div className="relative bg-gradient-to-br to-[#15449d] from-[#0162ff] text-white pb-8 ">
-      {/* Top Nav + Hero */}
       <TopNav />
-      <HeroSection />
+      <HeroSection currency={currency} onCurrencyChange={onCurrencyChange} />
 
-      {/* Floating App Icon (top right) */}
       <div className="absolute -bottom-4 left-4 z-50" ref={dropdownRef}>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="bg-white text-blue-600 p-2 rounded-full shadow-md focus:outline-none"
         >
-          <img src="/backoffice/grid-icon.png" alt="Menu Icon" className="w-6 h-6" />
+          <img
+            src="/backoffice/grid-icon.png"
+            alt="Menu Icon"
+            className="w-6 h-6"
+          />
         </button>
 
         {menuOpen && (
@@ -76,9 +90,8 @@ export default function Header() {
         )}
       </div>
 
-      {/* Welcome Text */}
       <div className="px-4 md:px-12 mt-6">
-        <h2 className="text-2xl md:text-3xl  font-light leading-snug">
+        <h2 className="text-2xl md:text-3xl font-light leading-snug">
           {isDashboard ? (
             <>
               Welcome back,{" "}
@@ -102,12 +115,17 @@ export default function Header() {
         </h2>
       </div>
 
-      {/* Showing + Date Filter */}
       <div className="flex flex-col md:items-end md:px-12 px-4 mt-4 space-y-2 md:space-y-1">
-        <p className="text-sm text-white/70">24/03/2025 - 04/04/2025</p>
+        <p className="text-sm text-white/70">
+          {startDate.toLocaleDateString("en-GB")} -{" "}
+          {endDate.toLocaleDateString("en-GB")}
+        </p>
         <div className="flex items-center space-x-2">
           <div className="text-sm text-white/80">Showing</div>
-          <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-2 rounded-md border border-white/20 text-sm text-white">
+          <button
+            onClick={onDateFilterOpen}
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-2 rounded-md border border-white/20 text-sm text-white"
+          >
             Weekly <ChevronDown size={14} />
           </button>
         </div>
