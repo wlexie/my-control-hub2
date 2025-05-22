@@ -48,7 +48,8 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
         setData(json);
       } catch (err) {
         console.error("Error fetching totals:", err);
-        setError("Failed to load transaction data");
+        setError("Failed to fetch transaction totals."); // Set an error message
+        // You could also check
       } finally {
         setLoading(false);
       }
@@ -96,7 +97,7 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-64 text-red-500">
+      <div className="flex items-center justify-center h-64 text-red-500">
         {error}
       </div>
     );
@@ -117,14 +118,17 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
           </h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-black whitespace-nowrap">
             {formatAmount(totalAmount)}
           </h1>
-          <span className="flex bg-green-100 text-green-600 text-sm rounded-full px-2 py-1 items-center gap-1">
-            <TrendingUp className="text-green-600 text-sm" />
-            13%
-          </span>
+          {/* Kept the static growth percentage for now, you might want to fetch this too */}
+          {!loading && data && (
+            <span className="flex bg-green-100 text-green-600 text-sm rounded-full px-2 py-1 items-center gap-1">
+              <TrendingUp className="text-green-600 text-sm" />
+              13% {/* This is static, consider making it dynamic if needed */}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col gap-6 mt-10">
@@ -153,7 +157,11 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
                 No. of Transactions
               </p>
               <p className="text-gray-800 font-medium text-xs">
-                {data?.transactionsCount.toLocaleString() ?? "N/A"}
+                {loading
+                  ? "Loading..."
+                  : data
+                  ? data.transactionsCount.toLocaleString()
+                  : "N/A"}
               </p>
             </div>
           </div>
