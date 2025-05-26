@@ -1,7 +1,5 @@
-"use client";
-
+import { useEffect } from "react";
 import {
-  PDFDownloadLink,
   Document,
   Page,
   View,
@@ -9,25 +7,10 @@ import {
   Image,
   StyleSheet,
   Font,
+  PDFDownloadLink,
 } from "@react-pdf/renderer";
-import { Transaction } from "@/app/backoffice/types/transactions";
+import { Transaction } from "../types/transactions";
 
-// Register fonts
-Font.register({
-  family: "Inter",
-  fonts: [
-    {
-      src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZg.ttf",
-      fontWeight: 400,
-    },
-    {
-      src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYMZg.ttf",
-      fontWeight: 700,
-    },
-  ],
-});
-
-// PDF styles
 const styles = StyleSheet.create({
   page: {
     padding: 40,
@@ -98,7 +81,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// PDF document
 const ReceiptPDF = ({
   transaction,
   formatDateEAT,
@@ -109,104 +91,97 @@ const ReceiptPDF = ({
   formatDateTime: (date: string) => string;
   formatDateEAT: (date: string) => string;
   formatChannelName: (channel: string) => string;
-}) => {
-  return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Image
-            src="/backoffice/tuma-logo.png"
-            style={styles.logo}
-            cache={false}
-          />
-          <Text style={styles.amount}>
-            {transaction.currencyIso3a}{" "}
-            {Number(transaction.senderAmount).toFixed(0)}
+}) => (
+  <Document>
+    <Page size="A4" style={styles.page}>
+      <View style={styles.header}>
+        <Image
+          src="/backoffice/tuma-logo.png"
+          style={styles.logo}
+          cache={false}
+        />
+        <Text style={styles.amount}>
+          {transaction.currencyIso3a}{" "}
+          {Number(transaction.senderAmount).toFixed(0)}
+        </Text>
+        <Text style={styles.successText}>
+          Successfully sent to{" "}
+          <Text style={styles.boldText}>{transaction.receiverName}</Text>
+        </Text>
+        <Text style={styles.successText}>
+          on{" "}
+          <Text style={styles.boldText}>
+            {formatDateTime(transaction.date)}
           </Text>
-          <Text style={styles.successText}>
-            Successfully sent to{" "}
-            <Text style={styles.boldText}>{transaction.receiverName}</Text>
-          </Text>
-          <Text style={styles.successText}>
-            on{" "}
-            <Text style={styles.boldText}>
-              {formatDateTime(transaction.date)}
-            </Text>
-          </Text>
-        </View>
+        </Text>
+      </View>
 
-        {/* Transaction Summary */}
-        <View style={styles.detailSection}>
-          <Text style={styles.sectionTitle}>Transaction Summary</Text>
-          {[
-            ["Transaction ID", transaction.transactionId],
-            ["User ID", transaction.userId || "N/A"],
-            ["Exchange Rate (KES)", transaction.exchangeRate || "N/A"],
-            ["Tuma Reference", transaction.transactionKey || "N/A"],
-            ["Trust Payment", transaction.tpReference || "N/A"],
-            ["Settlement Reference", transaction.settlementReference || "N/A"],
-            ["MPESA Reference", transaction.mpesaReference || "N/A"],
-            ["Bank Name", transaction.bankName || "N/A"],
-            ["Origin", "UK"],
-            ["Destination", "Kenya"],
-            ["Transfer Fee", "0.00"],
-          ].map(([label, value], idx) => (
-            <View style={styles.detailRow} key={idx}>
-              <Text style={styles.label}>{label}</Text>
-              <Text style={styles.value}>{value}</Text>
-            </View>
-          ))}
-        </View>
+      <View style={styles.detailSection}>
+        <Text style={styles.sectionTitle}>Transaction Summary</Text>
+        {[
+          ["Transaction ID", transaction.transactionId],
+          ["User ID", transaction.userId || "N/A"],
+          ["Exchange Rate (KES)", transaction.exchangeRate || "N/A"],
+          ["Tuma Reference", transaction.transactionKey || "N/A"],
+          ["Trust Payment", transaction.tpReference || "N/A"],
+          ["Settlement Reference", transaction.settlementReference || "N/A"],
+          ["MPESA Reference", transaction.mpesaReference || "N/A"],
+          ["Bank Name", transaction.bankName || "N/A"],
+          ["Origin", "UK"],
+          ["Destination", "Kenya"],
+          ["Transfer Fee", "0.00"],
+        ].map(([label, value], idx) => (
+          <View style={styles.detailRow} key={idx}>
+            <Text style={styles.label}>{label}</Text>
+            <Text style={styles.value}>{value}</Text>
+          </View>
+        ))}
+      </View>
 
-        {/* Sender Details */}
-        <View style={styles.detailSection}>
-          <Text style={styles.sectionTitle}>Sender Details</Text>
-          {[
-            ["Name", transaction.senderName || "N/A"],
-            ["Email", transaction.senderEmail || "N/A"],
-            ["Phone", transaction.senderPhone || "N/A"],
-          ].map(([label, value], idx) => (
-            <View style={styles.detailRow} key={idx}>
-              <Text style={styles.label}>{label}</Text>
-              <Text style={styles.value}>{value}</Text>
-            </View>
-          ))}
-        </View>
+      <View style={styles.detailSection}>
+        <Text style={styles.sectionTitle}>Sender Details</Text>
+        {[
+          ["Name", transaction.senderName || "N/A"],
+          ["Email", transaction.senderEmail || "N/A"],
+          ["Phone", transaction.senderPhone || "N/A"],
+        ].map(([label, value], idx) => (
+          <View style={styles.detailRow} key={idx}>
+            <Text style={styles.label}>{label}</Text>
+            <Text style={styles.value}>{value}</Text>
+          </View>
+        ))}
+      </View>
 
-        {/* Receiver Details */}
-        <View style={styles.detailSection}>
-          <Text style={styles.sectionTitle}>Receiver Details</Text>
-          {[
-            ["Name", transaction.receiverName || "N/A"],
-            ["Phone", transaction.receiverPhone || "N/A"],
-            [
-              "Amount Received",
-              `${transaction.receiverCurrencyIso3a} ${Number(
-                transaction.recipientAmount
-              ).toFixed(0)}`,
-            ],
-            ["Received At", formatDateEAT(transaction.date) || "N/A"],
-            ["Channel", formatChannelName(transaction.transactionType)],
-          ].map(([label, value], idx) => (
-            <View style={styles.detailRow} key={idx}>
-              <Text style={styles.label}>{label}</Text>
-              <Text style={styles.value}>{value}</Text>
-            </View>
-          ))}
-        </View>
+      <View style={styles.detailSection}>
+        <Text style={styles.sectionTitle}>Receiver Details</Text>
+        {[
+          ["Name", transaction.receiverName || "N/A"],
+          ["Phone", transaction.receiverPhone || "N/A"],
+          [
+            "Amount Received",
+            `${transaction.receiverCurrencyIso3a} ${Number(
+              transaction.recipientAmount
+            ).toFixed(0)}`,
+          ],
+          ["Received At", formatDateEAT(transaction.date) || "N/A"],
+        ].map(([label, value], idx) => (
+          <View style={styles.detailRow} key={idx}>
+            <Text style={styles.label}>{label}</Text>
+            <Text style={styles.value}>{value}</Text>
+          </View>
+        ))}
+      </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Thank you for using Tuma!</Text>
-          <Text style={styles.footerText}>For help, contact us:</Text>
-          <Text style={styles.footerText}>support@tuma.com</Text>
-          <Text style={styles.footerText}>+447-778-024-995</Text>
-          <Text style={[styles.footerText, styles.link]}>https://tuma.com</Text>
-        </View>
-      </Page>
-    </Document>
-  );
-};
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Thank you for using Tuma!</Text>
+        <Text style={styles.footerText}>For help, contact us:</Text>
+        <Text style={styles.footerText}>support@tuma.com</Text>
+        <Text style={styles.footerText}>+447-778-024-995</Text>
+        <Text style={[styles.footerText, styles.link]}>https://tuma.com</Text>
+      </View>
+    </Page>
+  </Document>
+);
 
 const ReceiptPDFViewer = ({
   transaction,
@@ -219,6 +194,22 @@ const ReceiptPDFViewer = ({
   formatDateEAT: (date: string) => string;
   formatChannelName: (channel: string) => string;
 }) => {
+  useEffect(() => {
+    Font.register({
+      family: "Inter",
+      fonts: [
+        {
+          src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZg.ttf",
+          fontWeight: 400,
+        },
+        {
+          src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYMZg.ttf",
+          fontWeight: 700,
+        },
+      ],
+    });
+  }, []);
+
   return (
     <PDFDownloadLink
       document={
@@ -230,13 +221,13 @@ const ReceiptPDFViewer = ({
         />
       }
       fileName={`Receipt_${transaction.transactionId}.pdf`}
-      className="flex items-center gap-2"
+      className="text-blue-600 font-semibold flex items-center gap-2"
     >
       {({ loading }) => (
         <>
           <img
             src="/backoffice/icons/download.svg"
-            alt="download"
+            alt="download icon"
             className="w-4 h-4"
           />
           {loading ? "Generating..." : "Download Receipt"}

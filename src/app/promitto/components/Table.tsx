@@ -634,11 +634,6 @@ const Table: FC = () => {
                     <p className="break-all">
                       {selectedTransaction.accountNumber || "N/A"}{" "}
                     </p>
-                    <p className="text-gray-400 col-span-2">Error Message:</p>{" "}
-                    {/* Make error message span 2 cols */}
-                    <p className="break-all col-span-2">
-                      {selectedTransaction.errorMessage || "N/A"}{" "}
-                    </p>
                   </div>
                 </div>
 
