@@ -12,6 +12,7 @@ import {
   statusStyles,
 } from "./components/constants";
 import { AnimatePresence } from "framer-motion";
+import { Toaster } from "react-hot-toast";
 
 interface User {
   accountId: number;
@@ -26,6 +27,13 @@ interface User {
 
 export default function UserAccounts() {
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const updateUserStatus = (userId: number, newStatus: Partial<User>) => {
+    setAllUsers((prev) =>
+      prev.map((user) =>
+        user.accountId === userId ? { ...user, ...newStatus } : user
+      )
+    );
+  };
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -156,6 +164,7 @@ export default function UserAccounts() {
   return (
     <div className="flex h-screen">
       <div className="w-80 flex-shrink-0">
+        <Toaster position="top-right" />
         <Sidebar />
       </div>
       <div className="flex-1 p-6 bg-white overflow-x-auto">
@@ -319,6 +328,7 @@ export default function UserAccounts() {
               userId={selectedUser.accountId}
               open={showModal}
               onClose={() => setShowModal(false)}
+              onUserUpdated={updateUserStatus}
             />
           )}
         </AnimatePresence>

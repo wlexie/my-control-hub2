@@ -1,13 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Transaction } from "../types/transactions";
-import dynamic from "next/dynamic";
-
-const ReceiptPDFViewer = dynamic(() => import("./ReceiptPDFViewer"), {
-  ssr: false,
-});
+import ReceiptPDFViewer from "./ReceiptPDFViewer";
 
 type TransactionModalProps = {
   isOpen: boolean;
@@ -246,20 +242,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
 
             <div className="sticky bottom-0 left-0 right-0 bg-white p-4 border-t flex justify-between items-center">
               {isClient && transaction.status === "Success" && (
-                <Suspense
-                  fallback={
-                    <span className="text-sm text-gray-500 ">
-                      Loading PDF...
-                    </span>
-                  }
-                >
-                  <ReceiptPDFViewer
-                    transaction={transaction}
-                    formatDateTime={formatDateTime}
-                    formatDateEAT={formatDateEAT}
-                    formatChannelName={formatChannelName}
-                  />
-                </Suspense>
+                <ReceiptPDFViewer
+                  transaction={transaction}
+                  formatDateTime={formatDateTime}
+                  formatDateEAT={formatDateEAT}
+                  formatChannelName={formatChannelName}
+                />
               )}
               <button
                 onClick={onClose}

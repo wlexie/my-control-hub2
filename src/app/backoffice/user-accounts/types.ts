@@ -1,4 +1,5 @@
 // types.ts
+export type KYCStep = "KYC_IN_PROGRESS" | "KYC_COMPLETED" | "KYC_FAILED";
 export interface User {
   // From API
   userId: number;
@@ -8,7 +9,7 @@ export interface User {
   lastName: string;
   email: string;
   phone: string;
-  step: string; // KYC status
+  step: KYCStep | string; 
   accountStatus: string;
   createdAt: string;
   country: string | null;

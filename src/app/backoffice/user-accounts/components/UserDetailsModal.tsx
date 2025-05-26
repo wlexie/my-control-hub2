@@ -5,17 +5,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getInitials, getPastelColor, statusStyles } from "./constants";
 import Link from "next/link";
 import type { User } from "../types";
+import toast from "react-hot-toast";
 
 interface Props {
   userId: number;
   onClose: () => void;
   open: boolean;
+  onUserUpdated: (userId: number, updates: Partial<User>) => void;
 }
 
 export default function UserDetailsModal({
   userId,
   onClose,
   open: isOpen,
+  onUserUpdated,
 }: Props) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -132,8 +135,10 @@ export default function UserDetailsModal({
                   </div>
 
                   {/* Status */}
-                  <div className="flex gap-4 mb-4">
-                    <div className="bg-white border px-4 py-2 rounded-xl flex-1">
+                  {/* Status and Manual Approval Section */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    {/* KYC status */}
+                    <div className="bg-white border px-4 py-2 rounded-xl">
                       <p className="text-sm font-semibold">KYC status</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span
@@ -150,7 +155,9 @@ export default function UserDetailsModal({
                         </span>
                       </div>
                     </div>
-                    <div className="bg-white border px-4 py-2 rounded-xl flex-1">
+
+                    {/* Account status */}
+                    <div className="bg-white border px-4 py-2 rounded-xl">
                       <p className="text-sm font-semibold">Account status</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span
@@ -169,6 +176,75 @@ export default function UserDetailsModal({
                         </span>
                       </div>
                     </div>
+
+                    {/* Notification Section with Manual Approve Button */}
+                    {user.step === "KYC_IN_PROGRESS" && (
+                      <div className="col-span-2 bg-white border px-4 py-2 rounded-xl">
+                        <p className="text-sm font-semibold mb-2">
+                          Manual Approval
+                        </p>
+                        <button
+                          disabled={String(user.step) === "KYC_COMPLETED"}
+                          onClick={async () => {
+                            if (!user.onfidoApplicantId) {
+                              toast.error("No applicant ID found.");
+                              return;
+                            }
+
+                            try {
+                              toast.loading("Sending approval request...");
+                              const response = await fetch(
+                                `https://api.tuma-app.com/api/account/document-recheck?applicantId=${user.onfidoApplicantId}`,
+                                {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                }
+                              );
+
+                              const result = await response.json();
+                              toast.dismiss();
+
+                              if (response.ok) {
+                                toast.success(
+                                  result.status || "Document recheck completed"
+                                );
+
+                                // ✅ Update local user state in modal
+                                setUser((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        step: "KYC_COMPLETED",
+                                        accountStatus: "Basic",
+                                      }
+                                    : prev
+                                );
+
+                                // ✅ Update parent list (table)
+                                onUserUpdated(user.userId ?? userId, {
+                                  accountStatus: "Basic",
+                                });
+                              } else {
+                                toast.error(
+                                  result.message || "Approval failed."
+                                );
+                              }
+                            } catch (error) {
+                              toast.dismiss();
+                              toast.error(
+                                "An error occurred. Please try again."
+                              );
+                              console.error(error);
+                            }
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Manually Approve
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Profile Info */}
