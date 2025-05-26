@@ -181,7 +181,7 @@ export default function UserDetailsModal({
                     {user.step === "KYC_IN_PROGRESS" && (
                       <div className="col-span-2 bg-white border px-4 py-2 rounded-xl">
                         <p className="text-sm font-semibold mb-2">
-                          Manual Approval
+                          Notification
                         </p>
                         <button
                           disabled={String(user.step) === "KYC_COMPLETED"}
@@ -241,7 +241,7 @@ export default function UserDetailsModal({
                           }}
                           className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Manually Approve
+                          Approve
                         </button>
                       </div>
                     )}

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Transaction } from "../types/transactions";
-import ReceiptPDFViewer from "./ReceiptPDFViewer";
+import { generateReceiptPDF } from "./generateReceipt";
 
 type TransactionModalProps = {
   isOpen: boolean;
@@ -121,6 +121,21 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       default:
         return channel || "Unknown";
     }
+  };
+  const handleDownload = async () => {
+    const blob = await generateReceiptPDF(
+      transaction,
+      formatDateTime,
+      formatDateEAT,
+      formatChannelName
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Receipt_${transaction.transactionId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -242,13 +257,33 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
 
             <div className="sticky bottom-0 left-0 right-0 bg-white p-4 border-t flex justify-between items-center">
               {isClient && transaction.status === "Success" && (
-                <ReceiptPDFViewer
-                  transaction={transaction}
-                  formatDateTime={formatDateTime}
-                  formatDateEAT={formatDateEAT}
-                  formatChannelName={formatChannelName}
-                />
+                <button
+                  onClick={async () => {
+                    const blob = await generateReceiptPDF(
+                      transaction,
+                      formatDateTime,
+                      formatDateEAT,
+                      formatChannelName
+                    );
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = `Receipt_${transaction.transactionId}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="text-blue-600 font-semibold flex items-center gap-2"
+                >
+                  <img
+                    src="/backoffice/icons/download.svg"
+                    alt="download icon"
+                    className="w-4 h-4"
+                  />
+                  Download Receipt
+                </button>
               )}
+
               <button
                 onClick={onClose}
                 className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
