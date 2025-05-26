@@ -164,6 +164,7 @@ const ReceiptPDF = ({
             ).toFixed(0)}`,
           ],
           ["Received At", formatDateEAT(transaction.date) || "N/A"],
+          ["Channel", formatChannelName(transaction.transactionType) || "N/A"],
         ].map(([label, value], idx) => (
           <View style={styles.detailRow} key={idx}>
             <Text style={styles.label}>{label}</Text>
