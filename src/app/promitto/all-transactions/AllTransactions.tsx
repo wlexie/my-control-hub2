@@ -6,16 +6,6 @@ import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
 import DateFilter from "../components/DateFilter";
 import * as XLSX from "xlsx";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import html2canvas from "html2canvas";
@@ -61,7 +51,6 @@ export default function AllTransactionsPage() {
   const [filteredTransactions, setFilteredTransactions] = useState<
     Transaction[]
   >([]);
-  const [totalRecords, setTotalRecords] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -121,17 +110,6 @@ export default function AllTransactionsPage() {
         return channel;
     }
   };
-
-  const statusOptions = [
-    "Success",
-    "Pending",
-    "Failed",
-    "Rejected",
-    "Reversed",
-    "Refunded",
-    "Escalated",
-    "Under Review",
-  ];
 
   // Fetch transactions from API
   useEffect(() => {
@@ -196,7 +174,6 @@ export default function AllTransactionsPage() {
 
         setAllTransactions(mappedTransactions);
         setFilteredTransactions(mappedTransactions);
-        setTotalRecords(total);
       } catch (error) {
         console.error("Error fetching transactions:", error);
         setAllTransactions([]);
@@ -478,32 +455,6 @@ export default function AllTransactionsPage() {
     } catch (error) {
       console.error("Error generating PDF:", error);
     }
-  };
-
-  const renderStatusBadge = (status: string) => {
-    return (
-      <span
-        className={`px-3 py-1 text-xs font-medium rounded-full ${
-          status === "Success"
-            ? "text-green-600 bg-green-100"
-            : status === "Pending"
-            ? "text-yellow-600 bg-yellow-100"
-            : status === "Failed"
-            ? "text-red-600 bg-red-100"
-            : status === "Refunded"
-            ? "text-purple-600 bg-purple-100"
-            : status === "Under Review"
-            ? "text-blue-600 bg-blue-100"
-            : status === "Rejected"
-            ? "text-orange-600 bg-orange-100"
-            : status === "Escalated"
-            ? "text-amber-600 bg-amber-100"
-            : "text-gray-600 bg-gray-100"
-        }`}
-      >
-        {status}
-      </span>
-    );
   };
 
   // Render status icon for modal

@@ -1,6 +1,32 @@
-import { FC, useState, useEffect, useRef } from "react";
+import { FC, useState, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import api from "../../../hooks/useApi";
+
+interface ApiTransaction {
+  transactionId: number;
+  transactionKey: string;
+  senderName: string;
+  senderEmail: string;
+  senderPhone: string;
+  receiverName: string;
+  receiverPhone: string | null;
+  senderAmount: number;
+  recipientAmount: number;
+  exchangeRate: number;
+  date: string;
+  status: string;
+  currencyIso3a: string;
+  receiverCurrencyIso3a: string;
+  transactionType: string;
+  accountNumber: string;
+  settlementReference: string;
+  tpReference: string;
+  mpesaReference: string | null;
+  errorMessage: string | null;
+  bankName: string | null;
+  userId: string | null;
+}
 
 interface Transaction {
   transactionId: number;
@@ -36,6 +62,8 @@ interface Transaction {
 }
 
 const Table: FC = () => {
+  const { get } = api();
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] =
@@ -66,7 +94,6 @@ const Table: FC = () => {
   const formatTimeEAT = (dateString: string | Date | undefined): string => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
-    // Convert to East Africa Time (UTC+3)
     date.setHours(date.getHours() + 3);
     const hours = date.getHours().toString().padStart(2, "0");
     const minutes = date.getMinutes().toString().padStart(2, "0");
@@ -80,25 +107,15 @@ const Table: FC = () => {
     return `${formatDate(dateString)} ${formatTimeEAT(dateString)}`;
   };
 
-  const statusOptions = [
-    "Success",
-    "Pending",
-    "Failed",
-    "Rejected",
-    "Reversed",
-    "Refunded",
-    "Escalated",
-    "Under Review",
-  ];
-
   useEffect(() => {
-    setLoading(true);
-    fetch(
-      "https://api.tuma-app.com/api/transfer/partner-transactions?page=1&size=5"
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const mappedTransactions = data.map((item: any) => ({
+    const fetchTransactions = async () => {
+      try {
+        setLoading(true);
+        const response = await get<ApiTransaction[]>(
+          "/transfer/partner-transactions?page=1&size=5"
+        );
+
+        const mappedTransactions = response.map((item) => ({
           transactionId: item.transactionId,
           transactionKey: item.transactionKey,
           senderName: item.senderName,
@@ -110,24 +127,23 @@ const Table: FC = () => {
           recipientAmount: item.recipientAmount,
           exchangeRate: item.exchangeRate,
           date: formatDateTimeForTable(item.date),
-          status:
-            item.status === "SUCCESS"
-              ? "Success"
-              : item.status === "PENDING"
-              ? "Pending"
-              : item.status === "FAILED" || item.status === "ERROR"
-              ? "Failed"
-              : item.status === "REJECTED"
-              ? "Rejected"
-              : item.status === "UNDER_REVIEW"
-              ? "Under Review"
-              : item.status === "REVERSED"
-              ? "Reversed"
-              : item.status === "REFUNDED"
-              ? "Refunded"
-              : item.status === "ESCALATED"
-              ? "Escalated"
-              : "Failed",
+          status: (item.status === "SUCCESS"
+            ? "Success"
+            : item.status === "PENDING"
+            ? "Pending"
+            : item.status === "FAILED" || item.status === "ERROR"
+            ? "Failed"
+            : item.status === "REJECTED"
+            ? "Rejected"
+            : item.status === "UNDER_REVIEW"
+            ? "Under Review"
+            : item.status === "REVERSED"
+            ? "Reversed"
+            : item.status === "REFUNDED"
+            ? "Refunded"
+            : item.status === "ESCALATED"
+            ? "Escalated"
+            : "Failed") as Transaction["status"],
           currencyIso3a: item.currencyIso3a,
           receiverCurrencyIso3a: item.receiverCurrencyIso3a,
           transactionType: formatChannelName(item.transactionType),
@@ -136,16 +152,19 @@ const Table: FC = () => {
           tpReference: item.tpReference,
           mpesaReference: item.mpesaReference,
           errorMessage: item.errorMessage,
-          userID: item.userId,
+          userId: item.userId,
           bankName: item.bankName,
         }));
+
         setTransactions(mappedTransactions);
-        setLoading(false);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error fetching transactions:", error);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchTransactions();
   }, []);
 
   useEffect(() => {
@@ -169,6 +188,8 @@ const Table: FC = () => {
       return;
     }
 
+    let hiddenContainer: HTMLDivElement | null = null;
+
     try {
       // Clone receipt to avoid UI distortion
       const clonedReceipt = receiptElement.cloneNode(true) as HTMLElement;
@@ -184,12 +205,12 @@ const Table: FC = () => {
       clonedReceipt.style.background = "white"; // Ensure background visibility
 
       // Append cloned receipt to a hidden container
-      const hiddenContainer = document.createElement("div");
+      hiddenContainer = document.createElement("div");
       hiddenContainer.style.position = "fixed";
       hiddenContainer.style.top = "-9999px"; // Moves it out of view
-      hiddenContainer.style.width = "100%";
-      hiddenContainer.style.display = "flex";
-      hiddenContainer.style.justifyContent = "center"; // Centers horizontally
+      hiddenContainer.style.left = "-9999px";
+      hiddenContainer.style.width = "auto";
+      hiddenContainer.style.height = "auto";
       hiddenContainer.appendChild(clonedReceipt);
       document.body.appendChild(hiddenContainer);
 
@@ -203,18 +224,25 @@ const Table: FC = () => {
       });
 
       const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = 210; // A4 width in mm
-      const pdfHeight = 297; // A4 height in mm
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      // Calculate proper scaling
-      const imgWidth = pdfWidth - 40; // Leaving margin on sides
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const canvasAspectRatio = canvasWidth / canvasHeight;
 
-      // Centered placement on A4
+      const marginVal = 10;
+      let imgWidth = pdfWidth - 2 * marginVal;
+      let imgHeight = imgWidth / canvasAspectRatio;
+
+      if (imgHeight > pdfHeight - 2 * marginVal) {
+        imgHeight = pdfHeight - 2 * marginVal;
+        imgWidth = imgHeight * canvasAspectRatio;
+      }
+
       const xOffset = (pdfWidth - imgWidth) / 2;
       const yOffset = (pdfHeight - imgHeight) / 2;
 
-      // Add image to PDF
       pdf.addImage(
         canvas.toDataURL("image/png"),
         "PNG",
@@ -227,10 +255,13 @@ const Table: FC = () => {
 
       console.log("PDF downloaded successfully");
 
-      // Remove cloned receipt from the DOM
       document.body.removeChild(hiddenContainer);
+      hiddenContainer = null;
     } catch (error) {
       console.error("Error generating PDF:", error);
+      if (hiddenContainer && document.body.contains(hiddenContainer)) {
+        document.body.removeChild(hiddenContainer);
+      }
     }
   };
 
@@ -238,10 +269,11 @@ const Table: FC = () => {
     setIsModalVisible(false);
     setTimeout(() => {
       setSelectedTransaction(null);
-    }, 420); // Matches the transition duration
+    }, 300); // Adjusted to match previous component's timeout
   };
 
-  const renderStatusBadge = (status: string) => {
+  const renderStatusBadge = (status: Transaction["status"]) => {
+    // Use Transaction['status']
     return (
       <span
         className={`px-2 py-1 text-xs font-semibold rounded-lg ${
@@ -383,8 +415,12 @@ const Table: FC = () => {
               <span className="text-black font-semibold text-md">
                 {selectedTransaction.receiverName}
               </span>
-              <p>{selectedTransaction.errorMessage}</p>
             </p>
+            {selectedTransaction.errorMessage && (
+              <p className="text-red-500 text-sm mt-1">
+                {selectedTransaction.errorMessage}
+              </p>
+            )}
             {dateDisplay}
           </>
         );
@@ -438,38 +474,42 @@ const Table: FC = () => {
           </>
         );
       default:
+      // Should not happen if status is correctly typed and handled
+      /*const exhaustiveCheck: never = selectedTransaction.status;
         return (
           <>
             <p className="text-gray-500 mt-1">
-              Transaction {selectedTransaction.status} for{" "}
+              Transaction status unknown for{" "}
               <span className="text-black font-semibold text-md">
                 {selectedTransaction.receiverName}
               </span>
             </p>
             {dateDisplay}
           </>
-        );
+        );*/
     }
   };
 
   return (
     <div className="bg-gray-100 p-4">
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+      <div className="bg-white shadow-sm rounded-lg overflow-x-auto">
         <h2 className="px-6 py-4 font-semibold text-gray-800 border-b">
           Latest Transactions
         </h2>
-        <table className="w-full text-sm text-left text-gray-700">
+        <table className="w-full text-sm text-left text-gray-700 min-w-[900px]">
           <thead className="bg-white">
             <tr>
-              <th className="px-6 py-3">Customer</th>
-              <th className="px-6 py-3">Transaction ID</th>
-              <th className="px-6 py-3">Sender Amount</th>
-              <th className="px-6 py-3">Sender Currency</th>
-              <th className="px-6 py-3">Recipient Amount</th>
-              <th className="px-6 py-3">Recipient Currency</th>
-              <th className="px-6 py-3">Channel</th>
-              <th className="px-6 py-3">Status</th>
-              <th className="px-6 py-3">Date & Time</th>
+              <th className="px-6 py-3 whitespace-nowrap">Customer</th>
+              <th className="px-6 py-3 whitespace-nowrap">Transaction ID</th>
+              <th className="px-6 py-3 whitespace-nowrap">Sender Amount</th>
+              <th className="px-6 py-3 whitespace-nowrap">Sender Currency</th>
+              <th className="px-6 py-3 whitespace-nowrap">Recipient Amount</th>
+              <th className="px-6 py-3 whitespace-nowrap">
+                Recipient Currency
+              </th>
+              <th className="px-6 py-3 whitespace-nowrap">Channel</th>
+              <th className="px-6 py-3 whitespace-nowrap">Status</th>
+              <th className="px-6 py-3 whitespace-nowrap">Date & Time</th>
             </tr>
           </thead>
           <tbody>
@@ -483,26 +523,36 @@ const Table: FC = () => {
               transactions.map((transaction) => (
                 <tr
                   key={transaction.transactionId}
-                  className="cursor-pointer hover:bg-gray-100"
+                  className="cursor-pointer hover:bg-gray-100 border-b"
                   onClick={() => handleRowClick(transaction)}
                 >
-                  <td className="px-6 py-4 flex items-center">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {transaction.senderName}
                   </td>
-                  <td className="px-6 py-4">{transaction.transactionId}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {transaction.transactionId}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {transaction.senderAmount.toFixed(2)}
                   </td>
-                  <td className="px-6 py-4">{transaction.currencyIso3a}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {transaction.currencyIso3a}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {transaction.recipientAmount.toFixed(2)}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {transaction.receiverCurrencyIso3a}
                   </td>
-                  <td className="px-6 py-4">{transaction.transactionType}</td>
-                  <td>{renderStatusBadge(transaction.status)}</td>
-                  <td className="px-6 py-4">{transaction.date}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {transaction.transactionType}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {renderStatusBadge(transaction.status)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {transaction.date}
+                  </td>
                 </tr>
               ))
             ) : (
@@ -520,30 +570,28 @@ const Table: FC = () => {
       {selectedTransaction && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div
-            className="bg-black/30 backdrop-blur-sm  w-full h-full"
+            className="bg-black/30 backdrop-blur-sm w-full h-full fixed inset-0"
             onClick={closeModal}
           ></div>
 
-          {/* Modal with Slide-in Transition */}
           <div
-            className={`bg-white w-[28rem] h-screen shadow-lg p-8 fixed right-0 transform transition-transform duration-300 ${
+            className={`bg-white w-[28rem] h-screen shadow-lg fixed right-0 transform transition-transform duration-300 ${
               isModalVisible ? "translate-x-0" : "translate-x-full"
             }`}
           >
-            {/* Close Button */}
             <div className="flex items-center justify-end p-6 border-b sticky top-0 bg-white z-10">
               <button
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl"
+                className="text-gray-500 hover:text-gray-800 text-3xl"
                 onClick={closeModal}
               >
-                &times;
+                ×
               </button>
             </div>
 
-            {/* Modal Content */}
             <div className="overflow-y-auto p-6 h-[calc(100vh-80px)]">
+              {" "}
+              {/* Adjust height for header */}
               <div className=" space-y-8">
-                {/* Confirmation Section */}
                 <div className="text-center mb-6">
                   <div className="mx-auto rounded-full flex items-center justify-center">
                     {renderStatusIcon()}
@@ -555,19 +603,28 @@ const Table: FC = () => {
                   {renderStatusMessage()}
                 </div>
 
-                {/* Transaction Details */}
                 <div className="mt-6">
-                  <div className="grid grid-cols-2 gap-y-4 text-gray-700">
+                  <div className="grid grid-cols-2 gap-y-4 text-gray-700 text-sm">
                     <p className="text-gray-400">Transaction ID:</p>
-                    <p>{selectedTransaction.transactionId}</p>
+                    <p className="break-all">
+                      {selectedTransaction.transactionId}
+                    </p>
                     <p className="text-gray-400">User ID:</p>
-                    <p>{selectedTransaction.userId || "N/A"}</p>
+                    <p className="break-all">
+                      {selectedTransaction.userId || "N/A"}
+                    </p>
                     <p className="text-gray-400">Transaction Key:</p>
-                    <p>{selectedTransaction.transactionKey}</p>
+                    <p className="break-all">
+                      {selectedTransaction.transactionKey}
+                    </p>
                     <p className="text-gray-400">Channel:</p>
-                    <p>{selectedTransaction.transactionType}</p>
+                    <p className="break-all">
+                      {selectedTransaction.transactionType}
+                    </p>
                     <p className="text-gray-400">Bank Name:</p>
-                    <p>{selectedTransaction.bankName || "N/A"}</p>
+                    <p className="break-all">
+                      {selectedTransaction.bankName || "N/A"}
+                    </p>
                     <p className="text-gray-400">Purpose:</p>
                     <p>Transfer</p>
                     <p className="text-gray-400">Sender Currency:</p>
@@ -575,19 +632,31 @@ const Table: FC = () => {
                     <p className="text-gray-400">Recipient Currency:</p>
                     <p>{selectedTransaction.receiverCurrencyIso3a || "N/A"}</p>
                     <p className="text-gray-400">Trust Payments:</p>
-                    <p>{selectedTransaction.tpReference || "N/A"}</p>
+                    <p className="break-all">
+                      {selectedTransaction.tpReference || "N/A"}
+                    </p>
                     <p className="text-gray-400">Settlement Reference:</p>
-                    <p>{selectedTransaction.settlementReference || "N/A"}</p>
+                    <p className="break-all">
+                      {selectedTransaction.settlementReference || "N/A"}
+                    </p>
+                    <p className="text-gray-400">MPESA Reference:</p>
+                    <p className="break-all">
+                      {selectedTransaction.mpesaReference || "N/A"}
+                    </p>
                     <p className="text-gray-400">Account Number:</p>
-                    <p>{selectedTransaction.accountNumber || "N/A"} </p>
-                    <p className="text-gray-400">Error Message:</p>
-                    <p>{selectedTransaction.errorMessage || "N/A"} </p>
+                    <p className="break-all">
+                      {selectedTransaction.accountNumber || "N/A"}{" "}
+                    </p>
+                    <p className="text-gray-400 col-span-2">Error Message:</p>{" "}
+                    {/* Make error message span 2 cols */}
+                    <p className="break-all col-span-2">
+                      {selectedTransaction.errorMessage || "N/A"}{" "}
+                    </p>
                   </div>
                 </div>
 
-                {/* Exchange Rate */}
                 <div>
-                  <div className="grid grid-cols-2 gap-y-4 text-gray-700 border border-dotted py-2 px-2 border-gray-300">
+                  <div className="grid grid-cols-2 gap-y-4 text-gray-700 text-sm border border-dotted py-2 px-2 border-gray-300 rounded-md">
                     <p className="text-gray-400">Exchange Rate:</p>
                     <p>
                       {selectedTransaction.exchangeRate.toFixed(2) || "N/A"}
@@ -602,38 +671,36 @@ const Table: FC = () => {
                   </div>
                 </div>
 
-                {/* Sender Section */}
                 <div className="mt-8 border-t pt-4 text-center">
                   <h4 className="text-lg font-bold text-gray-800 mb-4">
                     Sender
                   </h4>
-                  <div className="flex flex-col items-center space-y-4">
+                  <div className="flex flex-col items-center space-y-2 text-sm">
                     <div>
-                      <p className="text-gray-700 font-semibold">
+                      <p className="text-gray-700 font-semibold break-all">
                         {selectedTransaction.senderName}
                       </p>
-                      <p className="text-gray-500 text-lg">
+                      <p className="text-gray-500 break-all">
                         {selectedTransaction.senderPhone}
                       </p>
-                      <p className="text-gray-500 text-sm mt-1">
+                      <p className="text-gray-500 mt-1 break-all">
                         {selectedTransaction.senderEmail}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Receiver Section */}
                 <div className="mt-8 border-t pt-4 text-center">
                   <h4 className="text-lg font-bold text-gray-800 mb-4">
                     Receiver
                   </h4>
-                  <div className="flex flex-col items-center space-y-4">
+                  <div className="flex flex-col items-center space-y-2 text-sm">
                     <div>
-                      <p className="text-gray-700 font-semibold">
+                      <p className="text-gray-700 font-semibold break-all">
                         {selectedTransaction.receiverName}
                       </p>
                       {selectedTransaction.receiverPhone && (
-                        <p className="text-gray-500 text-lg">
+                        <p className="text-gray-500 break-all">
                           {selectedTransaction.receiverPhone}
                         </p>
                       )}
@@ -641,8 +708,9 @@ const Table: FC = () => {
                   </div>
                 </div>
 
-                {/* Download Receipt */}
-                <div className="mt-2 flex items-center justify-center">
+                <div className="mt-2 flex items-center justify-center pb-8">
+                  {" "}
+                  {/* Added pb-8 for bottom padding */}
                   <button
                     onClick={handleDownloadReceipt}
                     disabled={selectedTransaction.status !== "Success"}
@@ -652,18 +720,16 @@ const Table: FC = () => {
                         : "text-gray-400 cursor-not-allowed"
                     } font-semibold`}
                   >
-                    <svg
+                    <svg // Using a download icon
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
                     >
                       <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
+                        fillRule="evenodd"
+                        d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                        clipRule="evenodd"
                       />
                     </svg>
                     <span>Download Receipt</span>
@@ -672,7 +738,6 @@ const Table: FC = () => {
               </div>
             </div>
 
-            {/* Hidden Receipt for PDF Generation */}
             {selectedTransaction?.status === "Success" && (
               <div
                 id="receipt"
@@ -683,15 +748,17 @@ const Table: FC = () => {
                   width: "700px",
                   padding: "40px",
                   boxSizing: "border-box",
+                  left: "-9999px",
+                  top: "-9999px",
                 }}
                 className="bg-white mx-auto shadow-lg rounded-lg text-gray-700"
               >
-                {/* Header */}
                 <div className="text-center mb-1 mt-1">
                   <img
-                    src="/logoimage.png"
+                    src="/logoimage.png" // Ensure this path is correct or use an absolute URL if hosted
                     className="w-10 h-10 mx-auto"
                     alt="Company Logo"
+                    crossOrigin="anonymous"
                   />
                   <h2 className="text-2xl font-bold text-black mt-3">
                     {selectedTransaction.senderAmount.toFixed(2)}{" "}
@@ -711,7 +778,6 @@ const Table: FC = () => {
                   </p>
                 </div>
 
-                {/* Transaction Details - 2 Column Layout */}
                 <div className="bg-gray-50 p-5 rounded-lg mb-3">
                   <h3 className="font-semibold text-black text-lg mb-3">
                     Transaction Details
@@ -726,7 +792,7 @@ const Table: FC = () => {
                       </div>
                       <div>
                         <p className="text-gray-500 text-sm">Channel</p>
-                        <p className="text-sm font-semibold">
+                        <p className="text-sm font-semibold break-all">
                           {selectedTransaction.transactionType}
                         </p>
                       </div>
@@ -738,7 +804,7 @@ const Table: FC = () => {
                       </div>
                       <div>
                         <p className="text-gray-500 text-sm">TP Reference</p>
-                        <p className="text-sm font-semibold">
+                        <p className="text-sm font-semibold break-all">
                           {selectedTransaction.tpReference}
                         </p>
                       </div>
@@ -758,20 +824,19 @@ const Table: FC = () => {
                       </div>
                       <div>
                         <p className="text-gray-500 text-sm">Settlement Ref</p>
-                        <p className="text-sm font-semibold">
+                        <p className="text-sm font-semibold break-all">
                           {selectedTransaction.settlementReference || "N/A"}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-500 text-sm">MPESA Reference</p>
-                        <p className="text-sm font-semibold">
+                        <p className="text-sm font-semibold break-all">
                           {selectedTransaction.mpesaReference || "N/A"}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Transaction Key as full-width row */}
                   <div className="mt-4">
                     <p className="text-gray-500 text-sm">Transaction Key</p>
                     <p className="text-black font-semibold text-sm break-all p-2 rounded mt-1">
@@ -802,14 +867,13 @@ const Table: FC = () => {
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm">Bank Name</p>
-                      <p className="text-sm font-semibold">
+                      <p className="text-sm font-semibold break-all">
                         {selectedTransaction.bankName || "N/A"}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Sender & Receiver - Side by Side */}
                 <div className="flex gap-5 mb-5">
                   <div className="bg-gray-50 p-5 rounded-lg flex-1">
                     <h3 className="font-semibold text-black text-lg mb-3">
@@ -818,19 +882,19 @@ const Table: FC = () => {
                     <div className="space-y-3">
                       <div>
                         <p className="text-gray-500 text-sm">Name</p>
-                        <p className="text-black text-sm font-semibold">
+                        <p className="text-black text-sm font-semibold break-all">
                           {selectedTransaction.senderName}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-500 text-sm">Phone</p>
-                        <p className="text-sm font-semibold">
+                        <p className="text-sm font-semibold break-all">
                           {selectedTransaction.senderPhone}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-500 text-sm">Email</p>
-                        <p className="text-sm font-semibold">
+                        <p className="text-sm font-semibold break-all">
                           {selectedTransaction.senderEmail}
                         </p>
                       </div>
@@ -844,21 +908,21 @@ const Table: FC = () => {
                     <div className="space-y-3">
                       <div>
                         <p className="text-gray-500 text-sm">Name</p>
-                        <p className="text-black text-sm font-semibold">
+                        <p className="text-black text-sm font-semibold break-all">
                           {selectedTransaction.receiverName}
                         </p>
                       </div>
                       {selectedTransaction.receiverPhone && (
                         <div>
                           <p className="text-gray-500 text-sm">Phone</p>
-                          <p className="text-sm font-semibold">
+                          <p className="text-sm font-semibold break-all">
                             {selectedTransaction.receiverPhone}
                           </p>
                         </div>
                       )}
                       <div>
                         <p className="text-gray-500 text-sm">Account Number</p>
-                        <p className="text-sm font-semibold">
+                        <p className="text-sm font-semibold break-all">
                           {selectedTransaction.accountNumber}
                         </p>
                       </div>
@@ -866,7 +930,6 @@ const Table: FC = () => {
                   </div>
                 </div>
 
-                {/* Footer */}
                 <div className="text-center text-sm mt-4">
                   <p className="font-semibold">Thank you for using Tuma!</p>
                   <p className="text-gray-500 italic mt-1">
