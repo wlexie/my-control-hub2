@@ -11,7 +11,7 @@ export const generateReceiptPDF = async (
   const page = pdfDoc.addPage([595.28, 841.89]); // A4 size in points
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const { width, height } = page.getSize();
+  const  height  = page.getSize().height;
 
   let y = height - 40;
   const lineHeight = 18;

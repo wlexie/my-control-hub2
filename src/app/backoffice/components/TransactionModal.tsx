@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Transaction } from "../types/transactions";
 import { generateReceiptPDF } from "./generateReceipt";
@@ -121,21 +121,6 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       default:
         return channel || "Unknown";
     }
-  };
-  const handleDownload = async () => {
-    const blob = await generateReceiptPDF(
-      transaction,
-      formatDateTime,
-      formatDateEAT,
-      formatChannelName
-    );
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Receipt_${transaction.transactionId}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   return (
