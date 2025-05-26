@@ -6,8 +6,7 @@ import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
 import DateFilter from "../components/DateFilter";
 import * as XLSX from "xlsx";
-import useApi from '../../../hooks/useApi';
-/*import {
+import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -15,44 +14,13 @@ import useApi from '../../../hooks/useApi';
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "../../../components/ui/pagination"; */
+} from "@/components/ui/pagination";
 
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
-
-export interface ApiTransactionResponse {
-  transactionId?: number;
-  transactionKey?: string;
-  senderName?: string;
-  senderEmail?: string;
-  senderPhone?: string;
-  receiverName?: string;
-  receiverPhone?: string | null;
-  senderAmount?: number;
-  recipientAmount?: number;
-  exchangeRate?: number;
-  date?: string;
-  status?: string;
-  currencyIso3a?: string;
-  receiverCurrencyIso3a?: string;
-  transactionType?: string;
-  accountNumber?: string;
-  settlementReference?: string;
-  tpReference?: string;
-  mpesaReference?: string | null;
-  errorMessage?: string;
-  userId?: string | null;
-  bankName?: string | null;
-}
-
-export interface ApiTransactionsResponse {
-  content: ApiTransactionResponse[];
-  totalElements: number;
-}
-
 
 export interface Transaction {
   transactionId: number;
@@ -89,12 +57,11 @@ export interface Transaction {
 }
 
 export default function AllTransactionsPage() {
-  const { get } = useApi();
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<
     Transaction[]
   >([]);
- // const [ totalRecords,  setTotalRecords] = useState(0);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,7 +80,7 @@ export default function AllTransactionsPage() {
     endDate: null,
   });
 
-  const rowsPerPage = 10;
+  const rowsPerPage = 12;
 
   // Format date as DD/MM/YYYY
   const formatDate = (dateString: string | Date | undefined): string => {
@@ -155,7 +122,7 @@ export default function AllTransactionsPage() {
     }
   };
 
-  /*const statusOptions = [
+  const statusOptions = [
     "Success",
     "Pending",
     "Failed",
@@ -164,20 +131,29 @@ export default function AllTransactionsPage() {
     "Refunded",
     "Escalated",
     "Under Review",
-  ]; */
+  ];
 
   // Fetch transactions from API
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
         setLoading(true);
-        const data = await get<ApiTransactionsResponse>(
-          `/transfer/partner-transactions?page=${currentPage}&size=${rowsPerPage}`
+        const response = await fetch(
+          `https://api.tuma-app.com/api/transfer/partner-transactions?page=${currentPage}&size=${rowsPerPage}`
         );
-        const transactionsData = Array.isArray(data) ? data : data.content || [];
-        //const total = data.totalElements || data.length || 0;
 
-        const mappedTransactions = transactionsData.map((item: ApiTransactionResponse) => ({
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        const transactionsData = Array.isArray(data)
+          ? data
+          : data.content || [];
+        const total = data.totalElements || data.length || 0;
+
+        const mappedTransactions = transactionsData.map((item: any) => ({
           transactionId: item.transactionId || 0,
           transactionKey: item.transactionKey || "N/A",
           senderName: item.senderName || "Unknown",
@@ -189,7 +165,7 @@ export default function AllTransactionsPage() {
           recipientAmount: item.recipientAmount || 0,
           exchangeRate: item.exchangeRate || 0,
           date: item.date ? formatDateTimeForTable(item.date) : "N/A",
-          status: (
+          status:
             item.status === "SUCCESS"
               ? "Success"
               : item.status === "PENDING"
@@ -206,24 +182,21 @@ export default function AllTransactionsPage() {
               ? "Refunded"
               : item.status === "ESCALATED"
               ? "Escalated"
-              : "Failed"
-          ) as Transaction['status'],
+              : "Failed",
           currencyIso3a: item.currencyIso3a || "N/A",
           receiverCurrencyIso3a: item.receiverCurrencyIso3a || "N/A",
-          transactionType: formatChannelName(item.transactionType || "Unknown"),
+          transactionType: formatChannelName(item.transactionType) || "Unknown",
           accountNumber: item.accountNumber || "N/A",
           settlementReference: item.settlementReference || "N/A",
           tpReference: item.tpReference || "N/A",
           mpesaReference: item.mpesaReference || null,
           rawDate: item.date ? new Date(item.date) : new Date(),
           errorMessage: item.errorMessage || "N/A",
-          userId: item.userId || null,  // Add this line
-          bankName: item.bankName || null  // Add this line
         }));
 
         setAllTransactions(mappedTransactions);
         setFilteredTransactions(mappedTransactions);
-      //  setTotalRecords(total);
+        setTotalRecords(total);
       } catch (error) {
         console.error("Error fetching transactions:", error);
         setAllTransactions([]);
@@ -234,7 +207,7 @@ export default function AllTransactionsPage() {
     };
 
     fetchTransactions();
-  }, [currentPage]); // Added 'get' to dependency array as it's used in useEffect
+  }, [currentPage]);
 
   // Filter transactions based on search term and date range
   useEffect(() => {
@@ -418,7 +391,7 @@ export default function AllTransactionsPage() {
 
       const csvContent = [
         headers.join(","),
-        ...rows.map((row) => row.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(",")), // Ensure fields are stringified and quotes escaped
+        ...rows.map((row) => row.map((field) => `"${field}"`).join(",")),
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -456,8 +429,6 @@ export default function AllTransactionsPage() {
     const receiptElement = document.getElementById("receipt");
     if (!receiptElement) return;
 
-    let hiddenContainer: HTMLDivElement | null = null; // Declare here
-
     try {
       const clonedReceipt = receiptElement.cloneNode(true) as HTMLElement;
       clonedReceipt.style.opacity = "1";
@@ -469,12 +440,12 @@ export default function AllTransactionsPage() {
       clonedReceipt.style.margin = "auto";
       clonedReceipt.style.background = "white";
 
-      hiddenContainer = document.createElement("div"); // Assign here
+      const hiddenContainer = document.createElement("div");
       hiddenContainer.style.position = "fixed";
-      hiddenContainer.style.top = "-9999px"; // Keep it off-screen
-      hiddenContainer.style.left = "-9999px"; // Keep it off-screen
-      hiddenContainer.style.width = "auto"; // Let content define width
-      hiddenContainer.style.height = "auto"; // Let content define height
+      hiddenContainer.style.top = "-9999px";
+      hiddenContainer.style.width = "100%";
+      hiddenContainer.style.display = "flex";
+      hiddenContainer.style.justifyContent = "center";
       hiddenContainer.appendChild(clonedReceipt);
       document.body.appendChild(hiddenContainer);
 
@@ -486,23 +457,10 @@ export default function AllTransactionsPage() {
       });
 
       const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-
-      const canvasAspectRatio = canvasWidth / canvasHeight;
-      
-      const margin = 10; 
-      let imgWidth = pdfWidth - 2 * margin;
-      let imgHeight = imgWidth / canvasAspectRatio;
-
-      if (imgHeight > pdfHeight - 2 * margin) {
-        imgHeight = pdfHeight - 2 * margin;
-        imgWidth = imgHeight * canvasAspectRatio;
-      }
-      
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const imgWidth = pdfWidth - 40;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const xOffset = (pdfWidth - imgWidth) / 2;
       const yOffset = (pdfHeight - imgHeight) / 2;
 
@@ -517,16 +475,12 @@ export default function AllTransactionsPage() {
       pdf.save(`Receipt_${selectedTransaction.transactionId}.pdf`);
 
       document.body.removeChild(hiddenContainer);
-      hiddenContainer = null; // Set to null after successful removal
     } catch (error) {
       console.error("Error generating PDF:", error);
-       if (hiddenContainer && document.body.contains(hiddenContainer)) { // Check if hiddenContainer exists and is in the DOM
-         document.body.removeChild(hiddenContainer);
-       }
     }
   };
 
-  /*const renderStatusBadge = (status: string) => {
+  const renderStatusBadge = (status: string) => {
     return (
       <span
         className={`px-3 py-1 text-xs font-medium rounded-full ${
@@ -550,7 +504,7 @@ export default function AllTransactionsPage() {
         {status}
       </span>
     );
-  }; */
+  };
 
   // Render status icon for modal
   const renderStatusIcon = () => {
@@ -780,17 +734,17 @@ export default function AllTransactionsPage() {
           </div>
         </div>
         {/* Date filter active indicator */}
-        {dateRange.startDate && dateRange.endDate && (
+        {dateRange.startDate && (
           <div className="text-sm text-gray-500">
             Showing transactions from {dateRange.startDate.toLocaleDateString()}{" "}
-            to {dateRange.endDate.toLocaleDateString()}
+            to {dateRange.endDate?.toLocaleDateString()}
           </div>
         )}
         {/* Export Modal */}
         {isExportModalVisible && (
           <div className="fixed inset-0 z-50 flex justify-end">
             <div
-              className="bg-black bg-opacity-30 w-full h-full fixed inset-0" // Ensure it covers the whole screen
+              className="bg-black bg-opacity-30 w-full h-full"
               onClick={() => setIsExportModalVisible(false)}
             ></div>
             <div className="bg-white w-96 h-full shadow-lg p-6 overflow-y-auto relative transform transition-transform duration-300 translate-x-0">
@@ -798,7 +752,7 @@ export default function AllTransactionsPage() {
                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl"
                 onClick={() => setIsExportModalVisible(false)}
               >
-                ×
+                &times;
               </button>
               <h2 className="text-lg font-bold text-gray-900">
                 Export Transactions
@@ -814,7 +768,7 @@ export default function AllTransactionsPage() {
                     value="all"
                     checked={exportType === "all"}
                     onChange={() => setExportType("all")}
-                    className="form-radio h-4 w-4 text-yellow-500 border-gray-300 focus:ring-yellow-400" // Tailwind form-radio
+                    className="form-checkbox text-green-500"
                   />
                 </label>
                 <label className="flex justify-between items-center py-3 border-b border-gray-200 cursor-pointer">
@@ -827,7 +781,7 @@ export default function AllTransactionsPage() {
                     value="filtered"
                     checked={exportType === "filtered"}
                     onChange={() => setExportType("filtered")}
-                    className="form-radio h-4 w-4 text-yellow-500 border-gray-300 focus:ring-yellow-400"
+                    className="form-checkbox text-green-500"
                   />
                 </label>
               </div>
@@ -843,7 +797,7 @@ export default function AllTransactionsPage() {
                     value="csv"
                     checked={fileType === "csv"}
                     onChange={() => setFileType("csv")}
-                    className="form-radio h-4 w-4 text-yellow-500 border-gray-300 focus:ring-yellow-400"
+                    className="form-checkbox text-green-500"
                   />
                 </label>
                 <label className="flex justify-between items-center py-3 border-b border-gray-200 cursor-pointer">
@@ -854,7 +808,7 @@ export default function AllTransactionsPage() {
                     value="excel"
                     checked={fileType === "excel"}
                     onChange={() => setFileType("excel")}
-                    className="form-radio h-4 w-4 text-yellow-500 border-gray-300 focus:ring-yellow-400"
+                    className="form-checkbox text-green-500"
                   />
                 </label>
               </div>
@@ -876,19 +830,19 @@ export default function AllTransactionsPage() {
           </div>
         )}
         {/* Transactions Table */}
-        <div className="mt-6 bg-white border border-gray-200 rounded-lg shadow-sm overflow-x-auto"> {/* Added overflow-x-auto for responsiveness */}
-          <table className="w-full table-auto text-left min-w-[1024px]"> {/* Added min-w for larger tables */}
+        <div className="mt-6 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          <table className="w-full table-auto text-left">
             <thead className="bg-white">
               <tr className="text-gray-400 font-light text-sm">
-                <th className="py-3 px-4 whitespace-nowrap">Customer</th>
-                <th className="py-3 px-4 whitespace-nowrap">Transaction ID</th>
-                <th className="py-3 px-4 whitespace-nowrap">Sender Amount</th>
-                <th className="py-3 px-4 whitespace-nowrap">Sender Currency</th>
-                <th className="py-3 px-4 whitespace-nowrap">Recipient Amount</th>
-                <th className="py-3 px-4 whitespace-nowrap">Recipient Currency</th>
-                <th className="py-3 px-4 whitespace-nowrap">Channel</th>
-                <th className="py-3 px-4 whitespace-nowrap">Status</th>
-                <th className="py-3 px-4 whitespace-nowrap">Date & Time</th>
+                <th className="py-3 px-4">Customer</th>
+                <th className="py-3 px-4">Transaction ID</th>
+                <th className="py-3 px-4">Sender Amount</th>
+                <th className="py-3 px-4">Sender Currency</th>
+                <th className="py-3 px-4">Recipient Amount</th>
+                <th className="py-3 px-4">Recipient Currency</th>
+                <th className="py-3 px-4">Channel</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Date & Time</th>
                 <th className="py-3 px-4"></th>
               </tr>
             </thead>
@@ -909,44 +863,32 @@ export default function AllTransactionsPage() {
                     className="text-gray-700 cursor-pointer text-sm hover:bg-gray-50"
                     onClick={() => setSelectedTransaction(transaction)}
                   >
-                    <td className="py-4 px-6 whitespace-nowrap">{transaction.senderName}</td>
-                    <td className="py-3 px-4 whitespace-nowrap">{transaction.transactionId}</td>
-                    <td className="py-3 px-4 whitespace-nowrap">
+                    <td className="py-4 px-6">{transaction.senderName}</td>
+                    <td className="py-3 px-4">{transaction.transactionId}</td>
+                    <td className="py-3 px-4">
                       {transaction.senderAmount.toFixed(2)}
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap">{transaction.currencyIso3a}</td>
-                    <td className="py-3 px-4 whitespace-nowrap">
+                    <td className="py-3 px-4">{transaction.currencyIso3a}</td>
+                    <td className="py-3 px-4">
                       {transaction.recipientAmount.toFixed(2)}
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
+                    <td className="py-3 px-4">
                       {transaction.receiverCurrencyIso3a}
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap">{transaction.transactionType}</td>
-                    <td className="py-3 px-4 whitespace-nowrap">
+                    <td className="py-3 px-4">{transaction.transactionType}</td>
+                    <td className="py-3 px-4">
                       <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${ // changed text-sm to text-xs
+                        className={`px-3 py-1 text-sm font-medium rounded-full ${
                           transaction.status === "Success"
                             ? "text-green-600 bg-green-100"
-                            : transaction.status === "Pending"
-                            ? "text-yellow-600 bg-yellow-100"
-                            : transaction.status === "Failed"
-                            ? "text-red-600 bg-red-100"
-                            : transaction.status === "Refunded"
-                            ? "text-purple-600 bg-purple-100"
-                            : transaction.status === "Under Review"
-                            ? "text-blue-600 bg-blue-100"
-                            : transaction.status === "Rejected"
-                            ? "text-orange-600 bg-orange-100"
-                            : transaction.status === "Escalated"
-                            ? "text-amber-600 bg-amber-100"
-                            : "text-gray-600 bg-gray-100"
+                            : "text-red-600 bg-red-100"
                         }`}
                       >
                         {transaction.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap">{transaction.date}</td>
-                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                    <td className="py-3 px-4">{transaction.date}</td>
+                    <td className="py-3 px-4 text-right">
                       <ArrowRight className="h-5 w-5 text-gray-500" />
                     </td>
                   </tr>
@@ -965,7 +907,7 @@ export default function AllTransactionsPage() {
           </table>
         </div>
         {/* Pagination */}
-        {filteredTransactions.length > 0 && totalFilteredPages > 1 && ( // Only show pagination if more than one page
+        {filteredTransactions.length > 0 && (
           <div className="flex justify-center mt-6 space-x-2">
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -978,7 +920,7 @@ export default function AllTransactionsPage() {
               Page {currentPage} of {totalFilteredPages}
             </span>
             <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalFilteredPages))} // Ensure not to go beyond totalFilteredPages
+              onClick={() => setCurrentPage((prev) => prev + 1)}
               disabled={currentPage >= totalFilteredPages}
               className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
@@ -991,369 +933,378 @@ export default function AllTransactionsPage() {
         {selectedTransaction && (
           <div className="fixed inset-0 z-50 flex justify-end">
             <div
-              className="bg-black bg-opacity-50 w-full h-full fixed inset-0" // Ensure it covers the whole screen
+              className=" bg-opacity-50 bg-black/30 backdrop-blur-sm w-full h-full fixed inset-0"
               onClick={closeModal}
             ></div>
+
             <div
-              className={`bg-white w-[28rem] h-full shadow-lg p-8 overflow-y-auto fixed right-0 transform transition-transform duration-300 ${
+              className={`bg-white w-[28rem] h-screen shadow-lg fixed right-0 transform transition-transform duration-300 ${
                 isModalVisible ? "translate-x-0" : "translate-x-full"
               }`}
             >
-              <button
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl"
-                onClick={closeModal}
-              >
-                ×
-              </button>
+              <div className="flex items-center justify-end p-6 border-b sticky top-0 bg-white z-10">
+                <button
+                  className="text-gray-500 hover:text-gray-800 text-3xl"
+                  onClick={closeModal}
+                >
+                  ×
+                </button>
+              </div>
 
-              <div className="space-y-8">
-                <div className="text-center mb-6">
-                  <div className="mx-auto rounded-full flex items-center justify-center">
-                    {renderStatusIcon()}
+              <div className="overflow-y-auto p-6 h-[calc(100vh-80px)]">
+                {" "}
+                {/* Adjust height for header */}
+                <div className=" space-y-8">
+                  <div className="text-center mb-6">
+                    <div className="mx-auto rounded-full flex items-center justify-center">
+                      {renderStatusIcon()}
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-800 mt-4">
+                      {selectedTransaction.senderAmount.toFixed(2)}{" "}
+                      {selectedTransaction.currencyIso3a}
+                    </h3>
+                    {renderStatusMessage()}
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-800 mt-4">
-                    {selectedTransaction.senderAmount.toFixed(2)}{" "}
-                    {selectedTransaction.currencyIso3a}
-                  </h3>
-                  {renderStatusMessage()}
-                </div>
 
-                <div className="mt-6">
-                  <div className="grid grid-cols-2 gap-y-4 text-gray-700">
-                    <p className="text-gray-400">Transaction ID:</p>
-                    <p className="break-all">{selectedTransaction.transactionId}</p>
-                    <p className="text-gray-400">User ID:</p>
-                    <p className="break-all">{selectedTransaction.userId || "N/A"}</p>
-                    <p className="text-gray-400">Transaction Key:</p>
-                    <p className="break-all">{selectedTransaction.transactionKey}</p>
-                    <p className="text-gray-400">Channel:</p>
-                    <p className="break-all">{selectedTransaction.transactionType}</p>
-                    <p className="text-gray-400">Bank Name:</p>
-                    <p className="break-all">{selectedTransaction.bankName || "N/A"}</p>
-                    <p className="text-gray-400">Purpose:</p>
-                    <p>Transfer</p>
-                    <p className="text-gray-400">Sender Currency:</p>
-                    <p>{selectedTransaction.currencyIso3a}</p>
-                    <p className="text-gray-400">Recipient Currency:</p>
-                    <p>{selectedTransaction.receiverCurrencyIso3a}</p>
-                    <p className="text-gray-400">Trust Payments:</p>
-                    <p className="break-all">{selectedTransaction.tpReference}</p>
-                    <p className="text-gray-400">Settlement Reference:</p>
-                    <p className="break-all">{selectedTransaction.settlementReference}</p>
-                    <p className="text-gray-400">MPESA Reference:</p>
-                    <p className="break-all">{selectedTransaction.mpesaReference || "N/A"}</p>
-                    <p className="text-gray-400">Account Number:</p>
-                    <p className="break-all">{selectedTransaction.accountNumber}</p>
-
-                    <p className="text-gray-400">Error Message:</p>
-                    <p className="break-all col-span-2">{selectedTransaction.errorMessage || "N/A"}</p> 
+                  <div className="mt-6">
+                    <div className="grid grid-cols-2 gap-y-4 text-gray-700">
+                      <p className="text-gray-400">Transaction ID:</p>
+                      <p>{selectedTransaction.transactionId}</p>
+                      <p className="text-gray-400">User ID:</p>
+                      <p>{selectedTransaction.userId || "N/A"}</p>
+                      <p className="text-gray-400">Transaction Key:</p>
+                      <p>{selectedTransaction.transactionKey}</p>
+                      <p className="text-gray-400">Channel:</p>
+                      <p>{selectedTransaction.transactionType}</p>
+                      <p className="text-gray-400">Bank Name:</p>
+                      <p>{selectedTransaction.bankName || "N/A"}</p>
+                      <p className="text-gray-400">Purpose:</p>
+                      <p>Transfer</p>
+                      <p className="text-gray-400">Sender Currency:</p>
+                      <p>{selectedTransaction.currencyIso3a}</p>
+                      <p className="text-gray-400">Recipient Currency:</p>
+                      <p>{selectedTransaction.receiverCurrencyIso3a}</p>
+                      <p className="text-gray-400">Trust Payments:</p>
+                      <p>{selectedTransaction.tpReference}</p>
+                      <p className="text-gray-400">Settlement Reference:</p>
+                      <p>{selectedTransaction.settlementReference}</p>
+                      <p className="text-gray-400">MPESA Reference:</p>
+                      <p>{selectedTransaction.mpesaReference || "N/A"}</p>
+                      <p className="text-gray-400">Account Number:</p>
+                      <p>{selectedTransaction.accountNumber}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <div className="grid grid-cols-2 gap-y-4 text-gray-700 border border-dotted py-2 px-2 border-gray-300">
-                    <p className="text-gray-400">Exchange Rate:</p>
-                    <p>{selectedTransaction.exchangeRate.toFixed(2)}</p>
-                    <p className="text-gray-400">Transaction Fee:</p>
-                    <p>0.00</p>
-                    <p className="text-gray-400">Recipient Amount:</p>
-                    <p>
-                      {selectedTransaction.recipientAmount.toFixed(2)}{" "}
-                      {selectedTransaction.receiverCurrencyIso3a}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-8 border-t pt-4 text-center">
-                  <h4 className="text-lg font-bold text-gray-800 mb-4">
-                    Sender
-                  </h4>
-                  <div className="flex flex-col items-center space-y-4">
-                    <div>
-                      <p className="text-gray-700 font-semibold break-all">
-                        {selectedTransaction.senderName}
-                      </p>
-                      <p className="text-gray-500 text-lg break-all">
-                        {selectedTransaction.senderPhone}
-                      </p>
-                      <p className="text-gray-500 text-sm mt-1 break-all">
-                        {selectedTransaction.senderEmail}
+                  <div>
+                    <div className="grid grid-cols-2 gap-y-4 text-gray-700 border border-dotted py-2 px-2 border-gray-300">
+                      <p className="text-gray-400">Exchange Rate:</p>
+                      <p>{selectedTransaction.exchangeRate.toFixed(2)}</p>
+                      <p className="text-gray-400">Transaction Fee:</p>
+                      <p>0.00</p>
+                      <p className="text-gray-400">Recipient Amount:</p>
+                      <p>
+                        {selectedTransaction.recipientAmount.toFixed(2)}{" "}
+                        {selectedTransaction.receiverCurrencyIso3a}
                       </p>
                     </div>
                   </div>
-                </div>
 
-                <div className="mt-8 border-t pt-4 text-center">
-                  <h4 className="text-lg font-bold text-gray-800 mb-4">
-                    Receiver
-                  </h4>
-                  <div className="flex flex-col items-center space-y-4">
-                    <div>
-                      <p className="text-gray-700 font-semibold break-all">
-                        {selectedTransaction.receiverName}
-                      </p>
-                      {selectedTransaction.receiverPhone && (
-                        <p className="text-gray-500 text-lg break-all">
-                          {selectedTransaction.receiverPhone}
+                  <div className="mt-8 border-t pt-4 text-center">
+                    <h4 className="text-lg font-bold text-gray-800 mb-4">
+                      Sender
+                    </h4>
+                    <div className="flex flex-col items-center space-y-4">
+                      <div>
+                        <p className="text-gray-700 font-semibold">
+                          {selectedTransaction.senderName}
                         </p>
-                      )}
+                        <p className="text-gray-500 text-lg">
+                          {selectedTransaction.senderPhone}
+                        </p>
+                        <p className="text-gray-500 text-sm mt-1">
+                          {selectedTransaction.senderEmail}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {selectedTransaction.status === "Success" && (
-                  <div className="mt-8 text-center">
-                    <button
-                      className="flex items-center justify-center gap-2 text-yellow-500 font-semibold hover:text-yellow-600 mx-auto"
-                      onClick={handleDownloadReceipt}
-                    >
-                      <svg // Using a download icon
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      Download Receipt
-                    </button>
-                  </div>
-                )}
-
-                {/* Hidden receipt for PDF generation */}
-                {selectedTransaction?.status === "Success" && (
-                  <div
-                    id="receipt"
-                    style={{
-                      opacity: 0,
-                      position: "absolute",
-                      pointerEvents: "none",
-                      width: "700px", // Explicit width for PDF rendering consistency
-                      padding: "40px",
-                      boxSizing: "border-box",
-                      left: "-9999px", // Move off-screen
-                      top: "-9999px", // Move off-screen
-                    }}
-                    className="bg-white mx-auto shadow-lg rounded-lg text-gray-700"
-                  >
-                    {/* Header */}
-                    <div className="text-center mb-1 mt-1">
-                      <img
-                        src="/logoimage.png" // Ensure this path is correct or use an absolute URL if hosted
-                        className="w-10 h-10 mx-auto"
-                        alt="Company Logo"
-                        crossOrigin="anonymous" // Added for CORS if image is on different domain
-                      />
-                      <h2 className="text-2xl font-bold text-black mt-3">
-                        {selectedTransaction.senderAmount.toFixed(2)}{" "}
-                        {selectedTransaction.currencyIso3a}
-                      </h2>
-                      <p className="text-gray-600 mt-1">
-                        Successfully sent to{" "}
-                        <span className="font-semibold text-black">
+                  <div className="mt-8 border-t pt-4 text-center">
+                    <h4 className="text-lg font-bold text-gray-800 mb-4">
+                      Receiver
+                    </h4>
+                    <div className="flex flex-col items-center space-y-4">
+                      <div>
+                        <p className="text-gray-700 font-semibold">
                           {selectedTransaction.receiverName}
-                        </span>
-                      </p>
-                      <p className="text-gray-500 mt-0">
-                        on{" "}
-                        <span className="font-semibold text-black">
-                          {selectedTransaction.date}
-                        </span>
-                      </p>
+                        </p>
+                        {selectedTransaction.receiverPhone && (
+                          <p className="text-gray-500 text-lg">
+                            {selectedTransaction.receiverPhone}
+                          </p>
+                        )}
+                      </div>
                     </div>
+                  </div>
 
-                    {/* Transaction Details - 2 Column Layout */}
-                    <div className="bg-gray-50 p-5 rounded-lg mb-3">
-                      <h3 className="font-semibold text-black text-lg mb-3">
-                        Transaction Details
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <div>
-                            <p className="text-gray-500 text-sm">
-                              Transaction ID
-                            </p>
-                            <p className="text-black text-sm break-all font-semibold">
-                              {selectedTransaction.transactionId}
-                            </p>
+                  {selectedTransaction.status === "Success" && (
+                    <div className="mt-8 text-center">
+                      <button
+                        className="flex items-center justify-center gap-2 text-yellow-500 font-semibold hover:text-yellow-600 mx-auto"
+                        onClick={handleDownloadReceipt}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v16m8-8H4"
+                          />
+                        </svg>
+                        Download Receipt
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Hidden receipt for PDF generation */}
+                  {selectedTransaction?.status === "Success" && (
+                    <div
+                      id="receipt"
+                      style={{
+                        opacity: 0,
+                        position: "absolute",
+                        pointerEvents: "none",
+                        width: "700px",
+                        padding: "40px",
+                        boxSizing: "border-box",
+                      }}
+                      className="bg-white mx-auto shadow-lg rounded-lg text-gray-700"
+                    >
+                      {/* Header */}
+                      <div className="text-center mb-1 mt-1">
+                        <img
+                          src="/logoimage.png"
+                          className="w-10 h-10 mx-auto"
+                          alt="Company Logo"
+                        />
+                        <h2 className="text-2xl font-bold text-black mt-3">
+                          {selectedTransaction.senderAmount.toFixed(2)}{" "}
+                          {selectedTransaction.currencyIso3a}
+                        </h2>
+                        <p className="text-gray-600 mt-1">
+                          Successfully sent to{" "}
+                          <span className="font-semibold text-black">
+                            {selectedTransaction.receiverName}
+                          </span>
+                        </p>
+                        <p className="text-gray-500 mt-0">
+                          on{" "}
+                          <span className="font-semibold text-black">
+                            {selectedTransaction.date}
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* Transaction Details - 2 Column Layout */}
+                      <div className="bg-gray-50 p-5 rounded-lg mb-3">
+                        <h3 className="font-semibold text-black text-lg mb-3">
+                          Transaction Details
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-gray-500 text-sm">
+                                Transaction ID
+                              </p>
+                              <p className="text-black text-sm break-all font-semibold">
+                                {selectedTransaction.transactionId}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">Channel</p>
+                              <p className="text-sm font-semibold">
+                                {selectedTransaction.transactionType}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">
+                                Sender Currency
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {selectedTransaction.currencyIso3a}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">
+                                TP Reference
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {selectedTransaction.tpReference}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-gray-500 text-sm">Channel</p>
-                            <p className="text-sm font-semibold break-all">
-                              {selectedTransaction.transactionType}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-sm">
-                              Sender Currency
-                            </p>
-                            <p className="text-sm font-semibold">
-                              {selectedTransaction.currencyIso3a}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-sm">
-                              TP Reference
-                            </p>
-                            <p className="text-sm font-semibold break-all">
-                              {selectedTransaction.tpReference}
-                            </p>
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-gray-500 text-sm">Purpose</p>
+                              <p className="text-sm font-semibold">Transfer</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">
+                                Recipient Currency
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {selectedTransaction.receiverCurrencyIso3a}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">
+                                Settlement Ref
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {selectedTransaction.settlementReference}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">
+                                MPESA Reference
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {selectedTransaction.mpesaReference || "N/A"}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                        <div className="space-y-2">
+
+                        {/* Transaction Key as full-width row */}
+                        <div className="mt-4">
+                          <p className="text-gray-500 text-sm">
+                            Transaction Key
+                          </p>
+                          <p className="text-black font-semibold text-sm break-all p-2 rounded mt-1">
+                            {selectedTransaction.transactionKey}
+                          </p>
+                        </div>
+
+                        <div className="border-t border-gray-200 my-4"></div>
+                        <div className="grid grid-cols-3 gap-4">
                           <div>
-                            <p className="text-gray-500 text-sm">Purpose</p>
-                            <p className="text-sm font-semibold">Transfer</p>
+                            <p className="text-gray-500 text-sm">
+                              Transaction Fee
+                            </p>
+                            <p className="text-sm font-semibold">0.00</p>
                           </div>
                           <div>
                             <p className="text-gray-500 text-sm">
-                              Recipient Currency
+                              Exchange Rate
                             </p>
                             <p className="text-sm font-semibold">
+                              {selectedTransaction.exchangeRate.toFixed(2)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-sm font-semibold">
+                              Recipient Amount
+                            </p>
+                            <p className="text-sm font-semibold">
+                              {selectedTransaction.recipientAmount.toFixed(2)}{" "}
                               {selectedTransaction.receiverCurrencyIso3a}
                             </p>
                           </div>
                           <div>
-                            <p className="text-gray-500 text-sm">
-                              Settlement Ref
-                            </p>
-                            <p className="text-sm font-semibold break-all">
-                              {selectedTransaction.settlementReference}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-sm">
-                              MPESA Reference
-                            </p>
-                            <p className="text-sm font-semibold break-all">
-                              {selectedTransaction.mpesaReference || "N/A"}
+                            <p className="text-gray-500 text-sm">Bank Name</p>
+                            <p className="text-sm font-semibold">
+                              {selectedTransaction.bankName || "N/A"}
                             </p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Transaction Key as full-width row */}
-                      <div className="mt-4">
-                        <p className="text-gray-500 text-sm">Transaction Key</p>
-                        <p className="text-black font-semibold text-sm break-all p-2 rounded mt-1">
-                          {selectedTransaction.transactionKey}
-                        </p>
-                      </div>
-
-                      <div className="border-t border-gray-200 my-4"></div>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-gray-500 text-sm">
-                            Transaction Fee
-                          </p>
-                          <p className="text-sm font-semibold">0.00</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-sm">Exchange Rate</p>
-                          <p className="text-sm font-semibold">
-                            {selectedTransaction.exchangeRate.toFixed(2)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-sm font-semibold">
-                            Recipient Amount
-                          </p>
-                          <p className="text-sm font-semibold">
-                            {selectedTransaction.recipientAmount.toFixed(2)}{" "}
-                            {selectedTransaction.receiverCurrencyIso3a}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-sm">Bank Name</p>
-                          <p className="text-sm font-semibold break-all">
-                            {selectedTransaction.bankName || "N/A"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Sender & Receiver - Side by Side */}
-                    <div className="flex gap-5 mb-5">
-                      <div className="bg-gray-50 p-5 rounded-lg flex-1">
-                        <h3 className="font-semibold text-black text-lg mb-3">
-                          Sender
-                        </h3>
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-gray-500 text-sm">Name</p>
-                            <p className="text-black text-sm font-semibold break-all">
-                              {selectedTransaction.senderName}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-sm">Phone</p>
-                            <p className="text-sm font-semibold break-all">
-                              {selectedTransaction.senderPhone}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-sm">Email</p>
-                            <p className="text-sm font-semibold break-all">
-                              {selectedTransaction.senderEmail}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-gray-50 p-5 rounded-lg flex-1">
-                        <h3 className="font-semibold text-black text-lg mb-3">
-                          Receiver
-                        </h3>
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-gray-500 text-sm">Name</p>
-                            <p className="text-black text-sm font-semibold break-all">
-                              {selectedTransaction.receiverName}
-                            </p>
-                          </div>
-                          {selectedTransaction.receiverPhone && (
+                      {/* Sender & Receiver - Side by Side */}
+                      <div className="flex gap-5 mb-5">
+                        <div className="bg-gray-50 p-5 rounded-lg flex-1">
+                          <h3 className="font-semibold text-black text-lg mb-3">
+                            Sender
+                          </h3>
+                          <div className="space-y-3">
                             <div>
-                              <p className="text-gray-500 text-sm">Phone</p>
-                              <p className="text-sm font-semibold break-all">
-                                {selectedTransaction.receiverPhone}
+                              <p className="text-gray-500 text-sm">Name</p>
+                              <p className="text-black text-sm font-semibold">
+                                {selectedTransaction.senderName}
                               </p>
                             </div>
-                          )}
-                          <div>
-                            <p className="text-gray-500 text-sm">
-                              Account Number
-                            </p>
-                            <p className="text-sm font-semibold break-all">
-                              {selectedTransaction.accountNumber}
-                            </p>
+                            <div>
+                              <p className="text-gray-500 text-sm">Phone</p>
+                              <p className="text-sm font-semibold">
+                                {selectedTransaction.senderPhone}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">Email</p>
+                              <p className="text-sm font-semibold">
+                                {selectedTransaction.senderEmail}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 p-5 rounded-lg flex-1">
+                          <h3 className="font-semibold text-black text-lg mb-3">
+                            Receiver
+                          </h3>
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-gray-500 text-sm">Name</p>
+                              <p className="text-black text-sm font-semibold">
+                                {selectedTransaction.receiverName}
+                              </p>
+                            </div>
+                            {selectedTransaction.receiverPhone && (
+                              <div>
+                                <p className="text-gray-500 text-sm">Phone</p>
+                                <p className="text-sm font-semibold">
+                                  {selectedTransaction.receiverPhone}
+                                </p>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-gray-500 text-sm">
+                                Account Number
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {selectedTransaction.accountNumber}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Footer */}
-                    <div className="text-center text-sm mt-4">
-                      <p className="font-semibold">Thank you for using Tuma!</p>
-                      <p className="text-gray-500 italic mt-1">
-                        For inquiries or assistance, contact us:
-                      </p>
-                      <p className="text-gray-600 mt-1">support@tuma.com</p>
-                      <p className="text-gray-600">+447-778-024-995</p>
-                      <a
-                        href="https://tuma.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block -mt-1"
-                      >
-                        <p className="text-blue-500">tuma.com</p>
-                      </a>
+                      {/* Footer */}
+                      <div className="text-center text-sm mt-4">
+                        <p className="font-semibold">
+                          Thank you for using Tuma!
+                        </p>
+                        <p className="text-gray-500 italic mt-1">
+                          For inquiries or assistance, contact us:
+                        </p>
+                        <p className="text-gray-600 mt-1">support@tuma.com</p>
+                        <p className="text-gray-600">+447-778-024-995</p>
+                        <a
+                          href="https://tuma.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block -mt-1"
+                        >
+                          <p className="text-blue-500">tuma.com</p>
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>

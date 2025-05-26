@@ -10,7 +10,7 @@ import {
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
-import { Transaction } from "../types/transactions";
+import { Transaction } from "@/app/backoffice/types/transactions";
 
 // Register fonts
 Font.register({
@@ -165,10 +165,6 @@ const ReceiptPDF = ({
             ["Name", transaction.senderName || "N/A"],
             ["Email", transaction.senderEmail || "N/A"],
             ["Phone", transaction.senderPhone || "N/A"],
-            [
-              "Channel",
-              formatChannelName(transaction.transactionType) || "N/A",
-            ],
           ].map(([label, value], idx) => (
             <View style={styles.detailRow} key={idx}>
               <Text style={styles.label}>{label}</Text>
@@ -233,23 +229,17 @@ const ReceiptPDFViewer = ({
         />
       }
       fileName={`Receipt_${transaction.transactionId}.pdf`}
+      className="flex items-center gap-2"
     >
       {({ loading }) => (
-        <button
-          disabled={loading}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            loading
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700 text-white"
-          }`}
-        >
+        <>
           <img
             src="/backoffice/icons/download.svg"
             alt="download"
             className="w-4 h-4"
           />
           {loading ? "Generating..." : "Download Receipt"}
-        </button>
+        </>
       )}
     </PDFDownloadLink>
   );
