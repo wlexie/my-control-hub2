@@ -58,7 +58,7 @@ export default function Home() {
     transactionCount: 0,
     topTransactions: [],
   });
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{
@@ -86,11 +86,13 @@ export default function Home() {
           url += `?startDate=${start}&endDate=${end}`;
         }
 
-        const data = await get<AnalyticsData>(url); 
+        const data = await get<AnalyticsData>(url);
         setAnalyticsData(data);
         setLoading(false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An unknown error occurred");
+        setError(
+          err instanceof Error ? err.message : "An unknown error occurred"
+        );
         setLoading(false);
       }
     };
@@ -102,7 +104,7 @@ export default function Home() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <main className="flex-1 p-8 space-y-8 ml-80">
+        <main className="flex-1 p-8 space-y-8 ml-80 ">
           <Header
             dateRange={dateRange}
             onDateChange={handleDateFilterChange}
@@ -153,7 +155,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 p-8 space-y-8 ml-80">
+      <main className="flex-1 p-8 space-y-8 ml-80 bg-gray-50">
         <Header
           dateRange={dateRange}
           onDateChange={handleDateFilterChange}
@@ -161,20 +163,41 @@ export default function Home() {
         />
         <div className="gap-4 grid grid-cols-3 text-lg">
           <Card
-            icon={<img src="/promitto/icon1.svg" alt="Icon1" className="w-12 h-12" />}
+            icon={
+              <img
+                src="/promitto/icon1.svg"
+                alt="Icon1"
+                className="w-12 h-12"
+              />
+            }
             title="Total Amount Transacted"
-            value={`KES ${analyticsData.totalAmountTransacted.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`}
+            value={`KES ${analyticsData.totalAmountTransacted.toLocaleString(
+              "en-US",
+              {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }
+            )}`}
           />
           <Card
-            icon={<img src="/promitto/icon2.svg" alt="Icon2" className="w-12 h-12" />}
+            icon={
+              <img
+                src="/promitto/icon2.svg"
+                alt="Icon2"
+                className="w-12 h-12"
+              />
+            }
             title="Count of Transactions"
             value={analyticsData.transactionCount.toString()}
           />
           <Card
-            icon={<img src="/promitto/icon3.svg" alt="Icon3" className="w-12 h-12" />}
+            icon={
+              <img
+                src="/promitto/icon3.svg"
+                alt="Icon3"
+                className="w-12 h-12"
+              />
+            }
             title="Total Unique Customers"
             value={analyticsData.uniqueCustomers.toString()}
           />

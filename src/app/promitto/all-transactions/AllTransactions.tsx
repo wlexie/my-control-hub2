@@ -12,6 +12,41 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
 
+// Raw response structure from the API
+type ApiTransaction = {
+  transactionId: number;
+  transactionKey: string;
+  senderName: string;
+  senderEmail: string;
+  senderPhone: string;
+  receiverName: string;
+  receiverPhone: string | null;
+  senderAmount: number;
+  recipientAmount: number;
+  exchangeRate: number;
+  date: string;
+  status:
+    | "SUCCESS"
+    | "PENDING"
+    | "FAILED"
+    | "REJECTED"
+    | "UNDER_REVIEW"
+    | "REVERSED"
+    | "REFUNDED"
+    | "ESCALATED"
+    | "ERROR";
+  currencyIso3a: string;
+  receiverCurrencyIso3a: string;
+  transactionType: string;
+  accountNumber: string;
+  settlementReference: string;
+  tpReference: string;
+  mpesaReference: string | null;
+  errorMessage: string;
+  userId: string | null;
+  bankName: string | null;
+};
+
 export interface Transaction {
   transactionId: number;
   transactionKey: string;
@@ -45,6 +80,32 @@ export interface Transaction {
   userId: string | null;
   bankName: string | null;
 }
+
+const mapApiStatus = (
+  status: ApiTransaction["status"]
+): Transaction["status"] => {
+  switch (status) {
+    case "SUCCESS":
+      return "Success";
+    case "PENDING":
+      return "Pending";
+    case "FAILED":
+    case "ERROR":
+      return "Failed";
+    case "REJECTED":
+      return "Rejected";
+    case "UNDER_REVIEW":
+      return "Under Review";
+    case "REVERSED":
+      return "Reversed";
+    case "REFUNDED":
+      return "Refunded";
+    case "ESCALATED":
+      return "Escalated";
+    default:
+      return "Failed";
+  }
+};
 
 export default function AllTransactionsPage() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
@@ -129,48 +190,33 @@ export default function AllTransactionsPage() {
         const transactionsData = Array.isArray(data)
           ? data
           : data.content || [];
-        const total = data.totalElements || data.length || 0;
 
-        const mappedTransactions = transactionsData.map((item: any) => ({
-          transactionId: item.transactionId || 0,
-          transactionKey: item.transactionKey || "N/A",
-          senderName: item.senderName || "Unknown",
-          senderEmail: item.senderEmail || "N/A",
-          senderPhone: item.senderPhone || "N/A",
-          receiverName: item.receiverName || "Unknown",
-          receiverPhone: item.receiverPhone || null,
-          senderAmount: item.senderAmount || 0,
-          recipientAmount: item.recipientAmount || 0,
-          exchangeRate: item.exchangeRate || 0,
-          date: item.date ? formatDateTimeForTable(item.date) : "N/A",
-          status:
-            item.status === "SUCCESS"
-              ? "Success"
-              : item.status === "PENDING"
-              ? "Pending"
-              : item.status === "FAILED" || item.status === "ERROR"
-              ? "Failed"
-              : item.status === "REJECTED"
-              ? "Rejected"
-              : item.status === "UNDER_REVIEW"
-              ? "Under Review"
-              : item.status === "REVERSED"
-              ? "Reversed"
-              : item.status === "REFUNDED"
-              ? "Refunded"
-              : item.status === "ESCALATED"
-              ? "Escalated"
-              : "Failed",
-          currencyIso3a: item.currencyIso3a || "N/A",
-          receiverCurrencyIso3a: item.receiverCurrencyIso3a || "N/A",
-          transactionType: formatChannelName(item.transactionType) || "Unknown",
-          accountNumber: item.accountNumber || "N/A",
-          settlementReference: item.settlementReference || "N/A",
-          tpReference: item.tpReference || "N/A",
-          mpesaReference: item.mpesaReference || null,
-          rawDate: item.date ? new Date(item.date) : new Date(),
-          errorMessage: item.errorMessage || "N/A",
-        }));
+        const mappedTransactions: Transaction[] = transactionsData.map(
+          (item: ApiTransaction) => ({
+            transactionId: item.transactionId || 0,
+            transactionKey: item.transactionKey || "N/A",
+            senderName: item.senderName || "Unknown",
+            senderEmail: item.senderEmail || "N/A",
+            senderPhone: item.senderPhone || "N/A",
+            receiverName: item.receiverName || "Unknown",
+            receiverPhone: item.receiverPhone || null,
+            senderAmount: item.senderAmount || 0,
+            recipientAmount: item.recipientAmount || 0,
+            exchangeRate: item.exchangeRate || 0,
+            date: item.date ? formatDateTimeForTable(item.date) : "N/A",
+            status: mapApiStatus(item.status),
+            currencyIso3a: item.currencyIso3a || "N/A",
+            receiverCurrencyIso3a: item.receiverCurrencyIso3a || "N/A",
+            transactionType:
+              formatChannelName(item.transactionType) || "Unknown",
+            accountNumber: item.accountNumber || "N/A",
+            settlementReference: item.settlementReference || "N/A",
+            tpReference: item.tpReference || "N/A",
+            mpesaReference: item.mpesaReference || null,
+            rawDate: item.date ? new Date(item.date) : new Date(),
+            errorMessage: item.errorMessage || "N/A",
+          })
+        );
 
         setAllTransactions(mappedTransactions);
         setFilteredTransactions(mappedTransactions);

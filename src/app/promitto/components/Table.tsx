@@ -269,7 +269,7 @@ const Table: FC = () => {
     setIsModalVisible(false);
     setTimeout(() => {
       setSelectedTransaction(null);
-    }, 300); // Adjusted to match previous component's timeout
+    }, 300);
   };
 
   const renderStatusBadge = (status: Transaction["status"]) => {
@@ -474,24 +474,11 @@ const Table: FC = () => {
           </>
         );
       default:
-      // Should not happen if status is correctly typed and handled
-      /*const exhaustiveCheck: never = selectedTransaction.status;
-        return (
-          <>
-            <p className="text-gray-500 mt-1">
-              Transaction status unknown for{" "}
-              <span className="text-black font-semibold text-md">
-                {selectedTransaction.receiverName}
-              </span>
-            </p>
-            {dateDisplay}
-          </>
-        );*/
     }
   };
 
   return (
-    <div className="bg-gray-100 p-4">
+    <div className=" p-4">
       <div className="bg-white shadow-sm rounded-lg overflow-x-auto">
         <h2 className="px-6 py-4 font-semibold text-gray-800 border-b">
           Latest Transactions
