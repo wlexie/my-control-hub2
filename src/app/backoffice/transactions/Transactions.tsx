@@ -13,6 +13,32 @@ import * as XLSX from "xlsx";
 import api from "../../../hooks/useApi";
 import { useSearchParams } from "next/navigation";
 
+type RawTransaction = Partial<{
+  transactionReference: string;
+  transactionId: string;
+  senderName: string;
+  receiverName: string;
+  senderAmount: number;
+  currencyIso3a: string;
+  date: string;
+  status: string;
+  exchangeRate: number;
+  transactionType: string;
+  receiverPhone: string;
+  senderPhone: string;
+  transactionKey: string;
+  accountNumber: number | string;
+  settlementReference: string;
+  recipientAmount: number;
+  senderEmail: string;
+  receiverCurrencyIso3a: string;
+  mpesaReference: string;
+  tpReference: string;
+  errorMessage: string;
+  userId: number | string | null;
+  bankName: string;
+}>;
+
 const TransactionsPage = () => {
   const searchParams = useSearchParams();
   const userIdFilter = searchParams.get("userId");
@@ -86,9 +112,10 @@ const TransactionsPage = () => {
         setServerPageToFetch(1);
         setHasMoreData(true);
 
-        const result = await get<any[]>(
+        const result = await get<RawTransaction[]>(
           `/transfer/all-transactions?page=1&size=${rowsPerPage}`
         );
+
         if (!result || !Array.isArray(result)) {
           throw new Error("Invalid API response format.");
         }
@@ -108,7 +135,7 @@ const TransactionsPage = () => {
     fetchInitialTransactions();
   }, []);
 
-  const mapApiTransactionToTransaction = (tx: any): Transaction => ({
+  const mapApiTransactionToTransaction = (tx: RawTransaction): Transaction => ({
     transactionReference: tx.transactionReference || "N/A",
     transactionId: tx.transactionId || "N/A",
     senderName: tx.senderName || "Unknown Sender",
@@ -165,9 +192,10 @@ const TransactionsPage = () => {
     if (loadingMore || !hasMoreData) return;
     try {
       setLoadingMore(true);
-      const result = await get<any[]>(
+      const result = await get<RawTransaction[]>(
         `/transfer/all-transactions?page=${serverPageToFetch}&size=${rowsPerPage}`
       );
+
       if (!result || !Array.isArray(result)) {
         setHasMoreData(false);
         return;
