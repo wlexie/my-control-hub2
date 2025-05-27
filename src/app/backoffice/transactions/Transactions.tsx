@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
 import { Search } from "lucide-react";
@@ -52,8 +52,12 @@ const TransactionsPage = () => {
   ];
 
   // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
+
   const rowsPerPage = 12;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [serverPageToFetch, setServerPageToFetch] = useState(1);
+  const [hasMoreData, setHasMoreData] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Handle clicks outside date filter
   useEffect(() => {
@@ -73,105 +77,112 @@ const TransactionsPage = () => {
   }, []);
 
   useEffect(() => {
-    const fetchAllTransactions = async () => {
+    const fetchInitialTransactions = async () => {
       try {
         setLoading(true);
-        setError("");
-        let page = 1;
-        let allData: Transaction[] = [];
-        let hasMore = true;
+        setAllTransactions([]);
+        setFilteredTransactions([]);
+        setCurrentPage(1);
+        setServerPageToFetch(1);
+        setHasMoreData(true);
 
-        while (hasMore) {
-          const endpoint = userIdFilter
-            ? `/transfer/user-transactions?userId=${userIdFilter}&page=${page}&size=${rowsPerPage}`
-            : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
-
-          const result = await get<Transaction[]>(endpoint);
-
-          if (!result || !Array.isArray(result)) {
-            throw new Error("Invalid API response format.");
-          }
-
-          if (result.length === 0) {
-            hasMore = false;
-            continue;
-          }
-
-          // Explicitly type the formatted transactions
-          const formattedTransactions: Transaction[] = result.map((tx) => ({
-            transactionReference: tx.transactionReference || "N/A",
-            transactionId: tx.transactionId || "N/A",
-            senderName: tx.senderName || "Unknown Sender",
-            receiverName: tx.receiverName || "Unknown Recipient",
-            senderAmount: tx.senderAmount || 0,
-            currencyIso3a: tx.currencyIso3a || "USD",
-            date: tx.date || new Date().toISOString(),
-            status:
-              tx.status === "SUCCESS"
-                ? "Success"
-                : tx.status === "PENDING"
-                ? "Pending"
-                : tx.status === "FAILED" || tx.status === "ERROR"
-                ? "Failed"
-                : tx.status === "REJECTED"
-                ? "Rejected"
-                : tx.status === "UNDER_REVIEW"
-                ? "Under Review"
-                : tx.status === "REVERSED"
-                ? "Reversed"
-                : tx.status === "REFUNDED"
-                ? "Refunded"
-                : tx.status === "ESCALATED"
-                ? "Escalated"
-                : "Unknown",
-            exchangeRate: tx.exchangeRate || 1,
-            transactionType: tx.transactionType || "Unknown",
-            receiverPhone: tx.receiverPhone || "N/A",
-            senderPhone: tx.senderPhone || "N/A",
-            transactionKey: tx.transactionKey || "N/A",
-            accountNumber: Number(tx.accountNumber) || 0,
-            settlementReference: tx.settlementReference || "N/A",
-            recipientAmount: tx.recipientAmount || 0,
-            senderEmail: tx.senderEmail || "N/A",
-            receiverCurrencyIso3a: tx.receiverCurrencyIso3a || "USD",
-            mpesaReference: tx.mpesaReference || "N/A",
-            tpReference: tx.tpReference || "N/A",
-            errorMessage: tx.errorMessage || "N/A",
-            userId:
-              tx.userId !== undefined &&
-              tx.userId !== null &&
-              !isNaN(Number(tx.userId))
-                ? Number(tx.userId)
-                : null,
-
-            bankName: tx.bankName || "N/A",
-          }));
-
-          allData = [...allData, ...formattedTransactions];
-          page++;
-
-          if (page > 50) {
-            console.warn("Reached maximum page limit (50)");
-            hasMore = false;
-          }
+        const result = await get<any[]>(
+          `/transfer/all-transactions?page=1&size=${rowsPerPage}`
+        );
+        if (!result || !Array.isArray(result)) {
+          throw new Error("Invalid API response format.");
         }
 
-        setAllTransactions(allData);
-        setFilteredTransactions(allData);
+        const formatted = result.map(mapApiTransactionToTransaction);
+        setAllTransactions(formatted);
+        setFilteredTransactions(formatted);
+        setServerPageToFetch(2);
+        if (formatted.length < rowsPerPage) setHasMoreData(false);
       } catch (err) {
         console.error("Failed to fetch transactions:", err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "An unknown error occurred while fetching transactions"
-        );
+        setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
         setLoading(false);
       }
     };
+    fetchInitialTransactions();
+  }, []);
 
-    fetchAllTransactions();
-  }, [rowsPerPage, userIdFilter]);
+  const mapApiTransactionToTransaction = (tx: any): Transaction => ({
+    transactionReference: tx.transactionReference || "N/A",
+    transactionId: tx.transactionId || "N/A",
+    senderName: tx.senderName || "Unknown Sender",
+    receiverName: tx.receiverName || "Unknown Recipient",
+    senderAmount: tx.senderAmount || 0,
+    currencyIso3a: tx.currencyIso3a || "USD",
+    date: tx.date || new Date().toISOString(),
+    status: formatTransactionStatus(tx.status),
+    exchangeRate: tx.exchangeRate || 1,
+    transactionType: tx.transactionType || "Unknown",
+    receiverPhone: tx.receiverPhone || "N/A",
+    senderPhone: tx.senderPhone || "N/A",
+    transactionKey: tx.transactionKey || "N/A",
+    accountNumber: Number(tx.accountNumber) || 0,
+    settlementReference: tx.settlementReference || "N/A",
+    recipientAmount: tx.recipientAmount || 0,
+    senderEmail: tx.senderEmail || "N/A",
+    receiverCurrencyIso3a: tx.receiverCurrencyIso3a || "USD",
+    mpesaReference: tx.mpesaReference || "N/A",
+    tpReference: tx.tpReference || "N/A",
+    errorMessage: tx.errorMessage || "N/A",
+    userId:
+      tx.userId !== undefined && tx.userId !== null && !isNaN(Number(tx.userId))
+        ? Number(tx.userId)
+        : null,
+    bankName: tx.bankName || "N/A",
+  });
+  const formatTransactionStatus = (status: string | undefined): string => {
+    if (!status) return "Unknown";
+    switch (status.toUpperCase()) {
+      case "SUCCESS":
+        return "Success";
+      case "PENDING":
+        return "Pending";
+      case "FAILED":
+      case "ERROR":
+        return "Failed";
+      case "REJECTED":
+        return "Rejected";
+      case "UNDER_REVIEW":
+        return "Under Review";
+      case "REVERSED":
+        return "Reversed";
+      case "REFUNDED":
+        return "Refunded";
+      case "ESCALATED":
+        return "Escalated";
+      default:
+        return "Unknown";
+    }
+  };
+
+  const fetchMoreTransactions = useCallback(async () => {
+    if (loadingMore || !hasMoreData) return;
+    try {
+      setLoadingMore(true);
+      const result = await get<any[]>(
+        `/transfer/all-transactions?page=${serverPageToFetch}&size=${rowsPerPage}`
+      );
+      if (!result || !Array.isArray(result)) {
+        setHasMoreData(false);
+        return;
+      }
+      const formatted = result.map(mapApiTransactionToTransaction);
+      setAllTransactions((prev) => [...prev, ...formatted]);
+      setServerPageToFetch((prev) => prev + 1);
+      if (formatted.length < rowsPerPage) setHasMoreData(false);
+    } catch (err) {
+      console.error("Fetch more error:", err);
+      setHasMoreData(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [get, loadingMore, hasMoreData, serverPageToFetch, rowsPerPage]);
 
   // Filter transactions
   useEffect(() => {
@@ -280,6 +291,19 @@ const TransactionsPage = () => {
     const hours = String(date.getHours()).padStart(2, "0");
     const minutes = String(date.getMinutes()).padStart(2, "0");
     return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
+
+  const handleNextPage = () => {
+    const newPage = currentPage + 1;
+    setCurrentPage(newPage);
+
+    if (
+      newPage * rowsPerPage > allTransactions.length &&
+      hasMoreData &&
+      !loadingMore
+    ) {
+      fetchMoreTransactions();
+    }
   };
 
   return (
@@ -487,19 +511,23 @@ const TransactionsPage = () => {
             <div className="flex justify-center mt-6 space-x-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
+                disabled={currentPage === 1 || loadingMore || loading}
                 className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
+
               <button
-                onClick={() => setCurrentPage((prev) => prev + 1)}
+                onClick={handleNextPage}
                 disabled={
-                  currentPage * rowsPerPage >= filteredTransactions.length
+                  loading ||
+                  loadingMore ||
+                  (currentPage * rowsPerPage >= filteredTransactions.length &&
+                    !hasMoreData)
                 }
                 className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                Next
+                {loadingMore ? "Loading..." : "Next"}
               </button>
             </div>
           </>

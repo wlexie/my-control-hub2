@@ -23,6 +23,7 @@ interface User {
   country: string | null;
   registrationDate: string;
   accountStatus: string;
+  step: string;
 }
 
 export default function UserAccounts() {
@@ -175,7 +176,7 @@ export default function UserAccounts() {
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by name, account status or KYC status"
+                placeholder="Search by name and account status "
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-2 pl-10 border rounded-md shadow-sm"
