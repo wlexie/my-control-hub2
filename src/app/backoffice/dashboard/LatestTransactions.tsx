@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Transaction } from "../types/transactions";
 import { format } from "date-fns";
 import Link from "next/link";
-import useApi from "../../../hooks/useApi"; 
+import useApi from "../../../hooks/useApi";
 
 // Utility: Random pastel background
 const pastelColors = [
@@ -28,7 +28,7 @@ const getRandomPastel = (name: string) => {
 };
 
 export default function LatestTransactions() {
-  const api = useApi(); 
+  const api = useApi();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,28 +66,29 @@ export default function LatestTransactions() {
           {
             params: {
               page: 1,
-              size: 5
-            }
+              size: 5,
+            },
           }
         );
-  
+
         if (Array.isArray(data)) {
           const sorted = data.sort(
-            (a, b) =>
-              new Date(b.date).getTime() - new Date(a.date).getTime()
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
           );
           setTransactions(sorted.slice(0, 5));
         }
       } catch (error) {
         console.error("Failed to fetch latest transactions:", error);
         setError(
-          error instanceof Error ? error.message : "Failed to fetch transactions"
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch transactions"
         );
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchTransactions();
   }, []);
 
@@ -111,7 +112,7 @@ export default function LatestTransactions() {
     <div className="bg-white rounded-xl p-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Latest Transactions</h2>
-        <Link href="/transactions">
+        <Link href="/backoffice/transactions">
           <button className="px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600">
             View all
           </button>

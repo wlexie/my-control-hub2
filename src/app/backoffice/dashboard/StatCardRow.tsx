@@ -71,7 +71,7 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
 
   const cards = [
     {
-      label: "MPESA",
+      label: "Card-to-MPESA",
       amount: formatAmount(getAmount("CARD_TO_MPESA")),
       change: "-24%",
       positive: false,
@@ -82,7 +82,7 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
       ),
     },
     {
-      label: "Paybill",
+      label: "Card-to-Paybill",
       amount: formatAmount(getAmount("CARD_TO_PAYBILL")),
       change: "+27%",
       positive: true,
@@ -93,7 +93,7 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
       ),
     },
     {
-      label: "Bank",
+      label: "Card-to-Bank",
       amount: formatAmount(getAmount("CARD_TO_BANK")),
       change: "+17%",
       positive: true,
@@ -104,7 +104,7 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
       ),
     },
     {
-      label: "Card",
+      label: "Card-to-Card",
       amount: formatAmount(getAmount("CARD_TO_CARD")),
       change: "+13%",
       positive: true,
@@ -115,7 +115,7 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
       ),
     },
     {
-      label: "Till Number",
+      label: "Card-to-Till",
       amount: formatAmount(0),
       change: "-09%",
       positive: false,
