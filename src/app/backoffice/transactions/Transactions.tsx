@@ -43,14 +43,13 @@ const TransactionsPage = () => {
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
   const userIdFromQuery = userIdParam ? Number(userIdParam) : null;
+  const [allPagesLoaded, setAllPagesLoaded] = useState(false);
   const { get } = api();
-
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<
     Transaction[]
   >([]);
   const [loading, setLoading] = useState(true);
-  const [loadingAll, setLoadingAll] = useState(false);
   const [error, setError] = useState("");
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -79,28 +78,74 @@ const TransactionsPage = () => {
     "Under Review",
   ];
 
+  // Pagination states
+
   const rowsPerPage = 12;
   const [currentPage, setCurrentPage] = useState(1);
-  const [serverPageToFetch, setServerPageToFetch] = useState(2);
+  const [serverPageToFetch, setServerPageToFetch] = useState(1);
   const [hasMoreData, setHasMoreData] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const allDataLoadedRef = useRef(false);
+
+  // Handle clicks outside date filter
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dateFilterRef.current &&
+        !dateFilterRef.current.contains(event.target as Node)
+      ) {
+        setShowDateFilter(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchInitialTransactions = async () => {
       try {
         setLoading(true);
-        const url = userIdFromQuery
+        setCurrentPage(1);
+        const firstPageUrl = userIdFromQuery
           ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
           : `/transfer/all-transactions?page=1&size=${rowsPerPage}`;
-        const result = await get<RawTransaction[]>(url);
-        if (!result || !Array.isArray(result))
-          throw new Error("Invalid API response.");
 
-        const formatted = result.map(mapApiTransactionToTransaction);
-        setAllTransactions(formatted);
-        setFilteredTransactions(formatted);
-        setHasMoreData(result.length === rowsPerPage);
+        const firstResult = await get<RawTransaction[]>(firstPageUrl);
+        if (!firstResult || !Array.isArray(firstResult)) {
+          throw new Error("Invalid API response.");
+        }
+
+        const firstFormatted = firstResult.map(mapApiTransactionToTransaction);
+        setAllTransactions(firstFormatted);
+        setFilteredTransactions(firstFormatted);
+
+        // Background load all other pages
+        let page = 2;
+        let keepFetching = true;
+        let allTxs = [...firstFormatted];
+
+        while (keepFetching) {
+          const url = userIdFromQuery
+            ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
+            : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
+
+          const nextResult = await get<RawTransaction[]>(url);
+          if (!nextResult || nextResult.length === 0) {
+            keepFetching = false;
+            break;
+          }
+
+          const nextFormatted = nextResult.map(mapApiTransactionToTransaction);
+          allTxs = [...allTxs, ...nextFormatted];
+
+          page++;
+          if (nextResult.length < rowsPerPage) keepFetching = false;
+        }
+
+        setAllTransactions(allTxs);
+        setAllPagesLoaded(true);
       } catch (err) {
         console.error("Failed to fetch transactions:", err);
         setError(err instanceof Error ? err.message : "Unknown error");
@@ -110,48 +155,7 @@ const TransactionsPage = () => {
     };
 
     fetchInitialTransactions();
-  }, [userIdFromQuery]);
-
-  const loadAllTransactions = useCallback(async () => {
-    if (allDataLoadedRef.current || !hasMoreData) return;
-    setLoadingAll(true);
-
-    try {
-      let page = serverPageToFetch;
-      let allFetched: Transaction[] = [...allTransactions];
-
-      while (true) {
-        const url = userIdFromQuery
-          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
-          : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
-
-        const result = await get<RawTransaction[]>(url);
-        if (!result || result.length === 0) break;
-
-        const formatted = result.map(mapApiTransactionToTransaction);
-        allFetched = [...allFetched, ...formatted];
-        page++;
-
-        if (formatted.length < rowsPerPage) break;
-      }
-
-      setAllTransactions(allFetched);
-      setServerPageToFetch(page);
-      setHasMoreData(false);
-      allDataLoadedRef.current = true;
-    } catch (err) {
-      console.error("Error loading all transactions:", err);
-    } finally {
-      setLoadingAll(false);
-    }
-  }, [
-    get,
-    serverPageToFetch,
-    userIdFromQuery,
-    allTransactions,
-    rowsPerPage,
-    hasMoreData,
-  ]);
+  }, []);
 
   const mapApiTransactionToTransaction = (tx: RawTransaction): Transaction => ({
     transactionReference: tx.transactionReference || "N/A",
@@ -181,7 +185,6 @@ const TransactionsPage = () => {
         : null,
     bankName: tx.bankName || "N/A",
   });
-
   const formatTransactionStatus = (status: string | undefined): string => {
     if (!status) return "Unknown";
     switch (status.toUpperCase()) {
@@ -207,92 +210,17 @@ const TransactionsPage = () => {
     }
   };
 
-  useEffect(() => {
-    if (
-      !allDataLoadedRef.current &&
-      (searchQuery ||
-        statusFilter !== "All" ||
-        (dateRange.startDate && dateRange.endDate))
-    ) {
-      loadAllTransactions();
-    }
-
-    let filtered = [...allTransactions];
-    if (statusFilter !== "All") {
-      filtered = filtered.filter((t) => t.status === statusFilter);
-    }
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(
-        (t) =>
-          t.transactionId?.toString().includes(query) ||
-          t.senderName?.toLowerCase().includes(query) ||
-          t.receiverName?.toLowerCase().includes(query) ||
-          t.currencyIso3a?.toLowerCase().includes(query) ||
-          t.senderAmount?.toString().includes(query)
-      );
-    }
-    if (dateRange.startDate && dateRange.endDate) {
-      filtered = filtered.filter((t) => {
-        const txDate = new Date(t.date).getTime();
-        return (
-          txDate >= dateRange.startDate!.getTime() &&
-          txDate <= dateRange.endDate!.getTime()
-        );
-      });
-    }
-
-    setFilteredTransactions(filtered);
-    setCurrentPage(1);
-  }, [
-    searchQuery,
-    statusFilter,
-    dateRange,
-    allTransactions,
-    loadAllTransactions,
-  ]);
-
-  const handleExport = () => {
-    const fileName = "transactions_export";
-    const data = filteredTransactions.map((transaction) => ({
-      "Transaction ID": transaction.transactionId,
-      Sender: transaction.senderName,
-      "Sender Amount": transaction.senderAmount,
-      Currency: transaction.currencyIso3a,
-      Recipient: transaction.receiverName,
-      "Recipient Amount": transaction.recipientAmount,
-      "Transaction Type": transaction.transactionType,
-      Date: transaction.date,
-      Status: transaction.status,
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
-    XLSX.writeFile(workbook, `${fileName}.xlsx`, { compression: true });
-  };
-
-  const handleNextPage = () => {
-    const newPage = currentPage + 1;
-    setCurrentPage(newPage);
-
-    if (
-      newPage * rowsPerPage > allTransactions.length &&
-      hasMoreData &&
-      !loadingMore
-    ) {
-      fetchMoreTransactions();
-    }
-  };
-
   const fetchMoreTransactions = useCallback(async () => {
     if (loadingMore || !hasMoreData) return;
     try {
       setLoadingMore(true);
-      const url = userIdFromQuery
+
+      const endpoint = userIdFromQuery
         ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${serverPageToFetch}&size=${rowsPerPage}`
         : `/transfer/all-transactions?page=${serverPageToFetch}&size=${rowsPerPage}`;
 
-      const result = await get<RawTransaction[]>(url);
+      const result = await get<RawTransaction[]>(endpoint);
+
       if (!result || !Array.isArray(result)) {
         setHasMoreData(false);
         return;
@@ -316,6 +244,50 @@ const TransactionsPage = () => {
     rowsPerPage,
     userIdFromQuery,
   ]);
+
+  // Filter transactions
+  useEffect(() => {
+    if (!allPagesLoaded) return; // Prevent filtering until all data is fetched
+
+    let filtered = [...allTransactions];
+
+    if (statusFilter !== "All") {
+      filtered = filtered.filter((t) => t.status === statusFilter);
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(
+        (t) =>
+          t.transactionId?.toString().includes(query) ||
+          t.senderName?.toLowerCase().includes(query) ||
+          t.receiverName?.toLowerCase().includes(query) ||
+          t.currencyIso3a?.toLowerCase().includes(query) ||
+          t.senderAmount?.toString().includes(query)
+      );
+    }
+
+    if (dateRange.startDate && dateRange.endDate) {
+      filtered = filtered.filter((t) => {
+        const txDate = new Date(t.date).getTime();
+        return (
+          txDate >= dateRange.startDate!.getTime() &&
+          txDate <= dateRange.endDate!.getTime()
+        );
+      });
+    }
+
+    setFilteredTransactions(filtered);
+    setCurrentPage(1);
+  }, [
+    searchQuery,
+    allTransactions,
+    statusFilter,
+    dateRange,
+    userIdParam,
+    allPagesLoaded,
+  ]);
+
   const handleDateChange = (startDate: Date, endDate: Date) => {
     setDateRange({ startDate, endDate });
     setShowDateFilter(false);
@@ -330,6 +302,56 @@ const TransactionsPage = () => {
     setIsModalOpen(true);
   };
 
+  const handleExport = () => {
+    const fileName = generateExportFileName();
+    const data = prepareExportData();
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+    XLSX.writeFile(workbook, `${fileName}.xlsx`, { compression: true });
+  };
+
+  const generateExportFileName = () => {
+    let fileName = "transactions";
+    if (searchQuery.trim())
+      fileName += `_search_${searchQuery.trim().replace(/ /g, "_")}`;
+    if (statusFilter !== "All")
+      fileName += `_status_${statusFilter.toLowerCase()}`;
+    if (filteredTransactions !== allTransactions) fileName += "_filtered";
+    if (dateRange.startDate && dateRange.endDate) {
+      const start = dateRange.startDate.toISOString().split("T")[0];
+      const end = dateRange.endDate.toISOString().split("T")[0];
+      fileName += `_from_${start}_to_${end}`;
+    }
+    return fileName;
+  };
+
+  const prepareExportData = () => {
+    return filteredTransactions.map((transaction) => ({
+      "Transaction Reference": transaction.transactionReference,
+      "Transaction ID": transaction.transactionId,
+      "User ID": transaction.userId,
+      Sender: transaction.senderName,
+      "Sender's Number": transaction.senderPhone,
+      "Sender's Email": transaction.senderEmail,
+      Recipient: transaction.receiverName,
+      "Recipient's Number": transaction.receiverPhone,
+      "Recipient's Amount": transaction.recipientAmount,
+      "Sender Amount": transaction.senderAmount,
+      "Sender Currency": transaction.currencyIso3a,
+      "Destination Currency": transaction.receiverCurrencyIso3a,
+      "Exchange Rate": transaction.exchangeRate,
+      "Transaction Type": transaction.transactionType,
+      "Date & Time (GMT)": formatDateTime(transaction.date),
+      Status: transaction.status,
+      "Settlement Reference": transaction.settlementReference,
+      "MPESA Reference": transaction.mpesaReference,
+      "Trust Payment Reference": transaction.tpReference,
+      "Bank Name": transaction.bankName,
+    }));
+  };
+
   const formatDateTime = (dateString: string): string => {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, "0");
@@ -338,6 +360,19 @@ const TransactionsPage = () => {
     const hours = String(date.getHours()).padStart(2, "0");
     const minutes = String(date.getMinutes()).padStart(2, "0");
     return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
+
+  const handleNextPage = () => {
+    const newPage = currentPage + 1;
+    setCurrentPage(newPage);
+
+    if (
+      newPage * rowsPerPage > allTransactions.length &&
+      hasMoreData &&
+      !loadingMore
+    ) {
+      fetchMoreTransactions();
+    }
   };
 
   return (
