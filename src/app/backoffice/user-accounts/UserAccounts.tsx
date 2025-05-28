@@ -25,6 +25,7 @@ interface User {
   accountStatus: string;
   step: string;
   userId: number | null;
+  kycStatus: string;
 }
 
 export default function UserAccounts() {
@@ -113,12 +114,14 @@ export default function UserAccounts() {
 
   const handleExport = () => {
     const data = filteredUsers.map((u) => ({
-      "User ID": u.userId ?? "N/A",
+      "User ID": u.accountId ?? "N/A",
       "Full Name": `${u.firstName} ${u.lastName}`,
       Email: u.email,
       Phone: u.phone,
       Country: u.country === "KEN" ? "Kenya" : u.country || "—",
       "Account Status": u.accountStatus,
+      "Verification Status": u.kycStatus,
+      "KYC Status": u.step,
       "Registration Date": new Date(u.registrationDate).toLocaleString(
         "en-GB",
         {
@@ -264,7 +267,7 @@ export default function UserAccounts() {
                     className="cursor-pointer hover:bg-gray-50"
                   >
                     <td className="px-4 py-3 text-gray-500">
-                      {user.userId ?? "N/A"}
+                      {user.accountId ?? "N/A"}
                     </td>
 
                     <td className="px-4 py-3 flex items-center gap-2">
