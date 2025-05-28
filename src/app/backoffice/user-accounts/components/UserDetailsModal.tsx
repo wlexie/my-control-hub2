@@ -143,15 +143,16 @@ export default function UserDetailsModal({
                       <div className="flex items-center gap-2 mt-1">
                         <span
                           className={`w-2 h-2 rounded-full ${
-                            statusStyles[user.step]?.dot || "bg-gray-300"
+                            statusStyles[user.kycStatus]?.dot || "bg-gray-300"
                           }`}
                         />
                         <span
                           className={`text-sm font-medium ${
-                            statusStyles[user.step]?.text || "text-gray-600"
+                            statusStyles[user.kycStatus]?.text ||
+                            "text-gray-600"
                           }`}
                         >
-                          {user.step}
+                          {user.kycStatus}
                         </span>
                       </div>
                     </div>
@@ -249,14 +250,6 @@ export default function UserDetailsModal({
 
                   {/* Profile Info */}
                   <div className="bg-gray-50 p-4 rounded-xl mb-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 font-medium">
-                        Verification Status
-                      </span>
-                      <span className="font-semibold">
-                        {user.kycStatus || "—"}
-                      </span>
-                    </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Gender</span>
                       <span className="font-medium">
