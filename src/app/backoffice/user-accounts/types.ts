@@ -10,6 +10,7 @@ export interface User {
   email: string;
   phone: string;
   step: KYCStep | string; 
+  kycStatus: string | null;
   accountStatus: string;
   createdAt: string;
   country: string | null;

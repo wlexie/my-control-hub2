@@ -24,6 +24,7 @@ interface User {
   registrationDate: string;
   accountStatus: string;
   step: string;
+  userId: number | null;
 }
 
 export default function UserAccounts() {
@@ -86,6 +87,7 @@ export default function UserAccounts() {
     const filtered = allUsers.filter((user) => {
       const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
       const status = user.accountStatus.toLowerCase();
+      const userIdMatch = user.userId?.toString().includes(query);
       const date = new Date(user.registrationDate).getTime();
       const inDateRange =
         !dateRange.startDate ||
@@ -94,7 +96,8 @@ export default function UserAccounts() {
           date <= dateRange.endDate.getTime());
 
       return (
-        (fullName.includes(query) || status.includes(query)) && inDateRange
+        (fullName.includes(query) || status.includes(query) || userIdMatch) &&
+        inDateRange
       );
     });
 
@@ -110,6 +113,7 @@ export default function UserAccounts() {
 
   const handleExport = () => {
     const data = filteredUsers.map((u) => ({
+      "User ID": u.userId ?? "N/A",
       "Full Name": `${u.firstName} ${u.lastName}`,
       Email: u.email,
       Phone: u.phone,
@@ -140,9 +144,9 @@ export default function UserAccounts() {
         <>
           <img
             src="/backoffice/kenya-flag.png"
-            className="w-5 h-5"
+            className="w-5 h-5 inline-block mr-1"
             alt="Kenya flag"
-          />{" "}
+          />
           Kenya
         </>
       );
@@ -151,10 +155,21 @@ export default function UserAccounts() {
         <>
           <img
             src="/backoffice/uk-flag.png"
-            className="w-5 h-5"
+            className="w-5 h-5 inline-block mr-1"
             alt="UK flag"
-          />{" "}
+          />
           United Kingdom
+        </>
+      );
+    } else if (code === "Tanzania") {
+      return (
+        <>
+          <img
+            src="/backoffice/tz-flag.png"
+            className="w-5 h-5 inline-block mr-1"
+            alt="Tanzania flag"
+          />
+          Tanzania
         </>
       );
     } else {
@@ -227,6 +242,7 @@ export default function UserAccounts() {
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50 text-gray-500 text-left">
               <tr>
+                <th className="px-4 py-3">USER ID</th>
                 <th className="px-4 py-3">USER</th>
                 <th className="px-4 py-3">PHONE</th>
                 <th className="px-4 py-3">EMAIL</th>
@@ -247,6 +263,10 @@ export default function UserAccounts() {
                     }}
                     className="cursor-pointer hover:bg-gray-50"
                   >
+                    <td className="px-4 py-3 text-gray-500">
+                      {user.userId ?? "N/A"}
+                    </td>
+
                     <td className="px-4 py-3 flex items-center gap-2">
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm ${getPastelColor(

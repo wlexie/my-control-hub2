@@ -250,6 +250,14 @@ export default function UserDetailsModal({
                   {/* Profile Info */}
                   <div className="bg-gray-50 p-4 rounded-xl mb-4 space-y-2">
                     <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 font-medium">
+                        Verification Status
+                      </span>
+                      <span className="font-semibold">
+                        {user.kycStatus || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Gender</span>
                       <span className="font-medium">
                         {document?.gender || "—"}
