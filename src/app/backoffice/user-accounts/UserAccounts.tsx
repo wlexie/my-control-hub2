@@ -42,6 +42,7 @@ export default function UserAccounts() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<{
     startDate: Date | null;
     endDate: Date | null;
@@ -52,6 +53,7 @@ export default function UserAccounts() {
   const usersPerPage = 10;
 
   const fetchAllUsers = async () => {
+    setLoading(true);
     let page = 1;
     const size = 100;
     let results: User[] = [];
@@ -77,6 +79,7 @@ export default function UserAccounts() {
 
     setAllUsers(results);
     setFilteredUsers(results);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -328,7 +331,39 @@ export default function UserAccounts() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-800">
-              {paginatedUsers.length > 0 ? (
+              {loading ? (
+                [...Array(usersPerPage)].map((_, idx) => (
+                  <tr key={idx} className="animate-pulse">
+                    <td className="px-4 py-3">
+                      <div className="h-4 bg-gray-200 rounded w-16" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-gray-200" />
+                        <div className="h-4 bg-gray-200 rounded w-24" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 bg-gray-200 rounded w-20" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 bg-gray-200 rounded w-28" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 bg-gray-200 rounded w-20" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 bg-gray-200 rounded w-24" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-6 bg-gray-200 rounded w-20" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 bg-gray-200 rounded w-6" />
+                    </td>
+                  </tr>
+                ))
+              ) : paginatedUsers.length > 0 ? (
                 paginatedUsers.map((user) => (
                   <tr
                     key={user.accountId}
@@ -403,10 +438,13 @@ export default function UserAccounts() {
           >
             Previous
           </button>
-          <span className="text-sm">
-            Page {currentPage} of {totalPages} — {allUsers.length} customer
-            {allUsers.length !== 1 && "s"}
-          </span>
+          {!loading && (
+            <span className="text-sm">
+              Page {currentPage} of {totalPages} — {allUsers.length} customer
+              {allUsers.length !== 1 && "s"}
+            </span>
+          )}
+
           <button
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))

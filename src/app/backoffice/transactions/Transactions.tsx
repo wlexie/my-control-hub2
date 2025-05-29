@@ -447,7 +447,35 @@ const TransactionsPage = () => {
 
         {/* Transaction Table */}
         {loading ? (
-          <p className="text-center text-gray-500">Loading transactions...</p>
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="bg-gray-100 text-gray-600 text-sm">
+                  <th className="px-6 py-3">Transaction ID</th>
+                  <th className="px-6 py-3">Sender</th>
+                  <th className="px-6 py-3">Sender Amount</th>
+                  <th className="px-6 py-3">Sender Currency</th>
+                  <th className="px-6 py-3">Recipient</th>
+                  <th className="px-6 py-3">Recipient Amount</th>
+                  <th className="px-6 py-3">Destination Currency</th>
+                  <th className="px-6 py-3">Transaction Type</th>
+                  <th className="px-6 py-3">Time (GMT)</th>
+                  <th className="px-6 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: rowsPerPage }).map((_, i) => (
+                  <tr key={i} className="animate-pulse border-b">
+                    {Array.from({ length: 10 }).map((_, j) => (
+                      <td key={j} className="px-6 py-4">
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : error ? (
           <p className="text-center text-red-500">{error}</p>
         ) : (
