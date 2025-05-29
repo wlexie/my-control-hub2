@@ -8,15 +8,33 @@ interface TransactionItem {
   color: string;
 }
 
-export default function AverageTransactionTime() {
+interface Props {
+  startDate: Date;
+  endDate: Date;
+}
+
+export default function AverageTransactionTime({ startDate, endDate }: Props) {
   const [data, setData] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const getLabelFromDateRange = (): string => {
+    const diffInMs = endDate.getTime() - startDate.getTime();
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+    if (diffInDays <= 7) return "Weekly";
+    if (diffInDays <= 31) return "Monthly";
+    return "Custom Range";
+  };
 
   useEffect(() => {
     const fetchProcessingTime = async () => {
       try {
+        setLoading(true);
+        const formattedStart = startDate.toISOString().split("T")[0];
+        const formattedEnd = endDate.toISOString().split("T")[0];
+
         const res = await fetch(
-          "https://api.tuma-app.com/api/analytics/processing-time"
+          `https://api.tuma-app.com/api/analytics/processing-time?startDate=${formattedStart}&endDate=${formattedEnd}`
         );
         if (!res.ok) throw new Error("Network response was not ok");
 
@@ -61,7 +79,7 @@ export default function AverageTransactionTime() {
     };
 
     fetchProcessingTime();
-  }, []);
+  }, [startDate, endDate]); // trigger fetch when date changes
 
   return (
     <div className="w-full max-w-3xl p-4">
@@ -70,7 +88,7 @@ export default function AverageTransactionTime() {
           Average Time To Complete Transactions
         </h2>
         <button className="bg-blue-500 text-white px-3 py-1 text-sm rounded-md">
-          Weekly
+          {getLabelFromDateRange()}
         </button>
       </div>
 

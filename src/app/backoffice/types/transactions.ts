@@ -1,5 +1,4 @@
 export interface Transaction {
-    transactionReference: string;
     transactionId: string;
     transactionKey:string;
     senderName: string;

@@ -65,7 +65,7 @@ export default function Dashboard() {
             />
           </div>
           <div className="md:col-span-2 bg-white p-4 rounded-2xl">
-            <AverageTransactionTime />
+            <AverageTransactionTime startDate={startDate} endDate={endDate} />
           </div>
         </div>
 

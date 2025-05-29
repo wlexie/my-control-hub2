@@ -52,7 +52,7 @@ const chartConfig = {
 
 export function TransactionStatuses() {
   const api = useApi(); // Initialize your API middleware
-  const [selectedChannel, setSelectedChannel] = useState("MPESA");
+  const [selectedChannel, setSelectedChannel] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [changeSuccess, setChangeSuccess] = useState(0);
   const [changeFailed, setChangeFailed] = useState(0);
@@ -160,20 +160,22 @@ export function TransactionStatuses() {
             </button>
             {isDropdownOpen && (
               <div className="absolute right-0 mt-1 w-32 bg-white border rounded-md shadow-lg z-10">
-                {["MPESA", "Paybill", "Till", "Bank", "Card"].map((channel) => (
-                  <button
-                    key={channel}
-                    onClick={() => {
-                      setSelectedChannel(channel);
-                      setIsDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                      selectedChannel === channel ? "bg-gray-100" : ""
-                    }`}
-                  >
-                    {channel}
-                  </button>
-                ))}
+                {["All", "MPESA", "Paybill", "Bank", "Card", "Till"].map(
+                  (channel) => (
+                    <button
+                      key={channel}
+                      onClick={() => {
+                        setSelectedChannel(channel);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                        selectedChannel === channel ? "bg-gray-100" : ""
+                      }`}
+                    >
+                      {channel}
+                    </button>
+                  )
+                )}
               </div>
             )}
           </div>

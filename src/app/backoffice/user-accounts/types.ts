@@ -13,7 +13,7 @@ export interface User {
   kycStatus: string ;
   accountStatus: string;
   createdAt: string;
-  country: string | null;
+  country: string ;
   documents?: Document[];
   transaction?: Transaction;
 }

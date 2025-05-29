@@ -112,33 +112,102 @@ export default function UserAccounts() {
   );
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
-  const handleExport = () => {
-    const data = filteredUsers.map((u) => ({
-      "User ID": u.accountId ?? "N/A",
-      "Full Name": `${u.firstName} ${u.lastName}`,
-      Email: u.email,
-      Phone: u.phone,
-      Country: u.country === "KEN" ? "Kenya" : u.country || "—",
-      "Account Status": u.accountStatus,
-      "Verification Status": u.kycStatus,
-      "KYC Status": u.step,
-      "Registration Date": new Date(u.registrationDate).toLocaleString(
-        "en-GB",
-        {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        }
-      ),
-    }));
+  const handleExport = async () => {
+    const extendedData: any[] = [];
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    for (const u of filteredUsers) {
+      try {
+        const res = await fetch(
+          `https://api.tuma-app.com/api/account/client-profile?userId=${u.accountId}`
+        );
+        const user = await res.json();
+
+        const doc = user.documents?.[0] ?? {};
+        const tx = user.transaction ?? {};
+        const fullName = `${user.firstName} ${user.lastName}`;
+        const totalTx =
+          tx.totalTransactions?.successfulTransactions +
+            tx.totalTransactions?.failedTransactions || 0;
+
+        extendedData.push({
+          "User ID": user.accountId,
+          "Full Name": fullName,
+          Email: user.email,
+          Phone: user.phone,
+          Country: user.country || "—",
+          "Account Status": user.accountStatus,
+          "Verification Status": user.kycStatus,
+          "KYC Status": user.step,
+          "Account Key": user.accountKey,
+          "Onfido Applicant ID": user.onfidoApplicantId || "—",
+          "Date of Registration": new Date(user.createdAt).toLocaleString(
+            "en-GB",
+            {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }
+          ),
+
+          // Document fields
+          Gender: doc.gender || "—",
+          "Date of Birth": doc.dateOfBirth
+            ? new Date(doc.dateOfBirth).toLocaleDateString("en-GB")
+            : "—",
+          Nationality: doc.nationality || "—",
+          "Document Type": doc.type || "—",
+          "Document Number": doc.documentNumber || "—",
+          "Issuing Country": doc.issuingCountry || "—",
+
+          // Transaction data
+          "Last Transaction Date": tx.lastTransactionDate
+            ? new Date(tx.lastTransactionDate).toLocaleString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              })
+            : "—",
+          "Total Transactions": totalTx,
+          "Successful Transactions":
+            tx.totalTransactions?.successfulTransactions ?? "—",
+          "Failed Transactions":
+            tx.totalTransactions?.failedTransactions ?? "—",
+          "Total Transaction Value (KES)":
+            tx.totalTransactionsValue?.toFixed(2) ?? "—",
+        });
+      } catch (err) {
+        console.error(
+          "Failed to fetch user profile for export",
+          u.accountId,
+          err
+        );
+      }
+    }
+
+    // ⬇️ Construct the dynamic file name
+    let fileName = "User Accounts";
+
+    if (searchQuery.trim()) {
+      const safeQuery = searchQuery.trim().replace(/\s+/g, "_");
+      fileName += `_search_${safeQuery}`;
+    }
+
+    if (dateRange.startDate && dateRange.endDate) {
+      const start = dateRange.startDate.toISOString().split("T")[0];
+      const end = dateRange.endDate.toISOString().split("T")[0];
+      fileName += `_from_${start}_to_${end}`;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(extendedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-    XLSX.writeFile(workbook, "user_accounts.xlsx", { compression: true });
+    XLSX.writeFile(workbook, `${fileName}.xlsx`, { compression: true });
   };
 
   const getCountryDisplay = (code: string | null) => {

@@ -14,7 +14,6 @@ import api from "../../../hooks/useApi";
 import { useSearchParams } from "next/navigation";
 
 type RawTransaction = Partial<{
-  transactionReference: string;
   transactionId: string;
   senderName: string;
   receiverName: string;
@@ -39,17 +38,20 @@ type RawTransaction = Partial<{
   bankName: string;
 }>;
 
+const rowsPerPage = 10;
+
 const TransactionsPage = () => {
+  const { get } = api();
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
   const userIdFromQuery = userIdParam ? Number(userIdParam) : null;
-  const [allPagesLoaded, setAllPagesLoaded] = useState(false);
-  const { get } = api();
+
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<
     Transaction[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -64,7 +66,11 @@ const TransactionsPage = () => {
     endDate: null,
   });
   const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [allPagesLoaded, setAllPagesLoaded] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const dateFilterRef = useRef<HTMLDivElement>(null);
+  const isFirstFilterRun = useRef(true);
+  const fetchedPages = useRef<Set<number>>(new Set());
 
   const statusOptions = [
     "All",
@@ -77,14 +83,6 @@ const TransactionsPage = () => {
     "Escalated",
     "Under Review",
   ];
-
-  // Pagination states
-
-  const rowsPerPage = 12;
-  const [currentPage, setCurrentPage] = useState(1);
-  const [serverPageToFetch, setServerPageToFetch] = useState(1);
-  const [hasMoreData, setHasMoreData] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
 
   // Handle clicks outside date filter
   useEffect(() => {
@@ -104,61 +102,118 @@ const TransactionsPage = () => {
   }, []);
 
   useEffect(() => {
-    const fetchInitialTransactions = async () => {
+    const fetchInitialPage = async () => {
       try {
         setLoading(true);
-        setCurrentPage(1);
-        const firstPageUrl = userIdFromQuery
+        const url = userIdFromQuery
           ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
           : `/transfer/all-transactions?page=1&size=${rowsPerPage}`;
 
-        const firstResult = await get<RawTransaction[]>(firstPageUrl);
-        if (!firstResult || !Array.isArray(firstResult)) {
-          throw new Error("Invalid API response.");
-        }
+        const res = await get<RawTransaction[]>(url);
+        const formatted = res.map(mapApiTransactionToTransaction);
 
-        const firstFormatted = firstResult.map(mapApiTransactionToTransaction);
-        setAllTransactions(firstFormatted);
-        setFilteredTransactions(firstFormatted);
-
-        // Background load all other pages
-        let page = 2;
-        let keepFetching = true;
-        let allTxs = [...firstFormatted];
-
-        while (keepFetching) {
-          const url = userIdFromQuery
-            ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
-            : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
-
-          const nextResult = await get<RawTransaction[]>(url);
-          if (!nextResult || nextResult.length === 0) {
-            keepFetching = false;
-            break;
-          }
-
-          const nextFormatted = nextResult.map(mapApiTransactionToTransaction);
-          allTxs = [...allTxs, ...nextFormatted];
-
-          page++;
-          if (nextResult.length < rowsPerPage) keepFetching = false;
-        }
-
-        setAllTransactions(allTxs);
-        setAllPagesLoaded(true);
+        setAllTransactions(formatted);
+        setFilteredTransactions(formatted);
       } catch (err) {
-        console.error("Failed to fetch transactions:", err);
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError("Failed to fetch transactions");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchInitialTransactions();
+    fetchInitialPage();
   }, []);
 
+  // Background fetch remaining pages
+  useEffect(() => {
+    const loadRemainingPages = async () => {
+      let page = 2;
+      let hasMore = true;
+
+      while (hasMore) {
+        if (fetchedPages.current.has(page)) {
+          page++;
+          continue;
+        }
+
+        try {
+          const url = userIdFromQuery
+            ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
+            : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
+
+          const res = await get<RawTransaction[]>(url);
+
+          if (!res || res.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          const formatted = res.map(mapApiTransactionToTransaction);
+
+          // Prevent duplicates by checking for existing transaction IDs
+          setAllTransactions((prev) => {
+            const seen = new Set(prev.map((tx) => tx.transactionId));
+            const uniqueNew = formatted.filter(
+              (tx) => !seen.has(tx.transactionId)
+            );
+            return [...prev, ...uniqueNew];
+          });
+
+          fetchedPages.current.add(page);
+          page++;
+
+          if (res.length < rowsPerPage) hasMore = false;
+        } catch (error) {
+          console.error("Error loading page", page, error);
+          hasMore = false;
+        }
+      }
+
+      setAllPagesLoaded(true);
+    };
+
+    loadRemainingPages();
+  }, []);
+
+  // Filtering logic
+  useEffect(() => {
+    let filtered = [...allTransactions];
+
+    if (statusFilter !== "All") {
+      filtered = filtered.filter((t) => t.status === statusFilter);
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (t) =>
+          t.transactionId?.toString().includes(query) ||
+          t.senderName?.toLowerCase().includes(query) ||
+          t.receiverName?.toLowerCase().includes(query) ||
+          t.currencyIso3a?.toLowerCase().includes(query) ||
+          t.senderAmount?.toString().includes(query)
+      );
+    }
+
+    if (dateRange.startDate && dateRange.endDate) {
+      filtered = filtered.filter((t) => {
+        const txDate = new Date(t.date).getTime();
+        return (
+          txDate >= dateRange.startDate!.getTime() &&
+          txDate <= dateRange.endDate!.getTime()
+        );
+      });
+    }
+
+    setFilteredTransactions(filtered);
+
+    if (!isFirstFilterRun.current) {
+      setCurrentPage(1);
+    }
+    isFirstFilterRun.current = false;
+  }, [searchQuery, statusFilter, dateRange, allTransactions]);
+
   const mapApiTransactionToTransaction = (tx: RawTransaction): Transaction => ({
-    transactionReference: tx.transactionReference || "N/A",
     transactionId: tx.transactionId || "N/A",
     senderName: tx.senderName || "Unknown Sender",
     receiverName: tx.receiverName || "Unknown Recipient",
@@ -210,84 +265,6 @@ const TransactionsPage = () => {
     }
   };
 
-  const fetchMoreTransactions = useCallback(async () => {
-    if (loadingMore || !hasMoreData) return;
-    try {
-      setLoadingMore(true);
-
-      const endpoint = userIdFromQuery
-        ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${serverPageToFetch}&size=${rowsPerPage}`
-        : `/transfer/all-transactions?page=${serverPageToFetch}&size=${rowsPerPage}`;
-
-      const result = await get<RawTransaction[]>(endpoint);
-
-      if (!result || !Array.isArray(result)) {
-        setHasMoreData(false);
-        return;
-      }
-
-      const formatted = result.map(mapApiTransactionToTransaction);
-      setAllTransactions((prev) => [...prev, ...formatted]);
-      setServerPageToFetch((prev) => prev + 1);
-      if (formatted.length < rowsPerPage) setHasMoreData(false);
-    } catch (err) {
-      console.error("Fetch more error:", err);
-      setHasMoreData(false);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [
-    get,
-    loadingMore,
-    hasMoreData,
-    serverPageToFetch,
-    rowsPerPage,
-    userIdFromQuery,
-  ]);
-
-  // Filter transactions
-  useEffect(() => {
-    if (!allPagesLoaded) return; // Prevent filtering until all data is fetched
-
-    let filtered = [...allTransactions];
-
-    if (statusFilter !== "All") {
-      filtered = filtered.filter((t) => t.status === statusFilter);
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(
-        (t) =>
-          t.transactionId?.toString().includes(query) ||
-          t.senderName?.toLowerCase().includes(query) ||
-          t.receiverName?.toLowerCase().includes(query) ||
-          t.currencyIso3a?.toLowerCase().includes(query) ||
-          t.senderAmount?.toString().includes(query)
-      );
-    }
-
-    if (dateRange.startDate && dateRange.endDate) {
-      filtered = filtered.filter((t) => {
-        const txDate = new Date(t.date).getTime();
-        return (
-          txDate >= dateRange.startDate!.getTime() &&
-          txDate <= dateRange.endDate!.getTime()
-        );
-      });
-    }
-
-    setFilteredTransactions(filtered);
-    setCurrentPage(1);
-  }, [
-    searchQuery,
-    allTransactions,
-    statusFilter,
-    dateRange,
-    userIdParam,
-    allPagesLoaded,
-  ]);
-
   const handleDateChange = (startDate: Date, endDate: Date) => {
     setDateRange({ startDate, endDate });
     setShowDateFilter(false);
@@ -329,7 +306,6 @@ const TransactionsPage = () => {
 
   const prepareExportData = () => {
     return filteredTransactions.map((transaction) => ({
-      "Transaction Reference": transaction.transactionReference,
       "Transaction ID": transaction.transactionId,
       "User ID": transaction.userId,
       Sender: transaction.senderName,
@@ -365,14 +341,10 @@ const TransactionsPage = () => {
   const handleNextPage = () => {
     const newPage = currentPage + 1;
     setCurrentPage(newPage);
+  };
 
-    if (
-      newPage * rowsPerPage > allTransactions.length &&
-      hasMoreData &&
-      !loadingMore
-    ) {
-      fetchMoreTransactions();
-    }
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
 
   return (
@@ -579,8 +551,8 @@ const TransactionsPage = () => {
             {/* Pagination */}
             <div className="flex justify-center mt-6 space-x-2">
               <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1 || loadingMore || loading}
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
                 className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Previous
@@ -589,16 +561,23 @@ const TransactionsPage = () => {
               <button
                 onClick={handleNextPage}
                 disabled={
-                  loading ||
-                  loadingMore ||
-                  (currentPage * rowsPerPage >= filteredTransactions.length &&
-                    !hasMoreData)
+                  currentPage * rowsPerPage >= filteredTransactions.length &&
+                  allPagesLoaded
                 }
                 className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                {loadingMore ? "Loading..." : "Next"}
+                {allPagesLoaded ||
+                currentPage * rowsPerPage < filteredTransactions.length
+                  ? "Next"
+                  : "Loading..."}
               </button>
             </div>
+            {!allPagesLoaded && (
+              <p className="text-xs text-gray-500 mt-1 text-center">
+                ⚠ Filtering results may be incomplete. More data is still
+                loading...
+              </p>
+            )}
           </>
         )}
       </div>
