@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
 import { Search } from "lucide-react";
@@ -51,7 +51,6 @@ const TransactionsPage = () => {
     Transaction[]
   >([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -114,7 +113,7 @@ const TransactionsPage = () => {
 
         setAllTransactions(formatted);
         setFilteredTransactions(formatted);
-      } catch (err) {
+      } catch {
         setError("Failed to fetch transactions");
       } finally {
         setLoading(false);

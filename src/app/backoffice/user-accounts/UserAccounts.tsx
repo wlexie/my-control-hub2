@@ -112,8 +112,11 @@ export default function UserAccounts() {
   );
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
+  type ExportedUserRow = {
+    [key: string]: string | number | undefined;
+  };
   const handleExport = async () => {
-    const extendedData: any[] = [];
+    const extendedData: ExportedUserRow[] = [];
 
     for (const u of filteredUsers) {
       try {
