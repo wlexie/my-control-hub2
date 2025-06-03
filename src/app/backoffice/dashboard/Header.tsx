@@ -64,9 +64,6 @@ export default function Header({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const words = userName ? userName.split(" ") : [];
-  const half = Math.ceil(words.length / 2);
-
   return (
     <div className="relative bg-gradient-to-br to-[#15449d] from-[#0162ff] text-white pb-8 ">
       <TopNav user={user} />
