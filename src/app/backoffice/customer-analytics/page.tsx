@@ -1,5 +1,5 @@
 import React from "react";
-import CustomerAnalytics from "./CustomerAnalytics";
+import CustomerAnalytics from "@/app/backoffice/customer-analytics/CustomerAnalytics";
 
 function page() {
   return (

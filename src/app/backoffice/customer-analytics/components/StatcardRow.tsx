@@ -4,7 +4,7 @@ import {
   FaBuilding,
   FaDollarSign,
   FaPhone,
- // FaReceipt,
+  // FaReceipt,
   FaWallet,
 } from "react-icons/fa";
 const cards = [
@@ -62,14 +62,15 @@ export default function StatCardsRow() {
           key={i}
           className="bg-white p-10 rounded-xl shadow-sm flex flex-col justify-between"
         >
-          <div className="flex justify-between items-center mb-2 ">
-            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-4">
               {card.icon}
             </div>
-            <div className="text-gray-700 text-lg font-medium text-center">
+            <span className="text-gray-700 text-lg font-medium">
               {card.label}
-            </div>
+            </span>
           </div>
+
           <div className="text-2xl font-semibold text-gray-800">
             {card.amount}
           </div>

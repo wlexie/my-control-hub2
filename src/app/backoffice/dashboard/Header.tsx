@@ -35,6 +35,16 @@ export default function Header({
 }: HeaderProps) {
   const pathname = usePathname();
   const isDashboard = pathname === "/backoffice/dashboard";
+  const pageTitles: Record<string, string> = {
+    "/backoffice/dashboard": "Welcome back",
+    "/backoffice/financial-metrics": "Financial Metrics & Revenue Performance",
+    "/backoffice/customer-analytics": "Customer Analytics",
+    "/backoffice/compliance-risk": "Compliance & Risk Management",
+    "/backoffice/operational-efficiency": "Operational Efficiency",
+  };
+
+  const currentTitle = pageTitles[pathname] || "Dashboard";
+
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -94,25 +104,15 @@ export default function Header({
 
       <div className="px-4 md:px-12 mt-6">
         <h2 className="text-2xl md:text-3xl font-light leading-snug">
-          {isDashboard ? (
+          {pathname === "/backoffice/dashboard" ? (
             <>
-              Welcome back,{" "}
+              {currentTitle},{" "}
               <span className="text-white font-bold">
                 {userName || "User"}.
               </span>
             </>
           ) : (
-            <>
-              {userName ? (
-                <>
-                  <span className="font-light">{firstHalf} </span>
-                  <br className="block md:hidden" />
-                  <span className="font-semibold">{secondHalf}</span>
-                </>
-              ) : (
-                <span className="font-semibold">Page</span>
-              )}
-            </>
+            <span className="text-white font-semibold">{currentTitle}</span>
           )}
         </h2>
       </div>

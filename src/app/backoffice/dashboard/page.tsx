@@ -14,7 +14,8 @@ import DateFilter from "@/app/backoffice/components/DateFilter";
 export default function Dashboard() {
   const [currency, setCurrency] = useState("GBP");
 
-  const [startDate, setStartDate] = useState<Date>(new Date("01-01-2020"));
+  const [startDate, setStartDate] = useState<Date>(new Date(2024, 10, 20));
+
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
   const [dateLabel, setDateLabel] = useState("All Time");
@@ -32,7 +33,8 @@ export default function Dashboard() {
   };
 
   const handleClearDates = () => {
-    const allTimeStart = new Date("2020-01-01");
+    const allTimeStart = new Date(2024, 10, 20); // Correct version of "20-11-2024"
+
     const today = new Date();
     setStartDate(allTimeStart);
     setEndDate(today);

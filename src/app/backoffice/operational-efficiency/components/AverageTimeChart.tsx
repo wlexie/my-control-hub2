@@ -11,11 +11,36 @@ import {
 import Image from "next/image";
 
 const data = [
-  { name: "MPesa", seconds: 8, color: "#8e44ad", icon: "/icons/sim.svg" },
-  { name: "Bank", seconds: 17, color: "#f78da7", icon: "/icons/bank.svg" },
-  { name: "Card", seconds: 13, color: "#2ecc71", icon: "/icons/card.svg" },
-  { name: "Till", seconds: 4, color: "#3498db", icon: "/icons/till.svg" },
-  { name: "Paybill", seconds: 2, color: "#f39c12", icon: "/icons/bill.svg" },
+  {
+    name: "MPesa",
+    seconds: 8,
+    color: "#8e44ad",
+    icon: "/backoffice/icons/sim.svg",
+  },
+  {
+    name: "Bank",
+    seconds: 17,
+    color: "#f78da7",
+    icon: "/backoffice/icons/bank.svg",
+  },
+  {
+    name: "Card",
+    seconds: 13,
+    color: "#2ecc71",
+    icon: "/backoffice/icons/card.svg",
+  },
+  {
+    name: "Till",
+    seconds: 4,
+    color: "#3498db",
+    icon: "/backoffice/icons/till.svg",
+  },
+  {
+    name: "Paybill",
+    seconds: 2,
+    color: "#f39c12",
+    icon: "/backoffice/icons/bill.svg",
+  },
 ];
 
 export default function AverageTimeChart() {

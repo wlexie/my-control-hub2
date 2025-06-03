@@ -30,6 +30,7 @@ const navItems = [
     href: "/backoffice/operational-efficiency",
   },
 ];
+
 const getInitials = (firstName: string, lastName: string): string => {
   const f = firstName?.charAt(0) || "";
   const l = lastName?.charAt(0) || "";

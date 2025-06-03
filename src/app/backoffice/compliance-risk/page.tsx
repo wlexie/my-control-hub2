@@ -1,5 +1,5 @@
 import React from "react";
-import ComplianceRisk from "./ComplianceRisk";
+import ComplianceRisk from "@/app/backoffice/compliance-risk/ComplianceRisk";
 
 function page() {
   return (

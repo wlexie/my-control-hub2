@@ -23,7 +23,7 @@ type Referrer = {
 
 const mockData: Referrer[] = [
   {
-    avatar: "/avatar.png",
+    avatar: "/backoffice/avatar.png",
     name: "Jason Sterling",
     memberId: "61-70-425529",
     status: "Active",
@@ -32,10 +32,10 @@ const mockData: Referrer[] = [
     fees: "1,002.97",
     dateJoined: "24/03/25",
     country: "UK",
-    flag: "/uk-flag.png",
+    flag: "/backoffice/uk-flag.png",
   },
   {
-    avatar: "/avatar.png",
+    avatar: "/backoffice/avatar.png",
     name: "Kevin Mwangi",
     memberId: "61-70-425529",
     status: "Churned",
@@ -44,10 +44,10 @@ const mockData: Referrer[] = [
     fees: "988.37",
     dateJoined: "24/06/23",
     country: "KEN",
-    flag: "/uk-flag.png",
+    flag: "/backoffice/uk-flag.png",
   },
   {
-    avatar: "/avatar.png",
+    avatar: "/backoffice/avatar.png",
     name: "Kevin Mwiki",
     memberId: "61-70-425528",
     status: "Churned",
@@ -56,10 +56,10 @@ const mockData: Referrer[] = [
     fees: "988.37",
     dateJoined: "24/06/23",
     country: "KEN",
-    flag: "/kenya-flag.png",
+    flag: "/backoffice/kenya-flag.png",
   },
   {
-    avatar: "/avatar.png",
+    avatar: "/backoffice/avatar.png",
     name: "Kevin Maina",
     memberId: "61-70-425530",
     status: "Churned",
@@ -68,12 +68,12 @@ const mockData: Referrer[] = [
     fees: "988.37",
     dateJoined: "24/06/23",
     country: "KEN",
-    flag: "/kenya-flag.png",
+    flag: "/backoffice/kenya-flag.png",
   },
 ];
 
 export default function ReferralTable() {
- // const [page, setPage] = useState(1);
+  // const [page, setPage] = useState(1);
 
   return (
     <div className="p-6 bg-white rounded-2xl border-0">

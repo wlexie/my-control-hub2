@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Header from "../dashboard/Header";
 import { CountrySegmentationCard } from "./components/CountrySegmentation";
 import CustomerLifetimeValueChart from "./components/CustomerLifetimeValueChart";
@@ -7,41 +8,80 @@ import { CustomerSegmentationChart } from "./components/CustomerSegmentation";
 import StatCardsRow from "./components/StatcardRow";
 import TableGraph from "./components/TableGraph";
 import TotalCustomers from "./components/TotalCustomers";
+import DateFilter from "@/app/backoffice/components/DateFilter";
 
 export default function Dashboard() {
+  const [currency, setCurrency] = useState("GBP");
+  const [startDate, setStartDate] = useState<Date>(new Date(2024, 10, 20)); // 20 Nov 2024
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
+  const [dateLabel, setDateLabel] = useState("All Time");
+
+  const handleDateChange = (start: Date, end: Date) => {
+    setStartDate(start);
+    setEndDate(end);
+
+    const diffInDays =
+      Math.floor((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+
+    if (diffInDays <= 7) setDateLabel("Weekly");
+    else if (diffInDays <= 31) setDateLabel("Monthly");
+    else setDateLabel("Custom");
+  };
+
+  const handleClearDates = () => {
+    const allTimeStart = new Date(2024, 10, 20);
+    const today = new Date();
+    setStartDate(allTimeStart);
+    setEndDate(today);
+    setDateLabel("All Time");
+  };
+
   return (
     <main className="bg-[#F5F7FA] font-poppins min-h-screen overflow-x-hidden overflow-y-auto">
-      <Header />
+      <Header
+        currency={currency}
+        onCurrencyChange={setCurrency}
+        startDate={startDate}
+        endDate={endDate}
+        onDateFilterOpen={() => setIsDateFilterOpen(true)}
+        dateLabel={dateLabel}
+      />
 
-      {/* Stat Cards Row with negative margin */}
-      <div className="px-6 md:px-12 relative z-10 ">
+      <div className="px-6 md:px-12 relative z-10">
         <StatCardsRow />
 
         <div className="flex flex-col space-y-8">
-          {/* First Grid Section */}
-          {/* table */}
-
           <div className="bg-white p-4 rounded-2xl mt-5">
             <TableGraph />
           </div>
 
           <div className="grid grid-cols-5 gap-6 items-stretch justify-center mt-5">
-            {/* Container 1: Spans 3 columns */}
             <div className="col-span-3 bg-white p-4 rounded-2xl">
               <CustomerSegmentationChart />
             </div>
-            {/* Container 2: Spans 2 columns */}
             <div className="col-span-2 bg-white p-4 rounded-2xl text-2xl">
               <CountrySegmentationCard />
             </div>
           </div>
 
-          {/* Customer Value Section line graph */}
-
           <CustomerLifetimeValueChart />
           <TotalCustomers />
         </div>
       </div>
+
+      {isDateFilterOpen && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex justify-center items-start pt-10">
+          <DateFilter
+            isOpen={isDateFilterOpen}
+            onClose={() => setIsDateFilterOpen(false)}
+            onChange={handleDateChange}
+            onClear={handleClearDates}
+            initialStartDate={startDate}
+            initialEndDate={endDate}
+          />
+        </div>
+      )}
     </main>
   );
 }

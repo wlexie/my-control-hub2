@@ -16,7 +16,7 @@ const countries = [
     revenue: 81236.74,
     percent: 52,
     color: "#ef4444",
-    flag: "/uk-flag.png",
+    flag: "/backoffice/uk-flag.png",
   },
   {
     name: "Kenya",
@@ -24,7 +24,7 @@ const countries = [
     revenue: 20236.74,
     percent: 28,
     color: "#22c55e",
-    flag: "/kenya-flag.png",
+    flag: "/backoffice/kenya-flag.png",
   },
   {
     name: "Uganda",
@@ -32,7 +32,7 @@ const countries = [
     revenue: 18236.74,
     percent: 12,
     color: "#facc15",
-    flag: "/ug-flag.png",
+    flag: "/backoffice/ug-flag.png",
   },
   {
     name: "Tanzania",
@@ -40,7 +40,7 @@ const countries = [
     revenue: 9236.74,
     percent: 8,
     color: "#0ea5e9",
-    flag: "/tz-flag.png",
+    flag: "/backoffice/tz-flag.png",
   },
 ];
 
