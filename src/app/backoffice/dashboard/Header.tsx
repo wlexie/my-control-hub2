@@ -103,18 +103,19 @@ export default function Header({
       </div>
 
       <div className="px-4 md:px-12 mt-6">
-        <h2 className="text-2xl md:text-3xl font-light leading-snug">
-          {pathname === "/backoffice/dashboard" ? (
-            <>
-              {currentTitle},{" "}
-              <span className="text-white font-bold">
-                {userName || "User"}.
-              </span>
-            </>
-          ) : (
-            <span className="text-white font-semibold">{currentTitle}</span>
-          )}
-        </h2>
+        {(() => {
+          const [first, ...rest] =
+            pathname === "/backoffice/dashboard"
+              ? [`${currentTitle},`, userName || "User."]
+              : currentTitle.split(" ");
+
+          return (
+            <h2 className="text-2xl md:text-3xl leading-snug">
+              <span className="font-light text-white">{first} </span>
+              <span className="font-semibold text-white">{rest.join(" ")}</span>
+            </h2>
+          );
+        })()}
       </div>
 
       <div className="flex flex-col md:items-end md:px-12 px-4 mt-4 space-y-2 md:space-y-1">
