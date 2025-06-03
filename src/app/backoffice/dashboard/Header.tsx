@@ -34,7 +34,7 @@ export default function Header({
   dateLabel,
 }: HeaderProps) {
   const pathname = usePathname();
-  const isDashboard = pathname === "/backoffice/dashboard";
+
   const pageTitles: Record<string, string> = {
     "/backoffice/dashboard": "Welcome back",
     "/backoffice/financial-metrics": "Financial Metrics & Revenue Performance",
@@ -66,8 +66,6 @@ export default function Header({
 
   const words = userName ? userName.split(" ") : [];
   const half = Math.ceil(words.length / 2);
-  const firstHalf = words.slice(0, half).join(" ");
-  const secondHalf = words.slice(half).join(" ");
 
   return (
     <div className="relative bg-gradient-to-br to-[#15449d] from-[#0162ff] text-white pb-8 ">
