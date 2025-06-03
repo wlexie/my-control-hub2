@@ -13,6 +13,7 @@ export default {
         lufga: ["Lufga", "sans-serif"], 
         geist: ["var(--font-geist-sans)", "sans-serif"],
         geistMono: ["var(--font-geist-mono)", "monospace"],
+        outfit: ["var(--font-outfit)", "sans-serif"], // ✅ Added Outfit
       },
     },
   },
