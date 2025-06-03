@@ -206,7 +206,7 @@ const DashboardPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 font-outfit">
+    <div className="min-h-screen bg-white font-outfit">
       <div className="max-w-[1210px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 pb-28 md:pb-12">
         <div className="mb-4 text-center">
           <h1 className="text-3xl md:text-[24px] font-bold text-gray-800 mb-2">Tuma Navigator</h1>
