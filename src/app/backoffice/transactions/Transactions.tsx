@@ -105,8 +105,8 @@ const TransactionsPage = () => {
       try {
         setLoading(true);
         const url = userIdFromQuery
-          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
-          : `/transfer/all-transactions?page=1&size=${rowsPerPage}`;
+          ? `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
+          : `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/transfer/all-transactions?page=1&size=${rowsPerPage}`;
 
         const res = await get<RawTransaction[]>(url);
         const formatted = res.map(mapApiTransactionToTransaction);
@@ -137,8 +137,8 @@ const TransactionsPage = () => {
 
         try {
           const url = userIdFromQuery
-            ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
-            : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
+            ? `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
+            : `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
 
           const res = await get<RawTransaction[]>(url);
 
