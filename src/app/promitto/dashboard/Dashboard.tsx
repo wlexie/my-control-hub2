@@ -155,13 +155,13 @@ export default function Home() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 p-8 space-y-8 ml-80 bg-gray-50">
+      <main className="flex-1 p-8 space-y-8 ml-80 bg-gray-50 text-black">
         <Header
           dateRange={dateRange}
           onDateChange={handleDateFilterChange}
           onClearDateFilter={handleClearDateFilter}
         />
-        <div className="gap-4 grid grid-cols-3 text-lg">
+        <div className="gap-4 grid grid-cols-3 text-lg text-black">
           <Card
             icon={
               <img

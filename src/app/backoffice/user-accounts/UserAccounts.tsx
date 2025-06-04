@@ -87,11 +87,19 @@ export default function UserAccounts() {
   }, []);
 
   useEffect(() => {
-    const query = searchQuery.toLowerCase().trim();
+    const rawQuery = searchQuery.trim();
+    const tokens = rawQuery.toLowerCase().split(/\s+/);
+
     const filtered = allUsers.filter((user) => {
-      const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-      const status = user.accountStatus.toLowerCase();
-      const userIdMatch = user.userId?.toString().includes(query);
+      const fields = [
+        `${user.firstName} ${user.lastName}`.toLowerCase(),
+        user.email?.toLowerCase() ?? "",
+        user.phone?.toLowerCase() ?? "",
+        user.country?.toLowerCase() ?? "",
+        user.accountStatus?.toLowerCase() ?? "",
+        user.userId?.toString() ?? "",
+      ];
+
       const date = new Date(user.registrationDate).getTime();
       const inDateRange =
         !dateRange.startDate ||
@@ -99,10 +107,12 @@ export default function UserAccounts() {
         (date >= dateRange.startDate.getTime() &&
           date <= dateRange.endDate.getTime());
 
-      return (
-        (fullName.includes(query) || status.includes(query) || userIdMatch) &&
-        inDateRange
+      // All tokens must match at least one field
+      const matchesAllTokens = tokens.every((token) =>
+        fields.some((field) => field.includes(token))
       );
+
+      return inDateRange && matchesAllTokens;
     });
 
     setFilteredUsers(filtered);
@@ -264,11 +274,11 @@ export default function UserAccounts() {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold text-black">User & Accounts</h2>
           <div className="flex gap-4">
-            <div className="relative w-[470px]">
+            <div className="relative w-[670px]">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by name and account status "
+                placeholder="Search by any field: name, email, phone, country, status..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-2 pl-10 border rounded-md shadow-sm"
@@ -433,7 +443,7 @@ export default function UserAccounts() {
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-400"
+            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-400 text-white"
           >
             Previous
           </button>
@@ -449,7 +459,7 @@ export default function UserAccounts() {
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
             disabled={currentPage >= totalPages}
-            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-400"
+            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-400 text-white"
           >
             Next
           </button>

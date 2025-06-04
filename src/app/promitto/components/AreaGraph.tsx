@@ -88,11 +88,11 @@ function AreaGraph({
     <Card className="bg-white">
       <CardHeader className="items-center pb-2">
         <CardTitle className="text-xl">Transaction Volume</CardTitle>
-        <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-md">
+        <div className="text-sm text-black bg-gray-100 px-3 py-1 rounded-md">
           Weekly
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 ">
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart
             data={chartData}
@@ -105,6 +105,7 @@ function AreaGraph({
               fontSize={12}
               domain={[0, "dataMax + 5"]}
               tickCount={8}
+              fill="#000"
             />
             <XAxis
               dataKey="day"
@@ -112,6 +113,7 @@ function AreaGraph({
               axisLine={false}
               tickMargin={10}
               fontSize={12}
+              fill="#000"
             />
             <CartesianGrid
               vertical={false}

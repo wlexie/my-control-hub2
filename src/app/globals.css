@@ -5,7 +5,7 @@
 
 /* Apply global font */
 body {
-  font-family: "Poppins", "Manrope", "Lufga", sans-serif;
+  font-family: "Outfit", "Manrope", "Lufga", sans-serif;
 }
 
 /* Add this to your global styles */
@@ -220,9 +220,7 @@ body, html {
 }
 
 /* Font family utility classes */
-.font-poppins {
-  font-family: 'Poppins', sans-serif;
-}
+
 
 .font-outfit {
   font-family: 'Outfit', sans-serif;

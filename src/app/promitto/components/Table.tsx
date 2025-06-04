@@ -480,10 +480,10 @@ const Table: FC = () => {
   return (
     <div className=" p-4">
       <div className="bg-white shadow-sm rounded-lg overflow-x-auto">
-        <h2 className="px-6 py-4 font-semibold text-gray-800 border-b">
+        <h2 className="px-6 py-4 font-semibold text-black border-b">
           Latest Transactions
         </h2>
-        <table className="w-full text-sm text-left text-gray-700 min-w-[900px]">
+        <table className="w-full text-sm text-left text-black min-w-[900px]">
           <thead className="bg-white">
             <tr>
               <th className="px-6 py-3 whitespace-nowrap">Customer</th>

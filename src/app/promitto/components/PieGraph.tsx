@@ -16,7 +16,10 @@ import {
   CardTitle,
 } from "../../../components/ui/card";
 import api from "../../../hooks/useApi";
-import { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
+import {
+  ValueType,
+  NameType,
+} from "recharts/types/component/DefaultTooltipContent";
 
 // Colors for the chart
 const COLORS = {
@@ -120,10 +123,7 @@ export default function PieGraph() {
 
         <div className="flex justify-center gap-6 mt-4">
           {chartData.map((item, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-2 text-sm text-gray-600"
-            >
+            <div key={i} className="flex items-center gap-2 text-sm text-black">
               <span
                 className="inline-block w-3 h-3 rounded-sm"
                 style={{ backgroundColor: item.fill }}

@@ -1,7 +1,7 @@
 const Footer = () => {
   return (
-    <footer className="bg-gray-50 py-4 border-gray-300 flex">
-      <div className="container mx-auto flex justify-between items-center text-sm text-gray-500">
+    <footer className="bg-gray-50 py-4 border-gray-300 flex text-black">
+      <div className="container mx-auto flex justify-between items-center text-sm text-black">
         {/* Left Section - Logo */}
         <a
           href="https://tuma.com"
@@ -52,7 +52,7 @@ const Footer = () => {
 
         {/* Right Section - Copyright */}
         <div>
-          <span className="text-gray-500">Copyright © Tuma 2025</span>
+          <span className="text-black">Copyright © Tuma 2025</span>
         </div>
       </div>
     </footer>

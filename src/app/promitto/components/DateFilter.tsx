@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { DateRangePicker, Range, RangeKeyDict } from "react-date-range";
-import { 
-  //FaCalendarAlt, 
-  FaClock } from "react-icons/fa";
+import {
+  //FaCalendarAlt,
+  FaClock,
+} from "react-icons/fa";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 
@@ -106,7 +107,7 @@ const DateFilter: React.FC<DateFilterProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm ">
       <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-2xl">
         <DateRangePicker
           ranges={[selectedRange]}
