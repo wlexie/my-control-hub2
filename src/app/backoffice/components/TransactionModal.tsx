@@ -182,7 +182,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                     <p className="text-gray-400">Transfer Fee:</p>
                     <p>0.00</p>
                     <p className="text-gray-400">Payment Method:</p>
-                    <p>{formatChannelName(transaction.transactionType)}</p>
+                    <p>{transaction.transactionType}</p>
                     <p className="text-gray-400">Bank Name:</p>
                     <p>{transaction.bankName || "N/A"}</p>
                     <p className="text-gray-400">Transaction ID:</p>
@@ -200,7 +200,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                     <p className="text-gray-400">Origin:</p>
                     <p>UK</p>
                     <p className="text-gray-400">Destination:</p>
-                    <p>Kenya</p>
+                    <p>Tanzania</p>
                     <p className="text-gray-400">Time Sent:</p>
                     <p>{formatDateTime(transaction.date)}</p>
                     <p className="text-gray-400">Time Received:</p>

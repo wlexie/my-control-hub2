@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
 import { Search } from "lucide-react";
@@ -83,6 +83,49 @@ const TransactionsPage = () => {
     "Under Review",
   ];
 
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+
+  const availableCountries = useMemo(() => {
+    const hasTZS = allTransactions.some(
+      (tx) => tx.receiverCurrencyIso3a === "TZS"
+    );
+    const hasGBP = allTransactions.some(
+      (tx) => tx.receiverCurrencyIso3a === "GBP"
+    );
+
+    const countries = [
+      { code: "KE", label: "Kenya", flag: "/backoffice/kenya-flag.png" },
+    ];
+    if (hasTZS)
+      countries.push({
+        code: "TZ",
+        label: "Tanzania",
+        flag: "/backoffice/tz-flag.png",
+      });
+    if (hasGBP)
+      countries.push({
+        code: "UK",
+        label: "United Kingdom",
+        flag: "/backoffice/uk-flag.png",
+      });
+    return countries;
+  }, [allTransactions]);
+
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        countryDropdownRef.current &&
+        !countryDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowCountryDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Handle clicks outside date filter
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -105,8 +148,8 @@ const TransactionsPage = () => {
       try {
         setLoading(true);
         const url = userIdFromQuery
-          ? `https://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
-          : `https://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/transfer/all-transactions?page=1&size=${rowsPerPage}`;
+          ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
+          : `https://api.tuma-app.com/api/transfer/all-transactions?page=1&size=${rowsPerPage}`;
 
         const res = await get<RawTransaction[]>(url);
         const formatted = res.map(mapApiTransactionToTransaction);
@@ -137,8 +180,8 @@ const TransactionsPage = () => {
 
         try {
           const url = userIdFromQuery
-            ? `https://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
-            : `https://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
+            ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
+            : `https://api.tuma-app.com/api/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
 
           const res = await get<RawTransaction[]>(url);
 
@@ -181,6 +224,10 @@ const TransactionsPage = () => {
     if (statusFilter !== "All") {
       filtered = filtered.filter((t) => t.status === statusFilter);
     }
+    if (selectedCountry === "TZ")
+      filtered = filtered.filter((t) => t.receiverCurrencyIso3a === "TZS");
+    else if (selectedCountry === "UK")
+      filtered = filtered.filter((t) => t.receiverCurrencyIso3a === "GBP");
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -210,7 +257,7 @@ const TransactionsPage = () => {
       setCurrentPage(1);
     }
     isFirstFilterRun.current = false;
-  }, [searchQuery, statusFilter, dateRange, allTransactions]);
+  }, [searchQuery, statusFilter, dateRange, allTransactions, selectedCountry]);
 
   const mapApiTransactionToTransaction = (tx: RawTransaction): Transaction => ({
     transactionId: tx.transactionId || "N/A",
@@ -356,7 +403,7 @@ const TransactionsPage = () => {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-semibold text-black">Transactions</h2>
           <div className="flex gap-4">
-            <div className="relative w-[600px] ">
+            <div className="relative w-[450px] ">
               <input
                 type="text"
                 placeholder="Search by sender, recipient, ID, currency..."
@@ -418,6 +465,63 @@ const TransactionsPage = () => {
                 </>
               )}
             </div>
+            <div className="relative" ref={countryDropdownRef}>
+              <button
+                onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100"
+              >
+                {selectedCountry ? (
+                  <>
+                    <img
+                      src={
+                        availableCountries.find(
+                          (c) => c.code === selectedCountry
+                        )?.flag
+                      }
+                      alt={`${selectedCountry} flag`}
+                      className="w-5 h-5"
+                    />
+                    <span className="text-sm">
+                      Filter by Country: {selectedCountry}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-md">Filter by Country</span>
+                )}
+              </button>
+
+              {showCountryDropdown && (
+                <div className="absolute z-50 mt-2 bg-white border rounded shadow w-48">
+                  {availableCountries.map((country) => (
+                    <div
+                      key={country.code}
+                      onClick={() => {
+                        setSelectedCountry(country.code);
+                        setShowCountryDropdown(false);
+                      }}
+                      className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
+                    >
+                      <img
+                        src={country.flag}
+                        alt="flag"
+                        className="w-5 h-5 mr-2"
+                      />
+                      {country.label} ({country.code})
+                    </div>
+                  ))}
+                  <div
+                    onClick={() => {
+                      setSelectedCountry(null);
+                      setShowCountryDropdown(false);
+                    }}
+                    className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer border-t"
+                  >
+                    Reset filter
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="relative">
               <select
                 value={statusFilter}
