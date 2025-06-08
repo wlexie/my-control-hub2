@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Transaction } from "../types/transactions";
+import { generateReceiptPDF } from "./generateReceipt";
 
 type TransactionModalProps = {
   isOpen: boolean;
@@ -243,27 +244,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               {isClient && transaction.status === "Success" && (
                 <button
                   onClick={async () => {
-                    const formattedDate = formatDateTime(transaction.date);
-                    const channelName = formatChannelName(
-                      transaction.transactionType
+                    const blob = await generateReceiptPDF(
+                      transaction,
+                      formatDateTime,
+                      formatDateEAT,
+                      formatChannelName
                     );
-
-                    const res = await fetch("/api/receipt", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        transaction,
-                        formattedDate,
-                        channelName,
-                      }),
-                    });
-
-                    if (!res.ok) {
-                      alert("Failed to download receipt");
-                      return;
-                    }
-
-                    const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
                     link.href = url;
