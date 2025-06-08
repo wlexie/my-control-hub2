@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Transaction } from "../types/transactions";
-import { generateReceiptPDF } from "./generateReceipt";
 
 type TransactionModalProps = {
   isOpen: boolean;
@@ -200,7 +199,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                     <p className="text-gray-400">Origin:</p>
                     <p>UK</p>
                     <p className="text-gray-400">Destination:</p>
-                    <p>Tanzania</p>
+                    <p>Kenya</p>
                     <p className="text-gray-400">Time Sent:</p>
                     <p>{formatDateTime(transaction.date)}</p>
                     <p className="text-gray-400">Time Received:</p>
@@ -244,12 +243,27 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               {isClient && transaction.status === "Success" && (
                 <button
                   onClick={async () => {
-                    const blob = await generateReceiptPDF(
-                      transaction,
-                      formatDateTime,
-                      formatDateEAT,
-                      formatChannelName
+                    const formattedDate = formatDateTime(transaction.date);
+                    const channelName = formatChannelName(
+                      transaction.transactionType
                     );
+
+                    const res = await fetch("/api/receipt", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        transaction,
+                        formattedDate,
+                        channelName,
+                      }),
+                    });
+
+                    if (!res.ok) {
+                      alert("Failed to download receipt");
+                      return;
+                    }
+
+                    const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
                     link.href = url;

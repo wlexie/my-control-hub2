@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Bell, Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion"; // added
+import { Bell, LucideUserRound, Menu, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
+import { IoLogOutOutline, IoSettingsOutline } from "react-icons/io5";
 
 interface TopNavProps {
   user: {
@@ -39,13 +41,26 @@ const getInitials = (firstName: string, lastName: string): string => {
 
 function TopNav({ user }: TopNavProps) {
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
-  const handleLogoClick = () => {
-    router.push("/dashboard");
-  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="relative">
@@ -59,7 +74,10 @@ function TopNav({ user }: TopNavProps) {
               <Menu size={24} className="text-white" />
             )}
           </button>
-          <div onClick={handleLogoClick} className="cursor-pointer">
+          <div
+            onClick={() => router.push("/dashboard")}
+            className="cursor-pointer"
+          >
             <img
               src="/backoffice/tumalink.png"
               alt="Tuma Logo"
@@ -95,12 +113,44 @@ function TopNav({ user }: TopNavProps) {
           })}
         </ul>
 
-        {/* Right - Icons */}
-        <div className="flex items-center space-x-4">
+        {/* Right - Icons and Dropdown */}
+        <div className="flex items-center space-x-4 relative" ref={dropdownRef}>
           <Bell size={24} className="text-white" />
-          <div className="w-10 h-10 rounded-full bg-white text-blue-600 flex items-center justify-center font-semibold text-sm">
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="w-10 h-10 rounded-full bg-white text-blue-600 flex items-center justify-center font-semibold text-sm focus:outline-none"
+          >
             {user ? getInitials(user.firstName, user.lastName) : "?"}
-          </div>
+          </button>
+
+          {isDropdownOpen && (
+            <div className="absolute right-0 top-14 w-60 bg-white rounded-xl shadow-lg z-50 p-4 space-y-3">
+              <div className="flex items-center space-x-2 text-gray-600 hover:text-black cursor-pointer">
+                <IoSettingsOutline className="w-5 h-5" />
+                <span>Settings</span>
+              </div>
+              <div className="flex items-center space-x-2 text-gray-600 hover:text-black cursor-pointer">
+                <LucideUserRound className="w-5 h-5" />
+                <span>Account</span>
+              </div>
+              <div className="flex items-center justify-between text-gray-600 hover:text-black cursor-pointer">
+                <div className="flex items-center space-x-2">
+                  <Bell className="w-5 h-5" />
+                  <span>Notifications</span>
+                </div>
+                <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                  3
+                </span>
+              </div>
+              <div
+                className="flex items-center space-x-2 text-red-600 bg-red-100 hover:bg-red-200 rounded-md p-2 cursor-pointer"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+              >
+                <IoLogOutOutline className="w-5 h-5" />
+                <span>Log out</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -114,11 +164,9 @@ function TopNav({ user }: TopNavProps) {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed top-0 left-0 w-3/4 max-w-sm h-full bg-[#1a5cd6] shadow-lg z-50 p-6 space-y-6 rounded-tr-md rounded-br-md"
           >
-            {/* Close inside too */}
             <button onClick={toggleMenu} className="mb-4">
               <X size={28} className="text-white" />
             </button>
-
             {navItems.map((item, idx) => (
               <Link
                 key={idx}

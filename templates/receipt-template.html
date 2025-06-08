@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tuma Receipt</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 600px;
+      background: #fff;
+      border-radius: 16px;
+      margin: auto;
+      padding: 32px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .logo img {
+      width: 48px;
+      height: auto;
+    }
+
+    .amount {
+      font-size: 28px;
+      font-weight: 700;
+      color: #111827;
+      text-align: center;
+    }
+
+    .success {
+      text-align: center;
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 6px;
+      margin-bottom: 28px;
+    }
+
+    .section {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+
+    .section h3 {
+      margin: 0 0 16px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      padding: 4px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .row:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      color: #6b7280;
+    }
+
+    .value {
+      color: #111827;
+      font-weight: 500;
+    }
+
+    .footer {
+      font-size: 12px;
+      color: #6b7280;
+      text-align: center;
+      line-height: 1.6;
+      margin-top: 30px;
+    }
+
+    .footer a {
+      color: #3b82f6;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <img src="/backoffice/logo.svg" alt="Tuma Logo" />
+    </div>
+
+    <div class="amount">{{receiverCurrencyIso3a}} {{recipientAmount}}</div>
+    <div class="success">
+      Successfully sent to <strong>{{receiverName}}</strong><br />
+      on {{formattedDate}}
+    </div>
+
+    <div class="section">
+      <h3>Transaction Summary</h3>
+      <div class="row"><span class="label">Transaction ID</span><span class="value">{{transactionId}}</span></div>
+      <div class="row"><span class="label">Exchange Rate</span><span class="value">{{exchangeRate}}</span></div>
+      <div class="row"><span class="label">Reference</span><span class="value">{{transactionKey}}</span></div>
+      <div class="row"><span class="label">Channel</span><span class="value">{{channel}}</span></div>
+      <div class="row"><span class="label">Origin</span><span class="value">UK</span></div>
+      <div class="row"><span class="label">Destination</span><span class="value">KE</span></div>
+      <div class="row"><span class="label">Transfer Fee</span><span class="value">0.00</span></div>
+      
+    </div>
+
+    <div class="section">
+      <h3>Sender Details</h3>
+      <div class="row"><span class="label">Name</span><span class="value">{{senderName}}</span></div>
+      <div class="row"><span class="label">Email</span><span class="value">{{senderEmail}}</span></div>
+      <div class="row"><span class="label">Phone</span><span class="value">{{senderPhone}}</span></div>
+    </div>
+
+    <div class="section">
+      <h3>Receiver Details</h3>
+      <div class="row"><span class="label">Name</span><span class="value">{{receiverName}}</span></div>
+      <div class="row"><span class="label">Phone</span><span class="value">{{receiverPhone}}</span></div>
+    </div>
+
+    <div class="footer">
+      Thank you for using Tuma!<br />
+      Contact us: support@tuma.com | +447-778-024-995 | <a href="https://tuma.com">tuma.com</a>
+    </div>
+  </div>
+</body>
+</html>
