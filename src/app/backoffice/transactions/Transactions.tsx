@@ -87,6 +87,16 @@ const TransactionsPage = () => {
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
 
   const availableCountries = useMemo(() => {
+    const countries = [
+      {
+        code: "KE",
+        label: "Kenya",
+        flag: "/backoffice/kenya-flag.png",
+        currency: "KES",
+      },
+    ];
+
+    // Check if we have transactions with these currencies
     const hasTZS = allTransactions.some(
       (tx) => tx.receiverCurrencyIso3a === "TZS"
     );
@@ -94,21 +104,23 @@ const TransactionsPage = () => {
       (tx) => tx.receiverCurrencyIso3a === "GBP"
     );
 
-    const countries = [
-      { code: "KE", label: "Kenya", flag: "/backoffice/kenya-flag.png" },
-    ];
-    if (hasTZS)
+    if (hasTZS) {
       countries.push({
         code: "TZ",
         label: "Tanzania",
         flag: "/backoffice/tz-flag.png",
+        currency: "TZS",
       });
-    if (hasGBP)
+    }
+    if (hasGBP) {
       countries.push({
         code: "UK",
         label: "United Kingdom",
         flag: "/backoffice/uk-flag.png",
+        currency: "GBP",
       });
+    }
+
     return countries;
   }, [allTransactions]);
 
@@ -218,16 +230,22 @@ const TransactionsPage = () => {
   }, []);
 
   // Filtering logic
+  // Filtering logic
   useEffect(() => {
     let filtered = [...allTransactions];
 
     if (statusFilter !== "All") {
       filtered = filtered.filter((t) => t.status === statusFilter);
     }
-    if (selectedCountry === "TZ")
+
+    // Update this country filtering logic
+    if (selectedCountry === "KE") {
+      filtered = filtered.filter((t) => t.receiverCurrencyIso3a === "KES");
+    } else if (selectedCountry === "TZ") {
       filtered = filtered.filter((t) => t.receiverCurrencyIso3a === "TZS");
-    else if (selectedCountry === "UK")
+    } else if (selectedCountry === "UK") {
       filtered = filtered.filter((t) => t.receiverCurrencyIso3a === "GBP");
+    }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
