@@ -54,34 +54,6 @@ export default function UserDetailsModal({
       user.transaction.totalTransactions.failedTransactions
     : 0;
 
-  // const getCountryDisplay = (code: string | null) => {
-  //   if (code === "Kenya") {
-  //     return (
-  //       <>
-  //         <img
-  //           src="/backoffice/kenya-flag.png"
-  //           alt="Kenya"
-  //           className="w-5 h-5 rounded"
-  //         />{" "}
-  //         Kenya
-  //       </>
-  //     );
-  //   } else if (code === "United Kingdom" || code === "GBR") {
-  //     return (
-  //       <>
-  //         <img
-  //           src="/backoffice/uk-flag.png"
-  //           alt="UK"
-  //           className="w-5 h-5 rounded"
-  //         />{" "}
-  //         United Kingdom
-  //       </>
-  //     );
-  //   } else {
-  //     return <span className="text-gray-400">N/A</span>;
-  //   }
-  // };
-
   return (
     <AnimatePresence>
       {isOpen && (
