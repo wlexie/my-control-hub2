@@ -125,15 +125,15 @@ function TopNav({ user }: TopNavProps) {
 
           {isDropdownOpen && (
             <div className="absolute right-0 top-14 w-60 bg-white rounded-xl shadow-lg z-50 p-4 space-y-3">
-              <div className="flex items-center space-x-2 text-gray-600 hover:text-black cursor-pointer">
+              <div className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 cursor-pointer">
                 <IoSettingsOutline className="w-5 h-5" />
                 <span>Settings</span>
               </div>
-              <div className="flex items-center space-x-2 text-gray-600 hover:text-black cursor-pointer">
+              <div className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 cursor-pointer">
                 <LucideUserRound className="w-5 h-5" />
                 <span>Account</span>
               </div>
-              <div className="flex items-center justify-between text-gray-600 hover:text-black cursor-pointer">
+              <div className="flex items-center justify-between text-gray-600 hover:text-blue-600  cursor-pointer">
                 <div className="flex items-center space-x-2">
                   <Bell className="w-5 h-5" />
                   <span>Notifications</span>

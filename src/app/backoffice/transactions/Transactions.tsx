@@ -680,29 +680,38 @@ const TransactionsPage = () => {
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-center mt-6 space-x-2">
-              <button
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
-                className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-
-              <button
-                onClick={handleNextPage}
-                disabled={
-                  currentPage * rowsPerPage >= filteredTransactions.length &&
-                  allPagesLoaded
-                }
-                className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                {allPagesLoaded ||
-                currentPage * rowsPerPage < filteredTransactions.length
-                  ? "Next"
-                  : "Loading..."}
-              </button>
-            </div>
+            {filteredTransactions.length > 0 && (
+              <div className="flex justify-center mt-6 space-x-2">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="px-4 py-2">
+                  Page {currentPage} of{" "}
+                  {Math.ceil(filteredTransactions.length / rowsPerPage)}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((prev) => prev + 1)}
+                  disabled={
+                    currentPage >=
+                      Math.ceil(filteredTransactions.length / rowsPerPage) &&
+                    allPagesLoaded
+                  }
+                  className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {allPagesLoaded ||
+                  currentPage <
+                    Math.ceil(filteredTransactions.length / rowsPerPage)
+                    ? "Next"
+                    : "Loading..."}
+                </button>
+              </div>
+            )}
             {!allPagesLoaded && (
               <p className="text-xs text-gray-500 mt-1 text-center">
                 ⚠ Filtering results may be incomplete. More data is still

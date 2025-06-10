@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Search, ArrowRight } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
@@ -8,8 +8,8 @@ import DateFilter from "../components/DateFilter";
 import * as XLSX from "xlsx";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { PDFDocument, rgb } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
 
 // Raw response structure from the API
@@ -130,6 +130,8 @@ export default function AllTransactionsPage() {
     endDate: null,
   });
 
+  const [allPagesLoaded, setAllPagesLoaded] = useState(false);
+  const fetchedPages = useRef<Set<number>>(new Set());
   const rowsPerPage = 12;
 
   // Format date as DD/MM/YYYY
@@ -174,11 +176,11 @@ export default function AllTransactionsPage() {
 
   // Fetch transactions from API
   useEffect(() => {
-    const fetchTransactions = async () => {
+    const fetchInitialPage = async () => {
       try {
         setLoading(true);
         const response = await fetch(
-          `https://api.tuma-app.com/api/transfer/partner-transactions?page=${currentPage}&size=${rowsPerPage}`
+          `https://api.tuma-app.com/api/transfer/partner-transactions?page=1&size=${rowsPerPage}`
         );
 
         if (!response.ok) {
@@ -186,12 +188,11 @@ export default function AllTransactionsPage() {
         }
 
         const data = await response.json();
-
         const transactionsData = Array.isArray(data)
           ? data
           : data.content || [];
 
-        const mappedTransactions: Transaction[] = transactionsData.map(
+        const mappedTransactions = transactionsData.map(
           (item: ApiTransaction) => ({
             transactionId: item.transactionId || 0,
             transactionKey: item.transactionKey || "N/A",
@@ -215,11 +216,14 @@ export default function AllTransactionsPage() {
             mpesaReference: item.mpesaReference || null,
             rawDate: item.date ? new Date(item.date) : new Date(),
             errorMessage: item.errorMessage || "N/A",
+            userId: item.userId || null,
+            bankName: item.bankName || null,
           })
         );
 
         setAllTransactions(mappedTransactions);
         setFilteredTransactions(mappedTransactions);
+        fetchedPages.current.add(1);
       } catch (error) {
         console.error("Error fetching transactions:", error);
         setAllTransactions([]);
@@ -229,8 +233,93 @@ export default function AllTransactionsPage() {
       }
     };
 
-    fetchTransactions();
-  }, [currentPage]);
+    fetchInitialPage();
+  }, []);
+
+  // Add this useEffect for background loading of remaining pages
+  useEffect(() => {
+    const loadRemainingPages = async () => {
+      let page = 2;
+      let hasMore = true;
+
+      while (hasMore) {
+        if (fetchedPages.current.has(page)) {
+          page++;
+          continue;
+        }
+
+        try {
+          const response = await fetch(
+            `https://api.tuma-app.com/api/transfer/partner-transactions?page=${page}&size=${rowsPerPage}`
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const transactionsData = Array.isArray(data)
+            ? data
+            : data.content || [];
+
+          if (!transactionsData || transactionsData.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          const mappedTransactions = transactionsData.map(
+            (item: ApiTransaction) => ({
+              transactionId: item.transactionId || 0,
+              transactionKey: item.transactionKey || "N/A",
+              senderName: item.senderName || "Unknown",
+              senderEmail: item.senderEmail || "N/A",
+              senderPhone: item.senderPhone || "N/A",
+              receiverName: item.receiverName || "Unknown",
+              receiverPhone: item.receiverPhone || null,
+              senderAmount: item.senderAmount || 0,
+              recipientAmount: item.recipientAmount || 0,
+              exchangeRate: item.exchangeRate || 0,
+              date: item.date ? formatDateTimeForTable(item.date) : "N/A",
+              status: mapApiStatus(item.status),
+              currencyIso3a: item.currencyIso3a || "N/A",
+              receiverCurrencyIso3a: item.receiverCurrencyIso3a || "N/A",
+              transactionType:
+                formatChannelName(item.transactionType) || "Unknown",
+              accountNumber: item.accountNumber || "N/A",
+              settlementReference: item.settlementReference || "N/A",
+              tpReference: item.tpReference || "N/A",
+              mpesaReference: item.mpesaReference || null,
+              rawDate: item.date ? new Date(item.date) : new Date(),
+              errorMessage: item.errorMessage || "N/A",
+              userId: item.userId || null,
+              bankName: item.bankName || null,
+            })
+          );
+
+          // Prevent duplicates by checking for existing transaction IDs
+          setAllTransactions((prev) => {
+            const seen = new Set(prev.map((tx) => tx.transactionId));
+            const uniqueNew = mappedTransactions.filter(
+              (tx: { transactionId: number }) => !seen.has(tx.transactionId)
+            );
+            return [...prev, ...uniqueNew];
+          });
+
+          fetchedPages.current.add(page);
+          page++;
+
+          if (transactionsData.length < rowsPerPage) hasMore = false;
+        } catch (error) {
+          console.error("Error loading page", page, error);
+          hasMore = false;
+        }
+      }
+
+      setAllPagesLoaded(true);
+    };
+
+    loadRemainingPages();
+  }, []);
 
   // Filter transactions based on search term and date range
   useEffect(() => {
@@ -447,57 +536,205 @@ export default function AllTransactionsPage() {
 
   // Download receipt as PDF
   const handleDownloadReceipt = async () => {
-    if (!selectedTransaction) return;
-
-    const receiptElement = document.getElementById("receipt");
-    if (!receiptElement) return;
+    if (!selectedTransaction || selectedTransaction.status !== "Success") {
+      return;
+    }
 
     try {
-      const clonedReceipt = receiptElement.cloneNode(true) as HTMLElement;
-      clonedReceipt.style.opacity = "1";
-      clonedReceipt.style.position = "static";
-      clonedReceipt.style.pointerEvents = "auto";
-      clonedReceipt.style.transform = "scale(1)";
-      clonedReceipt.style.width = "700px";
-      clonedReceipt.style.padding = "40px";
-      clonedReceipt.style.margin = "auto";
-      clonedReceipt.style.background = "white";
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.registerFontkit(fontkit);
+      const page = pdfDoc.addPage([420, 594]);
 
-      const hiddenContainer = document.createElement("div");
-      hiddenContainer.style.position = "fixed";
-      hiddenContainer.style.top = "-9999px";
-      hiddenContainer.style.width = "100%";
-      hiddenContainer.style.display = "flex";
-      hiddenContainer.style.justifyContent = "center";
-      hiddenContainer.appendChild(clonedReceipt);
-      document.body.appendChild(hiddenContainer);
+      // You'll need to adjust these font paths based on your actual setup
+      const fontBytes = await fetch(
+        "/fonts/fonts/Outfit/static/Outfit-Regular.ttf"
+      ).then((res) => res.arrayBuffer());
+      const boldFontBytes = await fetch(
+        "/fonts/fonts/Outfit/static/Outfit-Bold.ttf"
+      ).then((res) => res.arrayBuffer());
 
-      await document.fonts.ready;
+      const font = await pdfDoc.embedFont(fontBytes);
+      const boldFont = await pdfDoc.embedFont(boldFontBytes);
 
-      const canvas = await html2canvas(clonedReceipt, {
-        scale: 2,
-        useCORS: true,
+      // Embed logo - adjust path as needed
+      const logoBytes = await fetch("/backoffice/tuma-logo.png").then((res) =>
+        res.arrayBuffer()
+      );
+      const logoImage = await pdfDoc.embedPng(logoBytes);
+      const logoDims = logoImage.scale(0.35);
+
+      const height = page.getHeight();
+      const width = page.getWidth();
+      let y = height - 60;
+
+      const centerX = (text: string, size = 12, useFont = font) =>
+        (width - useFont.widthOfTextAtSize(text, size)) / 2;
+
+      const drawText = (
+        text: string | number,
+        opts: {
+          x?: number;
+          y?: number;
+          size?: number;
+          font?: typeof font;
+          color?: [number, number, number];
+          adjustY?: boolean;
+        } = {}
+      ) => {
+        const str = text?.toString?.() ?? "";
+        const fontToUse = opts.font ?? font;
+        const size = opts.size ?? 12;
+        const textX = opts.x ?? 50;
+        const textY = opts.y ?? y;
+
+        page.drawText(str, {
+          x: textX,
+          y: textY,
+          size,
+          font: fontToUse,
+          color: rgb(...(opts.color ?? [0, 0, 0])),
+        });
+
+        if (opts.adjustY !== false) {
+          y = textY - size - 4;
+        }
+      };
+
+      // Logo
+      page.drawImage(logoImage, {
+        x: (width - logoDims.width) / 2,
+        y: y,
+        width: logoDims.width,
+        height: logoDims.height,
       });
 
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      const imgWidth = pdfWidth - 40;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const xOffset = (pdfWidth - imgWidth) / 2;
-      const yOffset = (pdfHeight - imgHeight) / 2;
+      y -= logoDims.height + 16;
 
-      pdf.addImage(
-        canvas.toDataURL("image/png"),
-        "PNG",
-        xOffset,
-        yOffset,
-        imgWidth,
-        imgHeight
-      );
-      pdf.save(`Receipt_${selectedTransaction.transactionId}.pdf`);
+      // Amount
+      const amountText = `${
+        selectedTransaction.receiverCurrencyIso3a ?? ""
+      } ${Number(selectedTransaction.recipientAmount ?? 0).toLocaleString()}`;
+      drawText(amountText, {
+        font: boldFont,
+        size: 20,
+        x: centerX(amountText, 20, boldFont),
+        y,
+      });
 
-      document.body.removeChild(hiddenContainer);
+      // "Successfully sent to..." bolded
+      drawText(`Successfully sent to ${selectedTransaction.receiverName}`, {
+        size: 10,
+        font: boldFont,
+        color: [0.4, 0.4, 0.4],
+        x: centerX(
+          `Successfully sent to ${selectedTransaction.receiverName}`,
+          10,
+          boldFont
+        ),
+      });
+
+      // Time bolded
+      drawText(`on ${selectedTransaction.date}`, {
+        size: 10,
+        font: boldFont,
+        color: [0.4, 0.4, 0.4],
+        x: centerX(`on ${selectedTransaction.date}`, 10, boldFont),
+      });
+
+      y -= 30;
+
+      const drawBox = (title: string, items: [string, string][]) => {
+        const boxTop = y;
+        const boxLeft = 40;
+        const boxWidth = width - 80;
+        const boxHeight = 20 + items.length * 16 + 10;
+
+        page.drawRectangle({
+          x: boxLeft,
+          y: boxTop - boxHeight,
+          width: boxWidth,
+          height: boxHeight,
+          color: rgb(0.96, 0.97, 0.98),
+        });
+
+        let textY = boxTop - 16;
+        drawText(title, {
+          font: boldFont,
+          size: 12,
+          x: boxLeft + 10,
+          y: textY,
+          adjustY: false,
+        });
+
+        textY -= 6;
+
+        items.forEach(([label, value]) => {
+          textY -= 14;
+          drawText(label, {
+            size: 9,
+            color: [0.4, 0.4, 0.4],
+            x: boxLeft + 10,
+            y: textY,
+            adjustY: false,
+          });
+          drawText(value ?? "", {
+            size: 9,
+            font: boldFont,
+            x: boxLeft + 180,
+            y: textY,
+            adjustY: false,
+          });
+        });
+
+        y = boxTop - boxHeight - 16;
+      };
+
+      drawBox("Receiver", [
+        ["Transaction ID", selectedTransaction.transactionId.toString()],
+        ["Channel", selectedTransaction.transactionType],
+        ["Purpose of payment", "Transfer"],
+        ["Origin", "UK – KE"],
+        ["Transaction fee", "0.00"],
+        [
+          "Exchange Rate",
+          `1 ${selectedTransaction.currencyIso3a} = ${Number(
+            selectedTransaction.exchangeRate ?? 0
+          ).toFixed(0)} ${selectedTransaction.receiverCurrencyIso3a ?? ""}`,
+        ],
+      ]);
+
+      drawBox("Sender", [
+        ["Sender Name", selectedTransaction.senderName || "N/A"],
+        ["Phone Number", selectedTransaction.senderPhone || "N/A"],
+      ]);
+
+      // Footer
+      const footerLines = [
+        "Thank you for using Tuma!",
+        "For inquiries or assistance, contact us:",
+        "support@tuma.com | +447-778-024-995",
+        "tuma.com",
+      ];
+
+      footerLines.forEach((line, idx) => {
+        drawText(line, {
+          size: 9,
+          color: idx >= 1 ? [0.4, 0.4, 0.4] : [0, 0, 0],
+          x: centerX(line, 9),
+          adjustY: true,
+        });
+      });
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Receipt_${selectedTransaction.transactionId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error generating PDF:", error);
     }
@@ -914,16 +1151,30 @@ export default function AllTransactionsPage() {
               Previous
             </button>
             <span className="px-4 py-2">
-              Page {currentPage} of {totalFilteredPages}
+              Page {currentPage} of{" "}
+              {Math.ceil(filteredTransactions.length / rowsPerPage)}
             </span>
             <button
               onClick={() => setCurrentPage((prev) => prev + 1)}
-              disabled={currentPage >= totalFilteredPages}
+              disabled={
+                currentPage >=
+                  Math.ceil(filteredTransactions.length / rowsPerPage) &&
+                allPagesLoaded
+              }
               className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              Next
+              {allPagesLoaded ||
+              currentPage < Math.ceil(filteredTransactions.length / rowsPerPage)
+                ? "Next"
+                : "Loading..."}
             </button>
           </div>
+        )}
+
+        {!allPagesLoaded && (
+          <p className="text-xs text-gray-500 mt-1 text-center">
+            ⚠ Filtering results may be incomplete. More data is still loading...
+          </p>
         )}
 
         {/* Transaction Details Modal */}
@@ -1065,240 +1316,6 @@ export default function AllTransactionsPage() {
                         </svg>
                         Download Receipt
                       </button>
-                    </div>
-                  )}
-
-                  {/* Hidden receipt for PDF generation */}
-                  {selectedTransaction?.status === "Success" && (
-                    <div
-                      id="receipt"
-                      style={{
-                        opacity: 0,
-                        position: "absolute",
-                        pointerEvents: "none",
-                        width: "700px",
-                        padding: "40px",
-                        boxSizing: "border-box",
-                      }}
-                      className="bg-white mx-auto shadow-lg rounded-lg text-gray-700"
-                    >
-                      {/* Header */}
-                      <div className="text-center mb-1 mt-1">
-                        <img
-                          src="/logoimage.png"
-                          className="w-10 h-10 mx-auto"
-                          alt="Company Logo"
-                        />
-                        <h2 className="text-2xl font-bold text-black mt-3">
-                          {selectedTransaction.senderAmount.toFixed(2)}{" "}
-                          {selectedTransaction.currencyIso3a}
-                        </h2>
-                        <p className="text-gray-600 mt-1">
-                          Successfully sent to{" "}
-                          <span className="font-semibold text-black">
-                            {selectedTransaction.receiverName}
-                          </span>
-                        </p>
-                        <p className="text-gray-500 mt-0">
-                          on{" "}
-                          <span className="font-semibold text-black">
-                            {selectedTransaction.date}
-                          </span>
-                        </p>
-                      </div>
-
-                      {/* Transaction Details - 2 Column Layout */}
-                      <div className="bg-gray-50 p-5 rounded-lg mb-3">
-                        <h3 className="font-semibold text-black text-lg mb-3">
-                          Transaction Details
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <div>
-                              <p className="text-gray-500 text-sm">
-                                Transaction ID
-                              </p>
-                              <p className="text-black text-sm break-all font-semibold">
-                                {selectedTransaction.transactionId}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-sm">Channel</p>
-                              <p className="text-sm font-semibold">
-                                {selectedTransaction.transactionType}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-sm">
-                                Sender Currency
-                              </p>
-                              <p className="text-sm font-semibold">
-                                {selectedTransaction.currencyIso3a}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-sm">
-                                TP Reference
-                              </p>
-                              <p className="text-sm font-semibold">
-                                {selectedTransaction.tpReference}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <div>
-                              <p className="text-gray-500 text-sm">Purpose</p>
-                              <p className="text-sm font-semibold">Transfer</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-sm">
-                                Recipient Currency
-                              </p>
-                              <p className="text-sm font-semibold">
-                                {selectedTransaction.receiverCurrencyIso3a}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-sm">
-                                Settlement Ref
-                              </p>
-                              <p className="text-sm font-semibold">
-                                {selectedTransaction.settlementReference}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-sm">
-                                MPESA Reference
-                              </p>
-                              <p className="text-sm font-semibold">
-                                {selectedTransaction.mpesaReference || "N/A"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Transaction Key as full-width row */}
-                        <div className="mt-4">
-                          <p className="text-gray-500 text-sm">
-                            Transaction Key
-                          </p>
-                          <p className="text-black font-semibold text-sm break-all p-2 rounded mt-1">
-                            {selectedTransaction.transactionKey}
-                          </p>
-                        </div>
-
-                        <div className="border-t border-gray-200 my-4"></div>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <p className="text-gray-500 text-sm">
-                              Transaction Fee
-                            </p>
-                            <p className="text-sm font-semibold">0.00</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-sm">
-                              Exchange Rate
-                            </p>
-                            <p className="text-sm font-semibold">
-                              {selectedTransaction.exchangeRate.toFixed(2)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-sm font-semibold">
-                              Recipient Amount
-                            </p>
-                            <p className="text-sm font-semibold">
-                              {selectedTransaction.recipientAmount.toFixed(2)}{" "}
-                              {selectedTransaction.receiverCurrencyIso3a}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-sm">Bank Name</p>
-                            <p className="text-sm font-semibold">
-                              {selectedTransaction.bankName || "N/A"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Sender & Receiver - Side by Side */}
-                      <div className="flex gap-5 mb-5">
-                        <div className="bg-gray-50 p-5 rounded-lg flex-1">
-                          <h3 className="font-semibold text-black text-lg mb-3">
-                            Sender
-                          </h3>
-                          <div className="space-y-3">
-                            <div>
-                              <p className="text-gray-500 text-sm">Name</p>
-                              <p className="text-black text-sm font-semibold">
-                                {selectedTransaction.senderName}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-sm">Phone</p>
-                              <p className="text-sm font-semibold">
-                                {selectedTransaction.senderPhone}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-sm">Email</p>
-                              <p className="text-sm font-semibold">
-                                {selectedTransaction.senderEmail}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-gray-50 p-5 rounded-lg flex-1">
-                          <h3 className="font-semibold text-black text-lg mb-3">
-                            Receiver
-                          </h3>
-                          <div className="space-y-3">
-                            <div>
-                              <p className="text-gray-500 text-sm">Name</p>
-                              <p className="text-black text-sm font-semibold">
-                                {selectedTransaction.receiverName}
-                              </p>
-                            </div>
-                            {selectedTransaction.receiverPhone && (
-                              <div>
-                                <p className="text-gray-500 text-sm">Phone</p>
-                                <p className="text-sm font-semibold">
-                                  {selectedTransaction.receiverPhone}
-                                </p>
-                              </div>
-                            )}
-                            <div>
-                              <p className="text-gray-500 text-sm">
-                                Account Number
-                              </p>
-                              <p className="text-sm font-semibold">
-                                {selectedTransaction.accountNumber}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="text-center text-sm mt-4">
-                        <p className="font-semibold">
-                          Thank you for using Tuma!
-                        </p>
-                        <p className="text-gray-500 italic mt-1">
-                          For inquiries or assistance, contact us:
-                        </p>
-                        <p className="text-gray-600 mt-1">support@tuma.com</p>
-                        <p className="text-gray-600">+447-778-024-995</p>
-                        <a
-                          href="https://tuma.com"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block -mt-1"
-                        >
-                          <p className="text-blue-500">tuma.com</p>
-                        </a>
-                      </div>
                     </div>
                   )}
                 </div>
