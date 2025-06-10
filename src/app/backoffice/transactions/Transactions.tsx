@@ -384,15 +384,6 @@ const TransactionsPage = () => {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
-  const handleNextPage = () => {
-    const newPage = currentPage + 1;
-    setCurrentPage(newPage);
-  };
-
-  const handlePreviousPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
-  };
-
   return (
     <div className="flex h-screen">
       <div className="w-80 flex-shrink-0">

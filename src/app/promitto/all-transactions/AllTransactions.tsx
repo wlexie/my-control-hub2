@@ -363,11 +363,6 @@ export default function AllTransactionsPage() {
     currentPage * rowsPerPage
   );
 
-  // Calculate total pages based on filtered results
-  const totalFilteredPages = Math.ceil(
-    filteredTransactions.length / rowsPerPage
-  );
-
   // Handle date filter changes
   const handleDateChange = (startDate: Date, endDate: Date) => {
     setDateRange({
