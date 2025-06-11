@@ -69,7 +69,6 @@ const TransactionsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const dateFilterRef = useRef<HTMLDivElement>(null);
   const isFirstFilterRun = useRef(true);
-  const fetchedPages = useRef<Set<number>>(new Set());
 
   const statusOptions = [
     "All",
@@ -181,7 +180,7 @@ const TransactionsPage = () => {
   // Background fetch remaining pages
   useEffect(() => {
     const fetchAllPagesRecursively = async () => {
-      const batchSize = 10;
+      const batchSize = 70;
       let currentPage = 2;
       let hasMore = true;
 
