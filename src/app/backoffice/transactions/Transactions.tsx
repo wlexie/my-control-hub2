@@ -180,7 +180,7 @@ const TransactionsPage = () => {
   // Background fetch remaining pages
   useEffect(() => {
     const fetchAllPagesRecursively = async () => {
-      const batchSize = 70;
+      const batchSize = 50;
       let currentPage = 2;
       let hasMore = true;
 
