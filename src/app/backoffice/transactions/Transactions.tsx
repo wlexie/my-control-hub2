@@ -180,53 +180,62 @@ const TransactionsPage = () => {
 
   // Background fetch remaining pages
   useEffect(() => {
-    const loadRemainingPages = async () => {
-      let page = 2;
+    const fetchAllPagesRecursively = async () => {
+      const batchSize = 10;
+      let currentPage = 2;
       let hasMore = true;
 
-      while (hasMore) {
-        if (fetchedPages.current.has(page)) {
-          page++;
-          continue;
-        }
-
+      const fetchPage = async (page: number) => {
+        const url = userIdFromQuery
+          ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
+          : `https://api.tuma-app.com/api/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
         try {
-          const url = userIdFromQuery
-            ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
-            : `https://api.tuma-app.com/api/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
-
           const res = await get<RawTransaction[]>(url);
-
-          if (!res || res.length === 0) {
-            hasMore = false;
-            break;
-          }
-
-          const formatted = res.map(mapApiTransactionToTransaction);
-
-          // Prevent duplicates by checking for existing transaction IDs
-          setAllTransactions((prev) => {
-            const seen = new Set(prev.map((tx) => tx.transactionId));
-            const uniqueNew = formatted.filter(
-              (tx) => !seen.has(tx.transactionId)
-            );
-            return [...prev, ...uniqueNew];
-          });
-
-          fetchedPages.current.add(page);
-          page++;
-
-          if (res.length < rowsPerPage) hasMore = false;
-        } catch (error) {
-          console.error("Error loading page", page, error);
-          hasMore = false;
+          return res.length > 0 ? res : null;
+        } catch (err) {
+          console.error(`Failed to load page ${page}:`, err);
+          return null;
         }
-      }
+      };
 
+      const fetchInBatches = async () => {
+        const batchPages = Array.from(
+          { length: batchSize },
+          (_, i) => currentPage + i
+        );
+        const results = await Promise.all(batchPages.map(fetchPage));
+
+        const validResults = results.filter(Boolean) as RawTransaction[][];
+
+        // If all returned empty, no more data
+        if (validResults.length === 0) {
+          hasMore = false;
+          return;
+        }
+
+        const flattened = validResults.flat();
+        const formatted = flattened.map(mapApiTransactionToTransaction);
+
+        setAllTransactions((prev) => {
+          const seen = new Set(prev.map((tx) => tx.transactionId));
+          const uniqueNew = formatted.filter(
+            (tx) => !seen.has(tx.transactionId)
+          );
+          return [...prev, ...uniqueNew];
+        });
+
+        currentPage += batchSize;
+
+        // Wait before next batch (optional, to avoid throttling)
+        await new Promise((res) => setTimeout(res, 100));
+        await fetchInBatches();
+      };
+
+      await fetchInBatches();
       setAllPagesLoaded(true);
     };
 
-    loadRemainingPages();
+    fetchAllPagesRecursively();
   }, []);
 
   // Filtering logic
@@ -721,12 +730,12 @@ const TransactionsPage = () => {
                 </button>
               </div>
             )}
-            {!allPagesLoaded && (
+            {/* {!allPagesLoaded && (
               <p className="text-xs text-gray-500 mt-1 text-center">
                 ⚠ Filtering results may be incomplete. More data is still
                 loading...
               </p>
-            )}
+            )} */}
           </>
         )}
       </div>
