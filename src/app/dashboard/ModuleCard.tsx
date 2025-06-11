@@ -41,8 +41,8 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
       </p>
       <button
         onClick={onSelect}
-        className="mt-auto w-full bg-indigo-50 hover:bg-indigo-300 text-indigo-600 font-medium py-2 px-4  
-        rounded-2xl transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
+        className="mt-auto w-full bg-indigo-50 hover:text-white font-semibold cursor-pointer hover:bg-blue-600 text-indigo-600 font-medium py-2 px-4  
+        rounded-3xl transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
       >
         Select Module
       </button>

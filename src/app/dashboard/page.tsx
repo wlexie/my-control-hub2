@@ -20,7 +20,7 @@ const allModulesData = [
     title: "Where customer care meets excellence.",
     description:
       "Empower your support team to resolve customer issues faster and smarter — all in one unified dashboard designed for real-time conversations and seamless service.",
-    path: "https://tuma-omnisupport.vercel.app/",
+    path: "/omnisupport",
     roles: ["ADMIN", "OMNISUPPORT"],
   },
   {
