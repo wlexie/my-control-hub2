@@ -182,7 +182,6 @@ const TransactionsPage = () => {
     const fetchAllPagesRecursively = async () => {
       const batchSize = 50;
       let currentPage = 2;
-      let hasMore = true;
 
       const fetchPage = async (page: number) => {
         const url = userIdFromQuery
@@ -205,12 +204,6 @@ const TransactionsPage = () => {
         const results = await Promise.all(batchPages.map(fetchPage));
 
         const validResults = results.filter(Boolean) as RawTransaction[][];
-
-        // If all returned empty, no more data
-        if (validResults.length === 0) {
-          hasMore = false;
-          return;
-        }
 
         const flattened = validResults.flat();
         const formatted = flattened.map(mapApiTransactionToTransaction);
