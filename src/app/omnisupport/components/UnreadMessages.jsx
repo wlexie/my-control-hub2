@@ -15,7 +15,7 @@ export default function UnreadMessages({ onSelectChat, filter, sortOrder }) {
   useEffect(() => {
     // This code only runs in the browser, preventing server-side errors
     if (typeof Audio !== "undefined") {
-      notificationSound.current = new Audio('/sounds/notification.mp3'); 
+      notificationSound.current = new Audio('/sound/notification.mp3'); 
     }
   }, []);
 

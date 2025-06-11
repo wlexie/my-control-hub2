@@ -21,7 +21,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
 }) => {
   return (
     <div className="bg-white rounded-xl border p-6 flex flex-col items-center  h-full transition-all duration-300 hover:shadow-lg">
-      <div className="mb-4 w-12 bg-indigo-50 p-3 rounded-full h-12 relative">
+      <div className="mb-4 w-12 bg-blue-50 p-3 rounded-full h-12 relative">
         {" "}
         {/* Adjust size as needed */}
         <Image
@@ -41,7 +41,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
       </p>
       <button
         onClick={onSelect}
-        className="mt-auto w-full bg-indigo-50 hover:text-white font-semibold cursor-pointer hover:bg-blue-600 text-indigo-600 font-medium py-2 px-4  
+        className="mt-auto w-full bg-blue-50 hover:text-white font-semibold cursor-pointer hover:bg-blue-600 text-[#367DFF] font-medium py-2 px-4  
         rounded-3xl transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
       >
         Select Module
