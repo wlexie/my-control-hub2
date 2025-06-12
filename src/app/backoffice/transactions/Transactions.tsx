@@ -67,8 +67,8 @@ const TransactionsPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [allPagesLoaded, setAllPagesLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loadedPages, setLoadedPages] = useState(new Set([1]));
   const dateFilterRef = useRef<HTMLDivElement>(null);
-  const isFirstFilterRun = useRef(true);
 
   const statusOptions = [
     "All",
@@ -95,7 +95,6 @@ const TransactionsPage = () => {
       },
     ];
 
-    // Check if we have transactions with these currencies
     const hasTZS = allTransactions.some(
       (tx) => tx.receiverCurrencyIso3a === "TZS"
     );
@@ -137,7 +136,6 @@ const TransactionsPage = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle clicks outside date filter
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -177,18 +175,20 @@ const TransactionsPage = () => {
     fetchInitialPage();
   }, []);
 
-  // Background fetch remaining pages
   useEffect(() => {
     const fetchAllPagesRecursively = async () => {
       const batchSize = 50;
-      let currentPage = 2;
+      let currentBatch = 2;
 
       const fetchPage = async (page: number) => {
+        if (loadedPages.has(page)) return null;
+
         const url = userIdFromQuery
           ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
           : `https://api.tuma-app.com/api/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
         try {
           const res = await get<RawTransaction[]>(url);
+          setLoadedPages((prev) => new Set(prev).add(page));
           return res.length > 0 ? res : null;
         } catch (err) {
           console.error(`Failed to load page ${page}:`, err);
@@ -199,12 +199,11 @@ const TransactionsPage = () => {
       const fetchInBatches = async () => {
         const batchPages = Array.from(
           { length: batchSize },
-          (_, i) => currentPage + i
+          (_, i) => currentBatch + i
         );
         const results = await Promise.all(batchPages.map(fetchPage));
 
         const validResults = results.filter(Boolean) as RawTransaction[][];
-
         const flattened = validResults.flat();
         const formatted = flattened.map(mapApiTransactionToTransaction);
 
@@ -216,22 +215,22 @@ const TransactionsPage = () => {
           return [...prev, ...uniqueNew];
         });
 
-        currentPage += batchSize;
+        currentBatch += batchSize;
 
-        // Wait before next batch (optional, to avoid throttling)
-        await new Promise((res) => setTimeout(res, 100));
-        await fetchInBatches();
+        if (validResults.length > 0) {
+          await new Promise((res) => setTimeout(res, 100));
+          await fetchInBatches();
+        } else {
+          setAllPagesLoaded(true);
+        }
       };
 
       await fetchInBatches();
-      setAllPagesLoaded(true);
     };
 
     fetchAllPagesRecursively();
-  }, []);
+  }, [loadedPages]);
 
-  // Filtering logic
-  // Filtering logic
   useEffect(() => {
     let filtered = [...allTransactions];
 
@@ -239,7 +238,6 @@ const TransactionsPage = () => {
       filtered = filtered.filter((t) => t.status === statusFilter);
     }
 
-    // Update this country filtering logic
     if (selectedCountry === "KE") {
       filtered = filtered.filter((t) => t.receiverCurrencyIso3a === "KES");
     } else if (selectedCountry === "TZ") {
@@ -271,7 +269,6 @@ const TransactionsPage = () => {
     }
 
     setFilteredTransactions(filtered);
-    isFirstFilterRun.current = false;
   }, [searchQuery, statusFilter, dateRange, allTransactions, selectedCountry]);
 
   const mapApiTransactionToTransaction = (tx: RawTransaction): Transaction => ({
@@ -301,6 +298,7 @@ const TransactionsPage = () => {
         : null,
     bankName: tx.bankName || "N/A",
   });
+
   const formatTransactionStatus = (status: string | undefined): string => {
     if (!status) return "Unknown";
     switch (status.toUpperCase()) {
@@ -399,6 +397,15 @@ const TransactionsPage = () => {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    return () => {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+      });
+    };
+  }, [currentPage, filteredTransactions]);
+
   return (
     <div className="flex h-screen">
       <div className="w-80 flex-shrink-0">
@@ -451,13 +458,11 @@ const TransactionsPage = () => {
 
               {showDateFilter && (
                 <>
-                  {/* Overlay with blur effect */}
                   <div
                     className="fixed inset-0 backdrop-blur-sm bg-transparent z-40"
                     onClick={() => setShowDateFilter(false)}
                   />
 
-                  {/* Modal container centered on screen */}
                   <div className="fixed z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                     <DateFilter
                       onChange={handleDateChange}
@@ -555,7 +560,6 @@ const TransactionsPage = () => {
           </div>
         </div>
 
-        {/* Transaction Table */}
         {loading ? (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <table className="w-full text-left border-collapse text-sm">
@@ -685,7 +689,6 @@ const TransactionsPage = () => {
               </table>
             </div>
 
-            {/* Pagination */}
             {filteredTransactions.length > 0 && (
               <div className="flex justify-center mt-6 space-x-2">
                 <button
@@ -703,13 +706,10 @@ const TransactionsPage = () => {
                 </span>
                 <button
                   onClick={() => {
-                    // Check if we need to load more data
                     const hasMoreData =
                       currentPage * rowsPerPage < filteredTransactions.length;
                     if (hasMoreData) {
                       setCurrentPage((prev) => prev + 1);
-                    } else {
-                      // Here you could trigger loading more data if needed
                     }
                   }}
                   disabled={
@@ -721,17 +721,10 @@ const TransactionsPage = () => {
                 </button>
               </div>
             )}
-            {/* {!allPagesLoaded && (
-              <p className="text-xs text-gray-500 mt-1 text-center">
-                ⚠ Filtering results may be incomplete. More data is still
-                loading...
-              </p>
-            )} */}
           </>
         )}
       </div>
 
-      {/* Transaction Modal */}
       {isModalOpen && (
         <TransactionModal
           isOpen={isModalOpen}
