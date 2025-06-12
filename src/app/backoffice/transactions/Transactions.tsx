@@ -271,10 +271,6 @@ const TransactionsPage = () => {
     }
 
     setFilteredTransactions(filtered);
-
-    if (!isFirstFilterRun.current) {
-      setCurrentPage(1);
-    }
     isFirstFilterRun.current = false;
   }, [searchQuery, statusFilter, dateRange, allTransactions, selectedCountry]);
 
@@ -697,7 +693,7 @@ const TransactionsPage = () => {
                     setCurrentPage((prev) => Math.max(prev - 1, 1))
                   }
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border rounded-md bg-blue-600 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
@@ -706,19 +702,22 @@ const TransactionsPage = () => {
                   {Math.ceil(filteredTransactions.length / rowsPerPage)}
                 </span>
                 <button
-                  onClick={() => setCurrentPage((prev) => prev + 1)}
+                  onClick={() => {
+                    // Check if we need to load more data
+                    const hasMoreData =
+                      currentPage * rowsPerPage < filteredTransactions.length;
+                    if (hasMoreData) {
+                      setCurrentPage((prev) => prev + 1);
+                    } else {
+                      // Here you could trigger loading more data if needed
+                    }
+                  }}
                   disabled={
-                    currentPage >=
-                      Math.ceil(filteredTransactions.length / rowsPerPage) &&
-                    allPagesLoaded
+                    currentPage * rowsPerPage >= filteredTransactions.length
                   }
-                  className="px-4 py-2 border rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border rounded-md bg-blue-600 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  {allPagesLoaded ||
-                  currentPage <
-                    Math.ceil(filteredTransactions.length / rowsPerPage)
-                    ? "Next"
-                    : "Loading..."}
+                  Next
                 </button>
               </div>
             )}

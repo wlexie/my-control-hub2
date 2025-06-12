@@ -167,7 +167,7 @@ export default function UserDetailsModal({
                             try {
                               toast.loading("Sending approval request...");
                               const response = await fetch(
-                                `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/account/document-recheck?applicantId=${user.onfidoApplicantId}`,
+                                `https://api.tuma-app.com/api/account/document-recheck?applicantId=${user.userId}`,
                                 {
                                   method: "POST",
                                   headers: {

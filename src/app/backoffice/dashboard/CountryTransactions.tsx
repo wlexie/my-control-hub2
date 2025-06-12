@@ -10,8 +10,8 @@ import {
 
 const chartData = [
   { route: "UK to Kenya", value: 150250 },
-  { route: "Kenya to UK", value: 75620 },
-  { route: "UK to Tanzania", value: 31369 },
+  { route: "Kenya to UK", value: 0 },
+  { route: "UK to Tanzania", value: 0 },
 ];
 
 const customColors = ["#367DFF", "#50B800", "#FBBF24"];

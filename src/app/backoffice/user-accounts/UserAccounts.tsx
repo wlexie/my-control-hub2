@@ -54,31 +54,51 @@ export default function UserAccounts() {
 
   const fetchAllUsers = async () => {
     setLoading(true);
-    let page = 1;
-    const size = 100;
-    let results: User[] = [];
+    const pageSize = 100;
+    const batchSize = 50; // how many pages to fetch per batch
+    let currentPage = 1;
+    let allResults: User[] = [];
 
-    while (true) {
+    const fetchPage = async (page: number): Promise<User[]> => {
       const res = await fetch(
-        `https://api.tuma-app.com/api/account/clients?page=${page}&size=${size}`
+        `https://api.tuma-app.com/api/account/clients?page=${page}&size=${pageSize}`
       );
-      if (!res.ok) break;
-
+      if (!res.ok) return [];
       const data = await res.json();
+
       const users = Array.isArray(data.content)
         ? data.content
         : Array.isArray(data)
         ? data
         : [];
 
-      if (!users.length) break;
+      return users;
+    };
 
-      results = [...results, ...users];
-      page++;
-    }
+    const fetchInBatches = async () => {
+      while (true) {
+        const pages = Array.from(
+          { length: batchSize },
+          (_, i) => currentPage + i
+        );
 
-    setAllUsers(results);
-    setFilteredUsers(results);
+        const results = await Promise.all(pages.map(fetchPage));
+        const combined = results.flat();
+
+        if (combined.length === 0) break; // No more users
+
+        allResults = [...allResults, ...combined];
+        currentPage += batchSize;
+
+        // Optional: small delay to prevent server overload
+        await new Promise((res) => setTimeout(res, 100));
+      }
+    };
+
+    await fetchInBatches();
+
+    setAllUsers(allResults);
+    setFilteredUsers(allResults);
     setLoading(false);
   };
 
@@ -443,7 +463,7 @@ export default function UserAccounts() {
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-400 text-white"
+            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-600 text-white"
           >
             Previous
           </button>
@@ -459,7 +479,7 @@ export default function UserAccounts() {
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
             disabled={currentPage >= totalPages}
-            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-400 text-white"
+            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-600 text-white"
           >
             Next
           </button>
