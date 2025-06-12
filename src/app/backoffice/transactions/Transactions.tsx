@@ -65,7 +65,6 @@ const TransactionsPage = () => {
     endDate: null,
   });
   const [statusFilter, setStatusFilter] = useState<string>("All");
-  const [allPagesLoaded, setAllPagesLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [loadedPages, setLoadedPages] = useState(new Set([1]));
   const dateFilterRef = useRef<HTMLDivElement>(null);
@@ -221,7 +220,6 @@ const TransactionsPage = () => {
           await new Promise((res) => setTimeout(res, 100));
           await fetchInBatches();
         } else {
-          setAllPagesLoaded(true);
         }
       };
 
