@@ -1,7 +1,10 @@
+// app/layout.tsx
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "../providers/ReduxProvider";
+import LayoutGatekeeper from "./LayoutGatekeeper"; // <-- Import the gatekeeper
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +40,13 @@ export default function RootLayout({
           antialiased
         `}
       >
-        <ReduxProvider>{children}</ReduxProvider>
+        <ReduxProvider>
+          {/* 
+            The Gatekeeper wraps the children. It will decide whether
+            to apply the ProtectedLayout based on the current URL.
+          */}
+          <LayoutGatekeeper>{children}</LayoutGatekeeper>
+        </ReduxProvider>
       </body>
     </html>
   );
