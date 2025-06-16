@@ -1,9 +1,11 @@
+// Modal1.js
+
 import { ChevronRight } from 'lucide-react';
 
 export default function Modal1({ closeModal, openEscalateModal, closeChat }) {
   return (
-    <div className="fixed inset-0 flex justify-end bg-black bg-opacity-80 z-50">
-      <div className="w-1/4 h-full bg-white font-poppins text-lg px-8 shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out animate-slide-in">
+    <div className="fixed inset-0 flex justify-end bg-black/50 bg-opacity-80 z-50">
+      <div className="w-2/7 h-full bg-white font-poppins text-lg px-8 shadow-lg transform  transition-transform duration-300 ease-in-out animate-slide-in">
         {/* Close button */}
         <button
           onClick={closeModal}
@@ -15,12 +17,10 @@ export default function Modal1({ closeModal, openEscalateModal, closeChat }) {
         {/* Modal content */}
         <div className="p-6 mt-32">
           <ul className="space-y-4 text-gray-700">
+            {/* --- MODIFICATION: Simplified onClick handler --- */}
             <li
               className="flex items-center border-y-2 py-3 cursor-pointer hover:text-blue-600"
-              onClick={() => {
-                closeChat();
-                closeModal();
-              }}
+              onClick={closeChat} // Just call the function from the parent. It handles everything.
             >
               Close Chat
               <ChevronRight className="w-5 h-5 ml-auto" />

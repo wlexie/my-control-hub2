@@ -3,7 +3,7 @@ import { ChevronLeft } from 'lucide-react';
 export default function EscalateIssueModal({ closeModal, goBackToModal1 }) {
   return (
     <div className="fixed inset-0 flex justify-end bg-black/50 bg-opacity-50 z-50">
-      <div className="w-1/4 h-full bg-white font-poppins text-lg px-4 shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out animate-slide-in">
+      <div className="w-2/7 h-full bg-white font-poppins text-lg px-4 shadow-lg transform  transition-transform duration-300 ease-in-out animate-slide-in">
         <button
           onClick={goBackToModal1}
           className="text-gray-600 hover:text-gray-800 mt-7 p-1"

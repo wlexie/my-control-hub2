@@ -1,27 +1,25 @@
-import { useState, useEffect, useRef } from "react"; // Import useRef
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import PropTypes from "prop-types";
 
-export default function UnreadMessages({ onSelectChat, filter, sortOrder }) {
+// --- START: MODIFIED COMPONENT ---
+export default function UnreadMessages({ onSelectChat, searchTerm, sortOrder }) {
   const [allUnreadConversations, setAllUnreadConversations] = useState([]);
   const [visibleCount, setVisibleCount] = useState(100);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- NEW: Refs for polling and notification sound ---
   const notificationSound = useRef(null);
-  const isFirstLoad = useRef(true); 
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
-    // This code only runs in the browser, preventing server-side errors
     if (typeof Audio !== "undefined") {
-      notificationSound.current = new Audio('/sound/notification.mp3'); 
+      notificationSound.current = new Audio('/sound/notification.mp3');
     }
   }, []);
 
   useEffect(() => {
     const fetchAndProcessConversations = async () => {
-      // For background polls, we don't want to show the loading indicator
       if (isFirstLoad.current) {
         setLoading(true);
       }
@@ -30,8 +28,6 @@ export default function UnreadMessages({ onSelectChat, filter, sortOrder }) {
       try {
         const response = await axios.get("https://api.tuma-app.com/api/webhook/conversations");
         const rawConversations = response.data || [];
-
-        // --- NEW: Store the current unread count BEFORE processing new data ---
         const previousUnreadCount = allUnreadConversations.length;
 
         const transformed = rawConversations.map(conv => {
@@ -39,9 +35,8 @@ export default function UnreadMessages({ onSelectChat, filter, sortOrder }) {
           try {
             const parsedMessage = JSON.parse(conv.lastMessage);
             lastMessageContent = parsedMessage.text || "";
-          } catch (e) {
-            // silent catch
-          }
+          } catch (e) { /* silent catch */ }
+          
           const storedTimestamp = localStorage.getItem(`lastTimestamp_${conv.id}`);
           const isUnread = conv.lastReceivedAt !== storedTimestamp;
 
@@ -56,31 +51,17 @@ export default function UnreadMessages({ onSelectChat, filter, sortOrder }) {
           };
         });
 
-        let unread = transformed.filter(conv => conv.isUnread);
+        const unread = transformed.filter(conv => conv.isUnread);
 
-        if (filter) {
-          unread = unread.filter(conv =>
-            conv.messages[0].content.toLowerCase().includes(filter.toLowerCase())
-          );
-        }
-
-        const sorted = unread.sort((a, b) => {
-          const timestampA = new Date(a.messages[0].timestamp);
-          const timestampB = new Date(b.messages[0].timestamp);
-          return sortOrder === "newest" ? timestampB - timestampA : timestampA - timestampB;
-        });
-
-        // --- NEW: Check if new unread messages have arrived and play sound ---
-        // We also check that this is not the first load, so it doesn't play on page open
-        if (!isFirstLoad.current && sorted.length > previousUnreadCount) {
+        if (!isFirstLoad.current && unread.length > previousUnreadCount) {
           try {
             notificationSound.current?.play();
           } catch (e) {
-            console.warn("Could not play notification sound, possibly due to browser restrictions.");
+            console.warn("Could not play notification sound.");
           }
         }
 
-        setAllUnreadConversations(sorted);
+        setAllUnreadConversations(unread);
 
       } catch (error) {
         console.error("❌ Error fetching unread messages:", error);
@@ -90,22 +71,16 @@ export default function UnreadMessages({ onSelectChat, filter, sortOrder }) {
       } finally {
         if (isFirstLoad.current) {
           setLoading(false);
-          isFirstLoad.current = false; // Mark the first load as complete
+          isFirstLoad.current = false;
         }
       }
     };
 
-    // --- NEW: Polling implementation ---
-    // 1. Fetch data immediately on component load
     fetchAndProcessConversations();
-
-    // 2. Then, set up an interval to re-fetch every 5 seconds (5000 milliseconds)
     const interval = setInterval(fetchAndProcessConversations, 3000);
-
-    // 3. IMPORTANT: Clean up the interval when the component unmounts to prevent memory leaks
     return () => clearInterval(interval);
 
-  }, [filter, sortOrder]); // Keep dependencies so it resets if filter/sort changes
+  }, []); // Note: The dependency array is empty. Polling handles updates.
 
   const loadMoreConversations = () => {
     setVisibleCount(prev => prev + 100);
@@ -118,19 +93,41 @@ export default function UnreadMessages({ onSelectChat, filter, sortOrder }) {
     setAllUnreadConversations(prev => prev.filter(c => c.id !== conversation.id));
   };
 
-  // The rest of your JSX remains exactly the same...
+  // --- NEW: Client-side filtering and sorting ---
+  const processedConversations = allUnreadConversations
+    .filter(conv => {
+      const lastMessage = conv.messages[0];
+      if (!lastMessage) return false;
+
+      const name = (lastMessage.from.name || '').toLowerCase();
+      const content = (lastMessage.content || '').toLowerCase();
+      const term = (searchTerm || '').toLowerCase();
+
+      // Search term must be in the sender's name OR the message content
+      return name.includes(term) || content.includes(term);
+    })
+    .sort((a, b) => {
+      const timestampA = new Date(a.messages[0].timestamp);
+      const timestampB = new Date(b.messages[0].timestamp);
+      return sortOrder === "newest" ? timestampB - timestampA : timestampA - timestampB;
+    });
+
   if (loading) {
     return <div className="p-4 text-center text-gray-500">Loading unread messages...</div>;
   }
   if (error) {
     return <div className="p-4 text-center text-red-500">{error}</div>;
   }
-  const conversationsToDisplay = allUnreadConversations.slice(0, visibleCount);
+
+  const conversationsToDisplay = processedConversations.slice(0, visibleCount);
+
   return (
     <div className="max-w-lg mx-auto font-poppins bg-white flex flex-col">
       <div className="flex-1 overflow-hidden" style={{ maxHeight: "77vh", overflowY: "auto" }}>
         {conversationsToDisplay.length === 0 ? (
-          <p className="text-center text-gray-500 mt-4">No unread messages found</p>
+          <p className="text-center text-gray-500 mt-4">
+            {searchTerm ? 'No results found.' : 'No unread messages.'}
+          </p>
         ) : (
           conversationsToDisplay.map((conv) => {
             const lastMessage = conv.messages[0];
@@ -166,7 +163,7 @@ export default function UnreadMessages({ onSelectChat, filter, sortOrder }) {
           })
         )}
       </div>
-      {visibleCount < allUnreadConversations.length && (
+      {visibleCount < processedConversations.length && (
         <button
           className="border border-blue-500 text-blue-600 py-2 px-4 mt-3 rounded mx-2 transition"
           onClick={loadMoreConversations}
@@ -178,12 +175,16 @@ export default function UnreadMessages({ onSelectChat, filter, sortOrder }) {
   );
 }
 
+// Update prop-types to use searchTerm
 UnreadMessages.propTypes = {
   onSelectChat: PropTypes.func.isRequired,
-  filter: PropTypes.string,
+  searchTerm: PropTypes.string,
   sortOrder: PropTypes.oneOf(["newest", "oldest"]),
 };
+
+// Update default props
 UnreadMessages.defaultProps = {
-  filter: "",
+  searchTerm: "",
   sortOrder: "newest",
 };
+// --- END: MODIFIED COMPONENT ---
