@@ -1,0 +1,124 @@
+import React from 'react';
+import PropTypes from 'prop-types';
+import { Search, X } from 'lucide-react';
+
+// The data is structured to handle both simple strings and complex objects with subtitles.
+const templateCategories = [
+  {
+    title: 'Common Issues',
+    templates: [
+      'Hi! Can you please share your account number?',
+      'Please give me a moment while I look into that.'
+    ]
+  },
+  {
+    title: 'Payments',
+    templates: [
+      'I\'ve escalated this to our finance team.',
+      'Refunds are processed within 24-48 hours.'
+    ]
+  },
+  {
+    title: 'Compliance Escalation',
+    templates: [
+      {
+        subtitle: 'ID Request',
+        message: `Hi [User Name]🎉, Thank you for choosing to be part of the Tuma Team. Unfortunately🥺, we are having issues verifying your documents. To proceed, please resubmit the following:\n\nA clear and valid UK ID or Passport 🇬🇧🪪\n\nNote: Please ensure the documents are clear, legible, with all corners visible, and submitted through the Tuma App 📲.\n\nIf you need assistance or have any questions, feel free to reach out. 💬\n\nBest regards,\nThe Tuma Team 💥`
+      },
+      {
+        subtitle: 'Expired ID',
+        message: `Hi [User Name]🎉, Thank you for choosing to be part of the Tuma Team. Unfortunately🥺, we are having issues verifying your documents as the one you submitted has expired. To proceed, please resubmit the following:\n\nA clear and valid UK ID or Passport 🇬🇧🪪\nOr, an alternative valid document if applicable 📑.\n\nNote: Please ensure the documents are clear, legible, with all corners visible, and submitted through the Tuma App 📲.\n\nIf you need assistance or have any questions, feel free to reach out. 💬\n\nBest regards,\nThe Tuma Team 💥`
+      },
+      {
+        subtitle: 'Account Verified',
+        message: `Hi [User Name]🎉, Great news 🎉 Your account has been successfully verified, and you’re officially part of the Tuma Team! 🖤 We’re beyond excited to have you with us and can’t wait for you to explore all the amazing features we offer. 🙌\n\nIf you need anything or have any questions, don’t hesitate to reach out. 💬\n\nWelcome aboard – let’s make this journey unforgettable! 🌟\n\nBest regards,\nThe Tuma Team 💥`
+      },
+      {
+        subtitle: 'Refuse Service',
+        message: `Hi [User Name] 👋, Thank you for your time and effort in trying to complete the verification process with us. Unfortunately, we were unable to verify your details, and as a result, we are unable to provide our services at this time. 😔\n\nWe wish you all the best in your future endeavors! 🌟\n\nBest regards,\nThe Tuma Team 💥`
+      }
+    ]
+  }
+];
+
+export default function TemplatesModal({ closeModal, onSelectTemplate, userName }) {
+  
+  // --- FIX: This function now processes the entire template string ---
+  // It replaces the placeholder and passes the full, multi-line message back.
+  const handleTemplateClick = (rawTemplateText) => {
+    const finalText = rawTemplateText.replace(/\[User Name\]/g, userName || 'there');
+    onSelectTemplate(finalText);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-40 flex justify-end" onClick={closeModal}>
+      <div 
+        className="w-full max-w-md h-full bg-white shadow-xl flex flex-col p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between pb-4 border-b">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search template"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <button className="ml-3 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            New +
+          </button>
+          <button 
+            onClick={closeModal}
+            className="ml-2 p-2 text-gray-500 hover:bg-gray-100 rounded-full"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pt-4 space-y-6">
+          {templateCategories.map((category) => (
+            <div key={category.title}>
+              <h3 className="font-semibold text-gray-800 mb-2">{category.title}</h3>
+              <div className="space-y-2">
+                {category.templates.map((template, index) => {
+                  // This logic correctly handles both simple string templates and complex object templates.
+                  if (typeof template === 'string') {
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => handleTemplateClick(template)}
+                        className="p-3 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 text-gray-700 text-sm"
+                      >
+                        {template}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => handleTemplateClick(template.message)}
+                        className="p-3 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 text-gray-700 text-sm font-medium"
+                      >
+                        {template.subtitle}
+                      </div>
+                    );
+                  }
+                })}
+              </div>
+              <button className="text-blue-600 text-sm mt-2 hover:underline">
+                Load more
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+TemplatesModal.propTypes = {
+  closeModal: PropTypes.func.isRequired,
+  onSelectTemplate: PropTypes.func.isRequired,
+  userName: PropTypes.string,
+};

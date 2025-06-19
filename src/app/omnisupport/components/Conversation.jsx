@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
-// NEW: Import X icon for the close button
-import { MoreVertical, Paperclip, Smile, Pin, Send, Loader2, CheckCheck, X } from 'lucide-react';
+import PropTypes from 'prop-types';
+import { MoreVertical, Paperclip, Smile, Pin, Send, Loader2, CheckCheck, X, UploadCloud } from 'lucide-react';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 import Modal from './Modal1';
 import EscalateIssueModal from './EscalateIssueModal';
+import TemplatesModal from './TemplatesModal';
 
-// ... (avatarColorPalette, getColorForId, getInitials functions remain the same) ...
+const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
+
 const avatarColorPalette = [ 'bg-red-500', 'bg-green-500', 'bg-purple-500', 'bg-blue-500', 'bg-indigo-500', 'bg-pink-500', 'bg-orange-500' ];
+
 const getColorForId = (id) => {
   if (!id) return 'bg-gray-400';
   let hash = 0;
@@ -18,6 +21,7 @@ const getColorForId = (id) => {
   const index = Math.abs(hash % avatarColorPalette.length);
   return avatarColorPalette[index];
 };
+
 const getInitials = (name = '') => {
   if (!name || typeof name !== 'string') return '??';
   const parts = name.split(' ').filter(Boolean);
@@ -27,89 +31,97 @@ const getInitials = (name = '') => {
   return '??';
 };
 
-
 export default function Conversation({ selectedChat, setSelectedChat }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEscalateModalOpen, setIsEscalateModalOpen] = useState(false);
-  const messagesEndRef = useRef(null);
+  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [errorMessages, setErrorMessages] = useState(null);
-
-  // --- NEW: State for the image lightbox ---
   const [lightboxImage, setLightboxImage] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
+  const dragCounter = useRef(0); // Prevents flickering when dragging over child elements
 
   const userName = selectedChat?.messages?.[0]?.from?.name || 'Unknown Contact';
   const userInitials = getInitials(userName);
   const userAvatarColor = useMemo(() => getColorForId(selectedChat?.id), [selectedChat?.id]);
 
+  const fetchFullConversation = async () => {
+    if (!selectedChat || !selectedChat.id) {
+      setMessages([]);
+      return;
+    }
+    setLoadingMessages(true);
+    setErrorMessages(null);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/messages/${selectedChat.id}?page=0&size=50`);
+      const fetchedMessages = response.data.content || response.data || [];
+      const processedMessages = fetchedMessages
+        .map(msg => {
+          try {
+            const parsedContent = JSON.parse(msg.content);
+            let type = 'unsupported';
+            let payload = null;
+            if (parsedContent.text && parsedContent.text.trim() !== '') {
+              type = 'text';
+              payload = parsedContent.text;
+            } else if (parsedContent.image && parsedContent.image.url) {
+              type = 'image';
+              payload = { url: parsedContent.image.url };
+            } else if (parsedContent.file && parsedContent.file.url) {
+              // Handle file type from backend
+              type = 'file';
+              payload = { url: parsedContent.file.url };
+            }
+            return { ...msg, type, payload };
+          } catch (error) {
+            return null;
+          }
+        })
+        .filter(msg => msg && (msg.type === 'text' || msg.type === 'image' || msg.type === 'file'));
+
+      const sortedMessages = [...processedMessages].sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      );
+      setMessages(sortedMessages);
+    } catch (error) {
+      console.error(" Error fetching full conversation:", error);
+      setErrorMessages("Failed to load conversation history.");
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [newMessage]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // The fetchFullConversation function from the previous step is correct
   useEffect(() => {
-    const fetchFullConversation = async () => {
-      if (!selectedChat || !selectedChat.id) {
-        setMessages([]);
-        return;
-      }
-      setLoadingMessages(true);
-      setErrorMessages(null);
-      setMessages([]);
-      try {
-        const response = await axios.get(
-          `https://api.tuma-app.com/api/webhook/messages/${selectedChat.id}?page=0&size=50`
-        );
-        const fetchedMessages = response.data.content || response.data || [];
-        const processedMessages = fetchedMessages
-          .map(msg => {
-            try {
-              const parsedContent = JSON.parse(msg.content);
-              let type = 'unsupported';
-              let payload = null;
-              if (parsedContent.text && parsedContent.text.trim() !== '') {
-                type = 'text';
-                payload = parsedContent.text;
-              } else if (parsedContent.image && parsedContent.image.url) {
-                type = 'image';
-                payload = { url: parsedContent.image.url };
-              }
-              return { ...msg, type, payload };
-            } catch (error) {
-              return null;
-            }
-          })
-          .filter(msg => msg && (msg.type === 'text' || msg.type === 'image'));
-
-        const sortedMessages = [...processedMessages].sort(
-          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
-        );
-        setMessages(sortedMessages);
-      } catch (error) {
-        console.error("❌ Error fetching full conversation:", error);
-        setErrorMessages("Failed to load conversation history.");
-      } finally {
-        setLoadingMessages(false);
-      }
-    };
     fetchFullConversation();
   }, [selectedChat]);
 
-  // ... (rest of functions remain the same) ...
   useEffect(() => {
-    if (isModalOpen || isEscalateModalOpen) {
-      document.body.classList.add('overflow-hidden');
-    } else {
-      document.body.classList.remove('overflow-hidden');
-    }
-  }, [isModalOpen, isEscalateModalOpen]);
+    document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen);
+  }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen]);
 
   const sendMessage = async () => {
     if (newMessage.trim() === '' || !selectedChat) return;
-    const recipientPhoneNumber = selectedChat.messages?.[0]?.from?.phoneNumber || selectedChat.fromNumber;
+    const recipientPhoneNumber = selectedChat.messages?.[0]?.from?.phoneNumber;
     if (!recipientPhoneNumber) {
       console.error('Recipient phone number could not be determined.');
       return;
@@ -125,21 +137,123 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
     setNewMessage('');
     setShowEmojiPicker(false);
     try {
-      await axios.post('/api/sendMessage', { recipientPhone: recipientPhoneNumber, message: newMessage, });
+      await axios.post('/api/sendMessage', { recipientPhone: recipientPhoneNumber, message: newMessage });
     } catch (error) {
       console.error('Error sending message:', error.response?.data || error);
     }
   };
+  
   const addEmoji = (emoji) => { setNewMessage(newMessage + emoji.native); };
-  const handleCloseChat = () => { if (setSelectedChat) { setSelectedChat(null); } };
+
+  const handleCloseChat = async () => {
+    if (!selectedChat || !selectedChat.id) return;
+    try {
+      await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`);
+      setSelectedChat(null);
+    } catch (error) {
+      console.error("Error closing conversation:", error.response?.data || error.message);
+      alert("Failed to close the conversation. Please try again.");
+    } finally {
+      setIsModalOpen(false);
+    }
+  };
+
+  const handleFileUpload = async (file) => {
+    if (!file || !selectedChat) return;
+    const recipientPhoneNumber = selectedChat.messages?.[0]?.from?.phoneNumber;
+    if (!recipientPhoneNumber) {
+      alert("Could not determine the recipient's phone number.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('recipientPhone', recipientPhoneNumber);
+
+    setIsUploading(true);
+    try {
+      const response = await axios.post('/api/sendMessage', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      if (response.data.success) {
+        setTimeout(() => fetchFullConversation(), 1500); 
+      } else {
+         throw new Error(response.data.error || "File upload failed on the server.");
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("File upload failed. Please try again.");
+    } finally {
+      setIsUploading(false);
+      if(fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    handleFileUpload(file);
+  };
+
+  const handleSelectTemplate = (templateText) => {
+    setNewMessage(templateText);
+    setIsTemplatesModalOpen(false);
+  };
+
+  // --- Drag and Drop Event Handlers ---
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDraggingOver(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDraggingOver(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    dragCounter.current = 0;
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleFileUpload(files[0]);
+      e.dataTransfer.clearData();
+    }
+  };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 p-4">
-      {/* --- NEW: Image Lightbox Component --- */}
+    <div 
+      className="flex flex-col h-screen bg-gray-50 p-4 relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {isDraggingOver && (
+        <div className="absolute inset-0 z-50 bg-blue-500/30 border-4 border-dashed border-blue-600 rounded-2xl flex flex-col items-center justify-center pointer-events-none">
+          <UploadCloud className="w-24 h-24 text-blue-600" />
+          <p className="mt-4 text-2xl font-bold text-blue-800">Drop file to upload</p>
+        </div>
+      )}
+
       {lightboxImage && (
         <div 
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 cursor-pointer"
-          onClick={() => setLightboxImage(null)} // Click background to close
+          onClick={() => setLightboxImage(null)}
         >
           <button 
             onClick={() => setLightboxImage(null)}
@@ -151,25 +265,27 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
             src={lightboxImage}
             alt="Lightbox view"
             className="max-w-full max-h-full rounded-lg shadow-2xl cursor-default"
-            onClick={(e) => e.stopPropagation()} // Prevent click on image from closing the modal
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
       )}
 
+      {isTemplatesModalOpen && (
+        <TemplatesModal 
+          closeModal={() => setIsTemplatesModalOpen(false)}
+          onSelectTemplate={handleSelectTemplate}
+          userName={userName}
+        />
+      )}
+
       {selectedChat ? (
         <>
-          {/* Header is the same */}
           <div className="pb-2 mb-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className={`flex items-center justify-center w-10 h-10 ${userAvatarColor} rounded-full font-semibold text-white`}>{userInitials}</div>
               <div>
                 <h2 className="text-sm font-semibold text-gray-800">{userName}</h2>
- <p className="text-xs text-gray-500">
-                  {selectedChat.messages?.[0]?.from?.phoneNumber || ''}
-                </p>              
-
- 
-               
+                <p className="text-xs text-gray-500">{selectedChat.messages?.[0]?.from?.phoneNumber || ''}</p>
               </div>
             </div>
             <div className="relative">
@@ -177,11 +293,10 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
             </div>
           </div>
           
-          {/* Modals are the same */}
           {isModalOpen && ( <Modal closeModal={() => setIsModalOpen(false)} closeChat={handleCloseChat} openEscalateModal={() => { setIsModalOpen(false); setIsEscalateModalOpen(true); }} /> )}
           {isEscalateModalOpen && ( <EscalateIssueModal closeModal={() => setIsEscalateModalOpen(false)} goBackToModal1={() => { setIsEscalateModalOpen(false); setIsModalOpen(true); }} /> )}
 
-          <div className="relative flex h-4/5 flex-col flex-1">
+          <div className="relative flex-1 flex flex-col min-h-0">
             <div className="overflow-y-auto bg-white border border-gray-200 rounded-2xl p-4 space-y-4 flex-1">
               {loadingMessages ? (
                 <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>
@@ -191,37 +306,20 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
                 messages.map((msg) => {
                   if (!msg || !msg.payload) return null;
                   const isSent = msg.direction === 'sent';
-
                   return (
                     <div key={msg.id} className={`flex w-full ${isSent ? 'justify-end' : 'justify-start'}`}>
                       <div className="flex items-end max-w-xl space-x-2">
-                        {!isSent && (
-                          <div className={`flex items-center justify-center w-6 h-6 ${userAvatarColor} rounded-full text-xs font-semibold text-white`}>{userInitials}</div>
-                        )}
-
+                        {!isSent && <div className={`flex items-center justify-center w-6 h-6 ${userAvatarColor} rounded-full text-xs font-semibold text-white`}>{userInitials}</div>}
                         <div className={`px-3 py-2 rounded-2xl ${isSent ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
-                          {msg.type === 'text' && (
-                            <p className="break-words">{msg.payload}</p>
-                          )}
-                          {msg.type === 'image' && (
-                            <img
-                              src={msg.payload.url}
-                              alt="User attachment"
-                              className="rounded-lg max-w-[200px] cursor-pointer" // Smaller preview in chat
-                              // --- MODIFIED: On click, open the lightbox ---
-                              onClick={() => setLightboxImage(msg.payload.url)}
-                            />
-                          )}
-
+                          {msg.type === 'text' && <p className="break-words whitespace-pre-wrap">{msg.payload}</p>}
+                          {msg.type === 'image' && <img src={msg.payload.url} alt="User attachment" className="rounded-lg max-w-[200px] cursor-pointer" onClick={() => setLightboxImage(msg.payload.url)} />}
+                          {msg.type === 'file' && <a href={msg.payload.url} target="_blank" rel="noopener noreferrer" className="text-blue-300 underline">{msg.payload.url.split('/').pop()}</a>}
                           <div className="flex items-center justify-end mt-1 space-x-1">
                             <span className={`text-xs ${isSent ? 'text-blue-200' : 'text-gray-500'}`}>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             {isSent && <CheckCheck className="w-4 h-4 text-blue-200" />}
                           </div>
                         </div>
-
-                        {isSent && (
-                          <div className="flex items-center justify-center w-6 h-6 bg-blue-200 rounded-full text-xs font-semibold text-blue-800">TM</div>
-                        )}
+                        {isSent && <div className="flex items-center justify-center w-6 h-6 bg-blue-200 rounded-full text-xs font-semibold text-blue-800">TM</div>}
                       </div>
                     </div>
                   );
@@ -229,20 +327,44 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
               )}
               <div ref={messagesEndRef} />
             </div>
-            
-            {showEmojiPicker && ( <div className="absolute bottom-20 right-4 z-10"> <Picker data={data} onEmojiSelect={addEmoji} /> </div> )}
+            {showEmojiPicker && ( <div className="absolute bottom-4 right-4 z-10"> <Picker data={data} onEmojiSelect={addEmoji} /> </div> )}
           </div>
 
-          {/* Input area is the same */}
           <div className="pt-4">
             <div className="bg-white border border-gray-200 rounded-xl p-2 flex items-center">
-              <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())} rows={1} className="flex-1 bg-transparent px-2 text-sm focus:outline-none resize-none" placeholder="Type your message here" />
+              <textarea 
+                ref={textareaRef}
+                value={newMessage} 
+                onChange={(e) => setNewMessage(e.target.value)} 
+                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())} 
+                rows={1}
+                className="flex-1 bg-transparent px-2 text-sm focus:outline-none resize-none max-h-40" 
+                placeholder="Type your message here" 
+              />
               <div className="flex items-center space-x-1">
-                <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full"> <Paperclip className="w-5 h-5" /> </button>
-                <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full" onClick={() => setShowEmojiPicker(!showEmojiPicker)}> <Smile className="w-5 h-5" /> </button>
-                <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full"> <Pin className="w-5 h-5" /> </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+                  accept="image/*, .pdf, .doc, .docx, .txt"
+                />
+                <button
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-full"
+                  onClick={() => fileInputRef.current.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
+                </button>
+                <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full" onClick={() => setShowEmojiPicker(!showEmojiPicker)}><Smile className="w-5 h-5" /></button>
+                <button 
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-full"
+                  onClick={() => setIsTemplatesModalOpen(true)}
+                >
+                  <Pin className="w-5 h-5" />
+                </button>
               </div>
-              <button onClick={sendMessage} className="bg-blue-600 text-white p-2 rounded-lg ml-2 hover:bg-blue-700 disabled:bg-blue-300" disabled={!newMessage.trim()}> <Send className="w-5 h-5" /> </button>
+              <button onClick={sendMessage} className="bg-blue-600 text-white p-2 rounded-lg ml-2 hover:bg-blue-700 disabled:bg-blue-300" disabled={!newMessage.trim()}><Send className="w-5 h-5" /></button>
             </div>
           </div>
         </>
@@ -252,3 +374,8 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
     </div>
   );
 }
+
+Conversation.propTypes = {
+  selectedChat: PropTypes.object,
+  setSelectedChat: PropTypes.func.isRequired
+};

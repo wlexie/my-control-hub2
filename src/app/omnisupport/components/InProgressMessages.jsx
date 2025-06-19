@@ -1,191 +1,155 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
+import PropTypes from "prop-types";
 
-// --- HELPER FUNCTION (Unchanged) ---
-const formatTimestamp = (timestampStr) => {
-    // ... (your existing formatTimestamp function)
-    if (!timestampStr) return "";
+const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
 
-    const originalDate = new Date(timestampStr);
-    const adjustedDate = new Date(originalDate);
-    adjustedDate.setHours(adjustedDate.getHours() + 3);
-  
-    const now = new Date();
-    const isToday =
-      adjustedDate.getFullYear() === now.getFullYear() &&
-      adjustedDate.getMonth() === now.getMonth() &&
-      adjustedDate.getDate() === now.getDate();
-  
-    if (isToday) {
-      return adjustedDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
-    } else {
-      const day = adjustedDate.getDate();
-      const month = adjustedDate.toLocaleString('default', { month: 'short' });
-      const year = adjustedDate.getFullYear();
-      return `${day} ${month} ${year}`;
+// --- HELPER FUNCTIONS (Unchanged) ---
+const parseMessageContent = (contentString) => {
+  if (!contentString) return { type: 'empty', content: null };
+  try {
+    const parsed = JSON.parse(contentString);
+    if (typeof parsed === 'object' && parsed !== null) {
+      if (parsed.text) return { type: 'text', content: parsed.text };
+      if (parsed.image && parsed.image.url) return { type: 'image', content: '📷 Image' };
+      if (parsed.interactive) return { type: 'interactive', content: null };
+      return { type: 'unsupported_json', content: null };
     }
+  } catch (e) { return { type: 'text', content: contentString }; }
+  return { type: 'unknown', content: null };
+};
+const formatTimestamp = (timestampStr) => {
+    if (!timestampStr) return "";
+    const date = new Date(timestampStr);
+    const now = new Date();
+    if (date.toDateString() === now.toDateString()) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
 };
 
-// --- START: MODIFIED COMPONENT ---
+// --- COMPONENT ---
 export default function InProgressMessages({ onSelectChat, activeChat, searchTerm }) {
   const [inProgressConversations, setInProgressConversations] = useState([]);
-  const [visibleCount, setVisibleCount] = useState(100);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const firstLoad = useRef(true);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
-    const fetchInProgressConversations = async () => {
-      // ... (your existing fetch logic is fine)
+    const fetchAndProcessConversations = async () => {
+      if (isInitialLoad.current) setLoading(true);
+      setError(null);
+
       try {
-        if (firstLoad.current) {
-          setLoading(true);
+        const convosResponse = await axios.get(`${API_BASE_URL}/conversations`);
+        // --- NEW FILTER: Only consider conversations that are NOT closed ---
+        const openConversations = (convosResponse.data || []).filter(conv => conv.isClosed !== true);
+
+        if (openConversations.length === 0) {
+          setInProgressConversations([]);
+          return;
         }
-        setError(null);
 
-        const response = await axios.get("https://api.tuma-app.com/api/webhook/conversations");
+        const messageCheckPromises = openConversations.map(conv =>
+          axios.get(`${API_BASE_URL}/messages/${conv.id}?page=0&size=50`)
+            .then(response => {
+              const messages = response.data || [];
+              const hasSentMessage = messages.some(msg => msg.direction === 'sent');
+              const hasReceivedMessage = messages.some(msg => msg.direction === 'received');
+              return {
+                conversation: conv,
+                messages: messages,
+                isInProgress: hasSentMessage && hasReceivedMessage,
+              };
+            })
+        );
         
-        console.log("✅ Fetched Conversations:", response.data);
+        const results = await Promise.allSettled(messageCheckPromises);
+        const trulyInProgress = results
+          .filter(result => result.status === 'fulfilled' && result.value.isInProgress)
+          .map(result => {
+            const { conversation, messages } = result.value;
+            const sortedMessages = messages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            const lastDisplayableMessage = sortedMessages.find(msg => {
+                const parsed = parseMessageContent(msg.content);
+                return parsed.type === 'text' || parsed.type === 'image';
+            });
+            if (!lastDisplayableMessage) return null;
+            const parsedContent = parseMessageContent(lastDisplayableMessage.content);
+            return {
+              id: conversation.id,
+              contactName: conversation.contactName,
+              msisdn: conversation.msisdn,
+              content: parsedContent.content,
+              timestamp: lastDisplayableMessage.createdAt,
+              messages: [{ from: { name: conversation.contactName, phoneNumber: conversation.msisdn } }]
+            };
+          })
+          .filter(Boolean);
 
-        const rawConversations = response.data || [];
-
-        const transformedConversations = rawConversations.map((conv) => {
-          let lastMessageContent = "No message content";
-          try {
-            const parsedMessage = JSON.parse(conv.lastMessage);
-            lastMessageContent = parsedMessage.text || "Message has no text";
-          } catch (e) {
-            console.error(`Could not parse lastMessage for conversation ${conv.id}:`, conv.lastMessage);
-          }
-          
-          const storedTimestamp = localStorage.getItem(`lastTimestamp_${conv.id}`);
-          const hasNewMessage = conv.lastReceivedAt !== storedTimestamp;
-
-          return {
-            id: conv.id,
-            hasNewMessage: hasNewMessage,
-            messages: [{
-              id: conv.id,
-              content: lastMessageContent,
-              timestamp: conv.lastReceivedAt,
-              from: {
-                name: conv.contactName,
-                phoneNumber: conv.msisdn,
-              },
-            }],
-          };
-        });
-
-        setInProgressConversations(transformedConversations);
+        setInProgressConversations(trulyInProgress);
 
       } catch (error) {
         console.error("❌ Error fetching in-progress messages:", error);
-        setError("Failed to fetch messages. Please try again later.");
+        setError("Failed to fetch active conversations.");
       } finally {
-        setLoading(false);
-        firstLoad.current = false;
+        if (isInitialLoad.current) {
+          setLoading(false);
+          isInitialLoad.current = false;
+        }
       }
     };
 
-    fetchInProgressConversations();
+    fetchAndProcessConversations();
+    const interval = setInterval(fetchAndProcessConversations, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  const loadMoreConversations = () => {
-    setVisibleCount((prevCount) => prevCount + 100);
-  };
+  const filteredConversations = useMemo(() => {
+    return inProgressConversations
+      .filter(conv => {
+        const name = (conv.contactName || '').toLowerCase();
+        const content = (conv.content || '').toLowerCase();
+        return name.includes(searchTerm.toLowerCase()) || content.includes(searchTerm.toLowerCase());
+      })
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  }, [inProgressConversations, searchTerm]);
 
-  const handleSelectChat = (conversation) => {
-    if (conversation.messages.length > 0) {
-      const lastMessage = conversation.messages[0];
-      localStorage.setItem(`lastTimestamp_${conversation.id}`, lastMessage.timestamp);
-    }
-
-    setInProgressConversations(prevConvs =>
-      prevConvs.map(c => 
-        c.id === conversation.id ? { ...c, hasNewMessage: false } : c
-      )
-    );
-
-    onSelectChat(conversation);
-  };
-
-  // --- START: NEW FILTERING LOGIC ---
-  const filteredConversations = inProgressConversations.filter((conv) => {
-    const lastMessage = conv.messages[0];
-    if (!lastMessage) return false; // Safety check
-
-    const name = (lastMessage.from.name || '').toLowerCase();
-    const content = (lastMessage.content || '').toLowerCase();
-    const term = searchTerm.toLowerCase();
-
-    // Return true if search term is found in the name OR the content
-    return name.includes(term) || content.includes(term);
-  });
-  // --- END: NEW FILTERING LOGIC ---
+  if (loading) return <p className="text-gray-500 text-center mt-4">Loading messages...</p>;
+  if (error) return <p className="text-red-500 text-center mt-4">{error}</p>;
 
   return (
     <div className="max-w-lg mx-auto font-poppins bg-white flex flex-col">
       <div className="flex-1 overflow-hidden" style={{ maxHeight: "78vh", overflowY: "auto" }}>
-        {loading ? (
-          <p className="text-gray-500 text-center mt-4">Loading messages...</p>
-        ) : error ? (
-          <p className="text-red-500 text-center mt-4">{error}</p>
-        ) : filteredConversations.length === 0 ? ( // Use filtered list for the check
-          <p className="text-center text-gray-500 mt-4">
-            {searchTerm ? 'No results found.' : 'No messages available'}
-          </p>
+        {filteredConversations.length === 0 ? (
+          <p className="text-center text-gray-500 mt-4">{searchTerm ? 'No results found.' : 'No in-progress conversations.'}</p>
         ) : (
-          // Use filteredConversations to render the list
-          filteredConversations.slice(0, visibleCount).map((conv) => {
-            const lastMessage = conv.messages[0];
-
-            return (
-              <div
-                key={conv.id}
-                className={`cursor-pointer px-4 py-2 border-b flex justify-between items-center transition ${
-                  activeChat?.id === conv.id
-                    ? "bg-gray-100"
-                    : conv.hasNewMessage
-                    ? "bg-gray-200"
-                    : "bg-white"
-                }`}
-                onClick={() => handleSelectChat(conv)}
-              >
-                <div className="flex items-start w-full">
-                  <div className="p-2 px-4 mr-2 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                    {(lastMessage.from.name || "?")[0].toUpperCase()}
+          filteredConversations.map((conv) => (
+            <div key={conv.id} className={`cursor-pointer px-4 py-2 border-b flex justify-between items-center transition ${activeChat?.id === conv.id ? "bg-gray-100" : "bg-white hover:bg-gray-50"}`} onClick={() => onSelectChat(conv)}>
+              <div className="flex items-start w-full">
+                <div className="p-2 px-4 mr-2 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">{(conv.contactName || "?")[0].toUpperCase()}</div>
+                <div className="flex justify-between items-start w-full">
+                  <div>
+                    <p className="font-medium text-gray-900 mb-1 text-sm">{conv.contactName || conv.msisdn}</p>
+                    <p className="text-gray-500 text-xs truncate max-w-[270px]">{conv.content}</p>
                   </div>
-                  <div className="flex justify-between items-start w-full">
-                    <div>
-                      <p className="font-medium text-gray-900 mb-1 text-sm">
-                        {lastMessage.from.name || lastMessage.from.phoneNumber}
-                      </p>
-                      <p className="text-gray-500 text-xs truncate max-w-[270px]">
-                        {lastMessage.content}
-                      </p>
-                    </div>
-                    <div className="ml-auto flex items-center">
-                      <p className="text-xs text-gray-400 whitespace-nowrap">
-                        {formatTimestamp(lastMessage.timestamp)}
-                      </p>
-                    </div>
+                  <div className="ml-auto flex items-center">
+                    <p className="text-xs text-gray-400 whitespace-nowrap">{formatTimestamp(conv.timestamp)}</p>
                   </div>
                 </div>
               </div>
-            );
-          })
+            </div>
+          ))
         )}
       </div>
-
-      {/* The "Load More" button should only show if there are more items in the filtered list to display */}
-      {visibleCount < filteredConversations.length && (
-        <button
-          className="border border-blue-500 text-blue-600 py-2 px-4 mt-3 rounded mx-2 transition"
-          onClick={loadMoreConversations}
-        >
-          Load More
-        </button>
-      )}
     </div>
   );
 }
+
+InProgressMessages.propTypes = {
+  onSelectChat: PropTypes.func.isRequired,
+  activeChat: PropTypes.object,
+  searchTerm: PropTypes.string,
+};
+InProgressMessages.defaultProps = {
+  activeChat: null,
+  searchTerm: "",
+};
