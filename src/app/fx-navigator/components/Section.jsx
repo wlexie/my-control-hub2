@@ -4,7 +4,7 @@ import Image from "next/image";
 import Update from "./Update";
 import { ChevronDown, Check } from "lucide-react"; // We still need icons
 
-// --- A. Define Currency Pairs and a Custom Hook at the top ---
+// A. Define Currency Pairs and a Custom Hook at the top ---
 
 const CURRENCY_PAIRS = [
   { base: "GBP", target: "KES" },
