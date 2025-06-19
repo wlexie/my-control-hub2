@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import axios, { AxiosError } from 'axios';
-import { formidable } from 'formidable';
+import { formidable, Fields, Files } from 'formidable';
 import { promises as fs } from 'fs';
 import path from 'path';
+import type { IncomingMessage } from 'http';
 
-// --- Hardcoded Keys (For local testing ONLY - NOT RECOMMENDED FOR PRODUCTION) ---
-const MESSAGEBIRD_API_KEY = "jR0kbXM2FxlNHMblz7sV33G6d";
-const MESSAGEBIRD_CHANNEL_ID = "7e68f5e4-965d-4bbc-9b37-017de54c0d17";
-const BASE_URL = "http://localhost:3000";
+const MESSAGEBIRD_API_KEY = 'jR0kbXM2FxlNHMblz7sV33G6d';
+const MESSAGEBIRD_CHANNEL_ID = '7e68f5e4-965d-4bbc-9b37-017de54c0d17';
+const BASE_URL = 'http://localhost:3000';
 
 export const config = {
   api: {
@@ -15,14 +15,12 @@ export const config = {
   },
 };
 
-// Helper function to parse form data
-const parseForm = (req: Request): Promise<{ fields: any; files: any }> => {
+// Helper function to parse multipart form data
+const parseForm = (req: Request): Promise<{ fields: Fields; files: Files }> => {
   return new Promise((resolve, reject) => {
     const form = formidable({});
-    form.parse(req as any, (err, fields, files) => {
-      if (err) {
-        return reject(err);
-      }
+    form.parse(req as unknown as IncomingMessage, (err, fields, files) => {
+      if (err) return reject(err);
       resolve({ fields, files });
     });
   });
@@ -41,10 +39,14 @@ export async function POST(request: Request) {
         throw new Error('File and recipientPhone are required for uploads.');
       }
 
-      const file = files.file[0];
-      const recipientPhone = fields.recipientPhone[0];
+      const fileArray = Array.isArray(files.file) ? files.file : [files.file];
+      const phoneArray = Array.isArray(fields.recipientPhone)
+        ? fields.recipientPhone
+        : [fields.recipientPhone];
 
-      // Save file to /public/uploads
+      const file = fileArray[0];
+      const recipientPhone = phoneArray[0];
+
       const publicUploadDir = path.join(process.cwd(), 'public', 'uploads');
       await fs.mkdir(publicUploadDir, { recursive: true });
 
@@ -54,9 +56,7 @@ export async function POST(request: Request) {
 
       const mediaUrl = `${BASE_URL}/uploads/${newFilename}`;
 
-      // DYNAMICALLY CHOOSE PAYLOAD TYPE BASED ON FILE'S MIMETYPE
       if (file.mimetype && file.mimetype.startsWith('image/')) {
-        // It's an image, use the 'image' payload
         messagePayload = {
           to: recipientPhone,
           from: MESSAGEBIRD_CHANNEL_ID,
@@ -66,7 +66,6 @@ export async function POST(request: Request) {
           },
         };
       } else {
-        // It's another type of file (document, etc.), use the 'file' payload
         messagePayload = {
           to: recipientPhone,
           from: MESSAGEBIRD_CHANNEL_ID,
@@ -76,9 +75,8 @@ export async function POST(request: Request) {
           },
         };
       }
-
     } else if (contentType.includes('application/json')) {
-      // --- HANDLE TEXT MESSAGE (Unchanged) ---
+      // --- HANDLE TEXT MESSAGE ---
       const body = await request.json();
       const { recipientPhone, message } = body;
 
@@ -92,12 +90,11 @@ export async function POST(request: Request) {
         type: 'text',
         content: { text: message },
       };
-
     } else {
       return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
     }
 
-    // --- SEND TO MESSAGEBIRD (Unchanged) ---
+    // --- SEND TO MESSAGEBIRD ---
     const messageBirdResponse = await axios.post(
       'https://conversations.messagebird.com/v1/send',
       messagePayload,
@@ -113,7 +110,6 @@ export async function POST(request: Request) {
       success: true,
       response: messageBirdResponse.data,
     });
-
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error('MessageBird API sending error:', axiosError.response?.data || axiosError.message);
