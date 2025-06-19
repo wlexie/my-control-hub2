@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+// CHANGED: Added useCallback to the import list
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'; 
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import { MoreVertical, Paperclip, Smile, Pin, Send, Loader2, CheckCheck, X, UploadCloud } from 'lucide-react';
@@ -9,6 +10,7 @@ import EscalateIssueModal from './EscalateIssueModal';
 import TemplatesModal from './TemplatesModal';
 
 const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
+const POLLING_INTERVAL = 5000; // Poll for new messages every 5 seconds (5000ms)
 
 const avatarColorPalette = [ 'bg-red-500', 'bg-green-500', 'bg-purple-500', 'bg-blue-500', 'bg-indigo-500', 'bg-pink-500', 'bg-orange-500' ];
 
@@ -47,19 +49,26 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
-  const dragCounter = useRef(0); // Prevents flickering when dragging over child elements
+  const dragCounter = useRef(0);
 
   const userName = selectedChat?.messages?.[0]?.from?.name || 'Unknown Contact';
   const userInitials = getInitials(userName);
   const userAvatarColor = useMemo(() => getColorForId(selectedChat?.id), [selectedChat?.id]);
-
-  const fetchFullConversation = async () => {
+  
+  // CHANGED: Wrapped fetchFullConversation in useCallback for stability and to prevent re-renders.
+  // Also added a `isBackgroundPoll` parameter to avoid showing the loader on every poll.
+  const fetchFullConversation = useCallback(async (isBackgroundPoll = false) => {
     if (!selectedChat || !selectedChat.id) {
       setMessages([]);
       return;
     }
-    setLoadingMessages(true);
+    
+    // Only show the main loader on the initial fetch, not on background polls
+    if (!isBackgroundPoll) {
+      setLoadingMessages(true);
+    }
     setErrorMessages(null);
+
     try {
       const response = await axios.get(`${API_BASE_URL}/messages/${selectedChat.id}?page=0&size=50`);
       const fetchedMessages = response.data.content || response.data || [];
@@ -76,7 +85,6 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
               type = 'image';
               payload = { url: parsedContent.image.url };
             } else if (parsedContent.file && parsedContent.file.url) {
-              // Handle file type from backend
               type = 'file';
               payload = { url: parsedContent.file.url };
             }
@@ -92,12 +100,18 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
       );
       setMessages(sortedMessages);
     } catch (error) {
-      console.error(" Error fetching full conversation:", error);
-      setErrorMessages("Failed to load conversation history.");
+      console.error("Error fetching full conversation:", error);
+      if (!isBackgroundPoll) {
+         setErrorMessages("Failed to load conversation history.");
+      }
     } finally {
-      setLoadingMessages(false);
+      if (!isBackgroundPoll) {
+        setLoadingMessages(false);
+      }
     }
-  };
+    // CHANGED: The dependency array now uses selectedChat.id for stability.
+  }, [selectedChat?.id]);
+
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -111,14 +125,44 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // CHANGED: This effect now just calls the stable fetchFullConversation function.
   useEffect(() => {
-    fetchFullConversation();
-  }, [selectedChat]);
+    // Perform an initial fetch when the selected chat changes.
+    if (selectedChat?.id) {
+      fetchFullConversation(false); // `false` indicates this is not a background poll.
+    } else {
+      setMessages([]); // Clear messages if no chat is selected.
+    }
+  }, [selectedChat?.id, fetchFullConversation]);
+
+
+  // NEW: This useEffect handles the polling for new messages.
+  useEffect(() => {
+    // Don't start polling if no chat is selected.
+    if (!selectedChat?.id) {
+      return;
+    }
+
+    // Set up an interval to poll for new messages.
+    const intervalId = setInterval(() => {
+      fetchFullConversation(true); // `true` indicates this is a background poll.
+    }, POLLING_INTERVAL);
+
+    // This is a cleanup function. React runs it when the component unmounts
+    // or when the dependencies (`selectedChat.id`) change.
+    return () => {
+      clearInterval(intervalId);
+    };
+
+  }, [selectedChat?.id, fetchFullConversation]); // Re-run this effect if the chat or fetch function changes.
+
 
   useEffect(() => {
     document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen);
   }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen]);
 
+  // ... (rest of your component code is unchanged)
+  
   const sendMessage = async () => {
     if (newMessage.trim() === '' || !selectedChat) return;
     const recipientPhoneNumber = selectedChat.messages?.[0]?.from?.phoneNumber;
@@ -138,6 +182,8 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
     setShowEmojiPicker(false);
     try {
       await axios.post('/api/sendMessage', { recipientPhone: recipientPhoneNumber, message: newMessage });
+      // NEW: After sending a message, fetch immediately to get the confirmed message from the server.
+      setTimeout(() => fetchFullConversation(true), 1500); // Wait a moment for server to process
     } catch (error) {
       console.error('Error sending message:', error.response?.data || error);
     }
@@ -176,7 +222,7 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       if (response.data.success) {
-        setTimeout(() => fetchFullConversation(), 1500); 
+        setTimeout(() => fetchFullConversation(true), 1500); 
       } else {
          throw new Error(response.data.error || "File upload failed on the server.");
       }
@@ -198,8 +244,7 @@ export default function Conversation({ selectedChat, setSelectedChat }) {
     setNewMessage(templateText);
     setIsTemplatesModalOpen(false);
   };
-
-  // --- Drag and Drop Event Handlers ---
+  
   const handleDragEnter = (e) => {
     e.preventDefault();
     e.stopPropagation();
