@@ -12,7 +12,7 @@ export default function SideNav() {
   const handleLogoClick = () => {
     router.push('/dashboard'); 
   };
-  //compo gvghvtft
+  //compo gvghvtft nsdmhsjkdjskjdjks
   return (
     <div className="w-1/4 min-h-screen font-poppins  px-4 pt-8 bg-blue-600 text-white flex flex-col">
       <div className="flex justify-start mb-16">
