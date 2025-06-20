@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 
 const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
 
-// --- HELPER FUNCTIONS (Unchanged) ---
+// --- HELPER FUNCTIONS ---
 const parseMessageContent = (contentString) => {
   if (!contentString) return { type: 'empty', content: null };
   try {
@@ -18,11 +18,20 @@ const parseMessageContent = (contentString) => {
   } catch (e) { return { type: 'text', content: contentString }; }
   return { type: 'unknown', content: null };
 };
+
 const formatTimestamp = (timestampStr) => {
     if (!timestampStr) return "";
     const date = new Date(timestampStr);
-    const now = new Date();
-    if (date.toDateString() === now.toDateString()) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+    if (date.toDateString() === yesterday.toDateString()) {
+        return "Yesterday";
+    }
     return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
 };
 
@@ -40,15 +49,15 @@ export default function ClosedMessages({ onSelectChat, activeChat, searchTerm })
 
       try {
         const convosResponse = await axios.get(`${API_BASE_URL}/conversations`);
-        // --- NEW FILTER: Only consider conversations that ARE closed ---
+        // Filter for conversations that are explicitly marked as closed
         const filteredConversations = (convosResponse.data || []).filter(conv => conv.isClosed === true);
 
         if (filteredConversations.length === 0) {
           setClosedConversations([]);
+          setLoading(false); // Ensure loading is turned off
           return;
         }
 
-        // We still fetch messages to robustly find the last *displayable* message
         const messageCheckPromises = filteredConversations.map(conv =>
           axios.get(`${API_BASE_URL}/messages/${conv.id}?page=0&size=50`)
             .then(response => ({
@@ -62,23 +71,23 @@ export default function ClosedMessages({ onSelectChat, activeChat, searchTerm })
           .filter(result => result.status === 'fulfilled')
           .map(result => {
             const { conversation, messages } = result.value;
-            // The logic here is simpler: we just need the last displayable message, no direction checks needed.
             const sortedMessages = messages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             const lastDisplayableMessage = sortedMessages.find(msg => {
                 const parsed = parseMessageContent(msg.content);
                 return parsed.type === 'text' || parsed.type === 'image';
             });
 
-            // If a closed conversation has no displayable messages, we can use a default.
             const content = lastDisplayableMessage ? parseMessageContent(lastDisplayableMessage.content).content : "Conversation closed";
             const timestamp = lastDisplayableMessage ? lastDisplayableMessage.createdAt : conversation.lastReceivedAt;
 
+            // This object is passed to the parent when a chat is selected
             return {
               id: conversation.id,
               contactName: conversation.contactName,
               msisdn: conversation.msisdn,
               content: content,
               timestamp: timestamp,
+              isClosed: true, // This flag tells the Conversation component to hide the input area
               messages: [{ from: { name: conversation.contactName, phoneNumber: conversation.msisdn } }]
             };
           });
@@ -97,7 +106,8 @@ export default function ClosedMessages({ onSelectChat, activeChat, searchTerm })
     };
 
     fetchAndProcessConversations();
-    const interval = setInterval(fetchAndProcessConversations, 30000); // Poll less frequently for closed chats
+    // Poll less frequently for closed chats as they are unlikely to change
+    const interval = setInterval(fetchAndProcessConversations, 30000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -115,14 +125,14 @@ export default function ClosedMessages({ onSelectChat, activeChat, searchTerm })
   if (error) return <p className="text-red-500 text-center mt-4">{error}</p>;
 
   return (
-    <div className="max-w-lg mx-auto font-poppins bg-white flex flex-col">
+    <div className="max-w-lg mx-auto font-poppins bg-whi flex flex-col">
       <div className="flex-1 overflow-hidden" style={{ maxHeight: "78vh", overflowY: "auto" }}>
         {filteredConversations.length === 0 ? (
           <p className="text-center text-gray-500 mt-4">{searchTerm ? 'No results found.' : 'No closed conversations.'}</p>
         ) : (
           filteredConversations.map((conv) => (
             <div key={conv.id} className={`cursor-pointer px-4 py-2 border-b flex justify-between items-center transition ${activeChat?.id === conv.id ? "bg-gray-100" : "bg-white hover:bg-gray-50"}`} onClick={() => onSelectChat(conv)}>
-              <div className="flex items-start w-full opacity-70"> {/* Add opacity to visually distinguish */}
+              <div className="flex items-start w-full opacity-70">
                 <div className="p-2 px-4 mr-2 bg-gray-400 rounded-full flex items-center justify-center text-white font-semibold text-lg">{(conv.contactName || "?")[0].toUpperCase()}</div>
                 <div className="flex justify-between items-start w-full">
                   <div>
@@ -147,6 +157,7 @@ ClosedMessages.propTypes = {
   activeChat: PropTypes.object,
   searchTerm: PropTypes.string,
 };
+
 ClosedMessages.defaultProps = {
   activeChat: null,
   searchTerm: "",

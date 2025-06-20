@@ -15,6 +15,8 @@ export default function AuditTrail() {
         
      
         const responseData = response.data || response; 
+            console.log('Fetched raw data:', responseData); 
+
         
         const transformedData = responseData.map(item => {
           const dateOfEffectObj = new Date(item.dateOfEffect);

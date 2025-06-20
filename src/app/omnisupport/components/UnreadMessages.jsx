@@ -18,9 +18,45 @@ const parseMessageContent = (contentString) => {
   } catch (e) { return { type: 'text', content: contentString }; }
   return { type: 'unknown', content: null };
 };
+
+// NEW: Updated formatTimestamp function
 const formatTimestamp = (timestampStr) => {
     if (!timestampStr) return "";
-    return new Date(timestampStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    const messageDate = new Date(timestampStr);
+
+    // Get the current date and reset its time to the beginning of the day for comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get yesterday's date by subtracting one day from today
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // Create a date object for the message's date, also at the beginning of the day
+    const messageDay = new Date(messageDate);
+    messageDay.setHours(0, 0, 0, 0);
+
+    // 1. Check if the message was sent today
+    if (messageDay.getTime() === today.getTime()) {
+        return messageDate.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    }
+
+    // 2. Check if the message was sent yesterday
+    if (messageDay.getTime() === yesterday.getTime()) {
+        return "Yesterday";
+    }
+
+    // 3. If it's older, show the date (e.g., 25/12/2023)
+    return messageDate.toLocaleDateString([], {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
 };
 
 // --- COMPONENT ---

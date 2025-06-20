@@ -101,18 +101,28 @@ export default function SideNav() {
             </span>
           </button>
         </Link>
+           <Link href="/omnisupport/e-citizen">
+          <button className="flex ml-9 items-center pl-4 pr-12 py-2 mt-2 rounded-lg  border-white text-white transition duration-300   ease-in-out hover:bg-white hover:border-blue-600 hover:text-blue-600">
+            
 
+            {/* Settings Text */}
+            <span className="text-[18px] font-medium transition duration-300 ease-in-out">
+              E-CITIZEN 
+            </span>
+          </button>
+        </Link>
+{/** 
       <Link href="/">
   <button className="group flex items-center text-2xl pl-4 pr-12 py-2 mt-2 rounded-lg border-white text-white transition duration-300 ease-in-out hover:bg-white hover:border-blue-600 hover:text-blue-600">
   <MdDomainVerification />
 
 
-    {/* Verification Text */}
     <span className="text-[18px] font-medium transition ml-3  duration-300 ease-in-out">
       Verification
     </span>
   </button>
 </Link>
+*/}
 
 
 
