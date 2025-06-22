@@ -97,6 +97,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   isMobile = false, // Default to not mobile
 }) => {
   const router = useRouter();
+  // The handleClick in this child component is correct. It correctly
+  // prioritizes the passed onClick prop.
   const handleClick = () => {
     if (onClick) onClick();
     else if (href) router.push(href);
@@ -123,7 +125,6 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
           </span>
         )}
       </div>
-      {/* Desktop: Label appears on hover. Mobile: Label always visible. */}
       <span
         className={`mt-1 text-xs font-medium ${colorClasses} 
                        ${
@@ -229,12 +230,23 @@ const DashboardPage = () => {
       id: "logout",
       label: "Logout",
       icon: MdOutlineLogout,
-      onClick: handleLogout,
+      onClick: handleLogout, // This specific handler was being ignored
       hoverColor: "hover:text-red-600",
       activeColor: "text-red-700",
       activeBg: "bg-red-100",
     },
   ];
+  
+  // ADDED: A new handler function to manage clicks
+  const handleSidebarItemClick = (item: typeof sidebarNavItems[0]) => {
+    // If the item has its own onClick function (like logout), execute it.
+    if (item.onClick) {
+      item.onClick();
+    } else {
+      // Otherwise, just set it as the active item.
+      setActiveItem(item.id);
+    }
+  };
 
   const renderSidebarItems = (isMobile: boolean) => (
     <>
@@ -246,7 +258,8 @@ const DashboardPage = () => {
           label={item.label}
           notificationCount={item.count}
           isActive={activeItem === item.id}
-          onClick={() => setActiveItem(item.id)}
+          // CHANGED: Use the new handler function
+          onClick={() => handleSidebarItemClick(item)} 
           hoverTextColorClass={item.hoverColor}
           activeTextColorClass={item.activeColor}
           activeBgColorClass={item.activeBg}
