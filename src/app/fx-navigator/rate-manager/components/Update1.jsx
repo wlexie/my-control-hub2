@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Image from 'next/image';
-import closeIcon from '../../../../public/fx/images/close.png';
-import api from "../../../utils/apiService"; 
+import closeIcon from '../../../../../public/fx/images/close.png';
+import api from "../../../../utils/apiService"; 
 import UpdateWeighted from './UpdateWeighted';
 
 const Update1 = ({ 

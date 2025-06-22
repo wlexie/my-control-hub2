@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import api from "../../../utils/apiService";
+import api from "../../../../utils/apiService";
 import Image from "next/image";
 import Update from "./Update";
 import { ChevronDown, Check } from "lucide-react"; // We still need icons

@@ -1,7 +1,7 @@
 import React from "react";
 import Image from 'next/image';
-import closeIcon from '../../../../public/fx/images/close.png';
-import successIcon from '../../../../public/fx/images/success.png';
+import closeIcon from '../../../../../public/fx/images/close.png';
+import successIcon from '../../../../../public/fx/images/success.png';
 
 const SuccessModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;

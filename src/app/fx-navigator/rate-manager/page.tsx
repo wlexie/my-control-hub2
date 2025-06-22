@@ -1,6 +1,6 @@
 'use client';
 
-import SideNav from './components/SideNav';
+import SideNav from '../components/SideNav';
 import Section from './components/Section';
 import AuditTrail from './components/AuditTrail';
 

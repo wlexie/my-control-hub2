@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Image from 'next/image';
-import closeIcon from '../../../../public/fx/images/close.png';
+import closeIcon from '../../../../../public/fx/images/close.png';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import ConfirmUpdate from './ConfirmUpdate';
 import SuccessModal from './SuccessModal';
-import api from '../../../utils/apiService'; // Import the api instance
+import api from '../../../../utils/apiService'; // Import the api instance
 
 const UpdateMarkup = ({ isOpen, onClose,   apiResponse, baseCurrency, targetCurrency }) => {
   const [data, setData] = useState([]);

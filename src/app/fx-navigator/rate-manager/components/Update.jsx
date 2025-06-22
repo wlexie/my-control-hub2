@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import Image from 'next/image';
 import Table from './Table';
-import closeIcon from '../../../../public/fx/images/close.png';
+import closeIcon from '../../../../../public/fx/images/close.png';
 import Update1 from './Update1'; 
 import axios from 'axios';
-import api from "../../../utils/apiService"; // Update the path as needed
+import api from "../../../../utils/apiService"; // Update the path as needed
 
 
 const Update = ({ isOpen, onClose }) => {

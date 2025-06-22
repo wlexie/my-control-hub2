@@ -14,6 +14,15 @@ import { HiOutlineUsers } from "react-icons/hi2";
 
 // Data for modules (assuming it's correct)
 const allModulesData = [
+    {
+    name: "Back Office Suite",
+    iconSrc: "/user-access/images/frame2.svg",
+    title: "Your command center for transactions.",
+    description:
+      "Get complete visibility into every transaction across the Tuma ecosystem. Track, monitor, and audit with confidence in a secure and intuitive interface.",
+    path: "/backoffice/dashboard/",
+    roles: ["ADMIN"],
+  },
   {
     name: "OmniSupport",
     iconSrc: "/user-access/images/frame1.svg",
@@ -29,7 +38,7 @@ const allModulesData = [
     title: "Take control of your exchange rates.",
     description:
       "Effortlessly manage and update Tuma's FX rates with precision. FX Navigator gives you full visibility and control to react to market changes — instantly.",
-    path: "/fx-navigator",
+    path: "/fx-navigator/dashboard",
     roles: ["ADMIN", "TREASURY"],
   },
   {
@@ -41,15 +50,7 @@ const allModulesData = [
     path: "/campaign-manager",
     roles: ["ADMIN"],
   },
-  {
-    name: "Back Office Suite",
-    iconSrc: "/user-access/images/frame2.svg",
-    title: "Your command center for transactions.",
-    description:
-      "Get complete visibility into every transaction across the Tuma ecosystem. Track, monitor, and audit with confidence in a secure and intuitive interface.",
-    path: "/backoffice/dashboard/",
-    roles: ["ADMIN"],
-  },
+
   {
     name: "Merchant Portal",
     iconSrc: "/user-access/images/frame5.svg",
@@ -147,9 +148,9 @@ const UserInitialsAvatar = ({ isMobile = false }) => {
   else if (user?.email) initials = user.email[0].toUpperCase();
 
   return (
-    <div className="relative flex flex-col items-center text-center group cursor-pointer w-full p-2">
+    <div className="relative flex flex-col items-center text-center group cursor-pointer w-full p-1 md:p-2">
       <div
-        className="w-10 h-10 md:w-12 md:h-12 bg-indigo-500 text-white rounded-full 
+        className="w-8 h-8 md:w-12 md:h-12 bg-indigo-500 text-white rounded-full 
                    flex items-center justify-center text-sm font-semibold
                    group-hover:ring-2 group-hover:ring-indigo-300 transition-all"
       >
@@ -203,7 +204,7 @@ const DashboardPage = () => {
       id: "settings",
       label: "Settings",
       icon: IoSettingsOutline,
-      hoverColor: "hover:text-blue-600",
+      hoverColor: "hover:text-blue-500",
       activeColor: "text-blue-700",
       activeBg: "bg-blue-100",
     },
@@ -303,7 +304,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <div className="md:hidden fixed bottom-2 rounded-2xl left-4 right-4 bg-white border border-gray-200  p-1 z-20">
+      <div className="md:hidden fixed bottom-0 rounded-t-2xl left-4 right-4 bg-white border border-gray-200  p-1 z-20">
         <div className="flex justify-around items-stretch h-full">
           {renderSidebarItems(true)}
         </div>

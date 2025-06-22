@@ -1,6 +1,6 @@
 import React from "react";
 import Image from 'next/image';
-import closeIcon from '../../../../public/fx/images/close.png';
+import closeIcon from '../../../../../public/fx/images/close.png';
 
 const ConfirmUpdate = ({ 
   isOpen, 

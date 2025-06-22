@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../../utils/apiService';
+import api from '../../../../utils/apiService';
 
 export default function AuditTrail() {
   const [records, setRecords] = useState([]);

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Image from 'next/image';
-import closeIcon from '../../../../public/fx/images/close.png';
+import closeIcon from '../../../../../public/fx/images/close.png';
 import UpdateMarkup from './UpdateMarkup';
-import api from '../../../utils/apiService';
+import api from '../../../../utils/apiService';
 
 const UpdateWeighted = ({ 
   isOpen, 
