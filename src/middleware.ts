@@ -1,4 +1,4 @@
-// middleware.ts
+/* middleware.ts
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get('auth_token')?.value;
   const { pathname } = request.nextUrl;
 
-  const publicPaths = ['/login', '/'];
+  const publicPaths = ['/login', '/', '/verify-otp'];
   const isPublicPath = publicPaths.includes(pathname);
 
   // Allow access to public paths like /login
@@ -40,7 +40,7 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-    '/', // Also run on the root path
-  ],
-};
+    //'/((?!api|_next/static|_next/image|favicon.ico).*)',
+  //  '/', // Also run on the root path
+ // ],
+//}; 
