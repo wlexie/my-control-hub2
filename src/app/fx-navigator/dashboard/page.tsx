@@ -7,6 +7,9 @@ import Volume from './components/Volume';
 import Total from './components/Total';
 import Reconciliation from './components/Reconciliation';
 import Margin from './components/Margin';
+import InterbankRateCard from './components/Interbank';
+import CostRateCard from './components/Cost';
+import CustomerRateCard from './components/Customer';
 
 export default function Home() {
   return (
@@ -35,6 +38,12 @@ export default function Home() {
               <Total />
               <Margin />
             </div>
+          </div>
+             {/* --- NEW: Grid for the three rate cards --- */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+            <InterbankRateCard />
+            <CostRateCard />
+            <CustomerRateCard />
           </div>
         </main>
       </div>
