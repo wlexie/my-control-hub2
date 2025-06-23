@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import Sidebar from "../components/Sidebar";
-import { Search, Menu } from "lucide-react";
+import { Search } from "lucide-react";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
 import DateFilter from "../components/DateFilter";
 import * as XLSX from "xlsx";
@@ -12,7 +12,6 @@ import {
   statusStyles,
 } from "./components/constants";
 import { AnimatePresence } from "framer-motion";
-import { Toaster } from "react-hot-toast";
 import { useMediaQuery } from "react-responsive";
 
 interface User {
@@ -31,7 +30,7 @@ interface User {
 
 export default function UserAccounts() {
   const isMobile = useMediaQuery({ maxWidth: 768 });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const updateUserStatus = (userId: number, newStatus: Partial<User>) => {
     setAllUsers((prev) =>
@@ -53,7 +52,7 @@ export default function UserAccounts() {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const dateFilterRef = useRef<HTMLDivElement>(null);
 
-  const usersPerPage = isMobile ? 5 : 10;
+  const usersPerPage = isMobile ? 7 : 10;
 
   const fetchAllUsers = async () => {
     setLoading(true);

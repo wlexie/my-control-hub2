@@ -74,7 +74,7 @@ const nav = [
   },
 ];
 
-const Sidebar: FC <SidebarProps> = ({ onClose }) => {
+const Sidebar: FC <SidebarProps> = ({ }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
