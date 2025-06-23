@@ -219,7 +219,6 @@ const TransactionsPage = () => {
         if (validResults.length > 0) {
           await new Promise((res) => setTimeout(res, 100));
           await fetchInBatches();
-        } else {
         }
       };
 
@@ -395,340 +394,361 @@ const TransactionsPage = () => {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
-  useEffect(() => {
-    const scrollY = window.scrollY;
-    return () => {
-      requestAnimationFrame(() => {
-        window.scrollTo(0, scrollY);
-      });
-    };
-  }, [currentPage, filteredTransactions]);
-
   return (
-    <div className="flex h-screen">
-      <div className="w-80 flex-shrink-0">
-        <Sidebar />
-      </div>
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar />
 
-      <div className="flex-1 p-6 bg-white overflow-x-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold text-black">Transactions</h2>
-          <div className="flex gap-4">
-            <div className="relative w-[450px] ">
-              <input
-                type="text"
-                placeholder="Search by sender, recipient, ID, currency..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border rounded-md shadow-sm focus:ring focus:ring-gray-100"
-              />
-              <Search
-                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 "
-                strokeWidth={2.5}
-              />
-            </div>
+      <div className="flex-1 md:ml-80 h-full overflow-y-auto bg-white">
+        <div className="p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+            <h2 className="text-2xl font-semibold text-black">Transactions</h2>
+            <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+              <div className="relative w-full md:w-[450px]">
+                <input
+                  type="text"
+                  placeholder="Search by sender, recipient, ID, currency"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 pl-2 border rounded-md shadow-sm focus:ring focus:ring-gray-100"
+                />
+                <Search
+                  className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+                  strokeWidth={2.5}
+                />
+              </div>
 
-            <div className="relative" ref={dateFilterRef}>
-              <button
-                onClick={() => setShowDateFilter(!showDateFilter)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100"
-              >
-                <FaCalendarAlt />
-                {dateRange.startDate && dateRange.endDate ? (
-                  <span className="text-sm">
-                    {dateRange.startDate.toLocaleDateString()} -{" "}
-                    {dateRange.endDate.toLocaleDateString()}
-                  </span>
-                ) : (
-                  "Filter by date"
-                )}
-              </button>
-
-              {dateRange.startDate && dateRange.endDate && (
+              <div className="relative" ref={dateFilterRef}>
                 <button
-                  onClick={clearDateFilter}
-                  className="absolute -right-2 -top-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                  title="Clear date filter"
+                  onClick={() => setShowDateFilter(!showDateFilter)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100 w-full md:w-auto"
                 >
-                  ×
-                </button>
-              )}
-
-              {showDateFilter && (
-                <>
-                  <div
-                    className="fixed inset-0 backdrop-blur-sm bg-transparent z-40"
-                    onClick={() => setShowDateFilter(false)}
-                  />
-
-                  <div className="fixed z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <DateFilter
-                      onChange={handleDateChange}
-                      onClear={clearDateFilter}
-                      initialStartDate={dateRange.startDate}
-                      initialEndDate={dateRange.endDate}
-                      isOpen={showDateFilter}
-                      onClose={() => setShowDateFilter(false)}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="relative" ref={countryDropdownRef}>
-              <button
-                onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100"
-              >
-                {selectedCountry ? (
-                  <>
-                    <img
-                      src={
-                        availableCountries.find(
-                          (c) => c.code === selectedCountry
-                        )?.flag
-                      }
-                      alt={`${selectedCountry} flag`}
-                      className="w-5 h-5"
-                    />
+                  <FaCalendarAlt />
+                  {dateRange.startDate && dateRange.endDate ? (
                     <span className="text-sm">
-                      Filter by Country: {selectedCountry}
+                      {dateRange.startDate.toLocaleDateString()} -{" "}
+                      {dateRange.endDate.toLocaleDateString()}
                     </span>
-                  </>
-                ) : (
-                  <span className="text-md">Filter by Country</span>
-                )}
-              </button>
+                  ) : (
+                    "Filter by date"
+                  )}
+                </button>
 
-              {showCountryDropdown && (
-                <div className="absolute z-50 mt-2 bg-white border rounded shadow w-48">
-                  {availableCountries.map((country) => (
+                {dateRange.startDate && dateRange.endDate && (
+                  <button
+                    onClick={clearDateFilter}
+                    className="absolute -right-2 -top-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                    title="Clear date filter"
+                  >
+                    ×
+                  </button>
+                )}
+
+                {showDateFilter && (
+                  <>
                     <div
-                      key={country.code}
+                      className="fixed inset-0 backdrop-blur-sm bg-transparent z-40"
+                      onClick={() => setShowDateFilter(false)}
+                    />
+
+                    <div className="fixed z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                      <DateFilter
+                        onChange={handleDateChange}
+                        onClear={clearDateFilter}
+                        initialStartDate={dateRange.startDate}
+                        initialEndDate={dateRange.endDate}
+                        isOpen={showDateFilter}
+                        onClose={() => setShowDateFilter(false)}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="relative" ref={countryDropdownRef}>
+                <button
+                  onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100 w-full md:w-auto"
+                >
+                  {selectedCountry ? (
+                    <>
+                      <img
+                        src={
+                          availableCountries.find(
+                            (c) => c.code === selectedCountry
+                          )?.flag
+                        }
+                        alt={`${selectedCountry} flag`}
+                        className="w-5 h-5"
+                      />
+                      <span className="text-sm">
+                        {
+                          availableCountries.find(
+                            (c) => c.code === selectedCountry
+                          )?.label
+                        }
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-md">Filter by Country</span>
+                  )}
+                </button>
+
+                {showCountryDropdown && (
+                  <div className="absolute z-50 mt-2 bg-white border rounded shadow w-48">
+                    {availableCountries.map((country) => (
+                      <div
+                        key={country.code}
+                        onClick={() => {
+                          setSelectedCountry(country.code);
+                          setShowCountryDropdown(false);
+                        }}
+                        className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
+                      >
+                        <img
+                          src={country.flag}
+                          alt="flag"
+                          className="w-5 h-5 mr-2"
+                        />
+                        {country.label} ({country.code})
+                      </div>
+                    ))}
+                    <div
                       onClick={() => {
-                        setSelectedCountry(country.code);
+                        setSelectedCountry(null);
                         setShowCountryDropdown(false);
                       }}
-                      className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
+                      className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer border-t"
                     >
-                      <img
-                        src={country.flag}
-                        alt="flag"
-                        className="w-5 h-5 mr-2"
-                      />
-                      {country.label} ({country.code})
+                      Reset filter
                     </div>
-                  ))}
-                  <div
-                    onClick={() => {
-                      setSelectedCountry(null);
-                      setShowCountryDropdown(false);
-                    }}
-                    className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer border-t"
-                  >
-                    Reset filter
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            <div className="relative">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none bg-white border rounded-md px-4 py-2 pr-8 shadow-sm hover:bg-gray-100 focus:outline-none focus:ring focus:ring-gray-100"
+              <div className="relative w-full md:w-auto">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="appearance-none bg-white border rounded-md px-4 py-2 pr-8 shadow-sm hover:bg-gray-100 focus:outline-none focus:ring focus:ring-gray-100 w-full"
+                >
+                  {statusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                  <svg className="fill-current h-4 w-4" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100 w-full md:w-auto"
               >
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                <svg className="fill-current h-4 w-4" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
+                <FaFileExport /> Export
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-gray-100 text-gray-600 text-sm">
+                      <th className="px-6 py-3 hidden sm:table-cell">
+                        Transaction ID
+                      </th>
+                      <th className="px-6 py-3">Sender</th>
+                      <th className="px-6 py-3">Amount</th>
+                      <th className="px-6 py-3 hidden sm:table-cell">
+                        Currency
+                      </th>
+                      <th className="px-6 py-3 hidden md:table-cell">
+                        Recipient
+                      </th>
+                      <th className="px-6 py-3 hidden md:table-cell">
+                        Recipient Amount
+                      </th>
+                      <th className="px-6 py-3 hidden lg:table-cell">
+                        Destination Currency
+                      </th>
+                      <th className="px-6 py-3 hidden lg:table-cell">Type</th>
+                      <th className="px-6 py-3">Time</th>
+                      <th className="px-6 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: rowsPerPage }).map((_, i) => (
+                      <tr key={i} className="animate-pulse border-b">
+                        {Array.from({ length: 10 }).map((_, j) => (
+                          <td key={j} className="px-6 py-4">
+                            <div className="h-4 bg-gray-200 rounded w-full"></div>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100"
-            >
-              <FaFileExport /> Export
-            </button>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <table className="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr className="bg-gray-100 text-gray-600 text-sm">
-                  <th className="px-6 py-3">Transaction ID</th>
-                  <th className="px-6 py-3">Sender</th>
-                  <th className="px-6 py-3">Sender Amount</th>
-                  <th className="px-6 py-3">Sender Currency</th>
-                  <th className="px-6 py-3">Recipient</th>
-                  <th className="px-6 py-3">Recipient Amount</th>
-                  <th className="px-6 py-3">Destination Currency</th>
-                  <th className="px-6 py-3">Transaction Type</th>
-                  <th className="px-6 py-3">Time (GMT)</th>
-                  <th className="px-6 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: rowsPerPage }).map((_, i) => (
-                  <tr key={i} className="animate-pulse border-b">
-                    {Array.from({ length: 10 }).map((_, j) => (
-                      <td key={j} className="px-6 py-4">
-                        <div className="h-4 bg-gray-200 rounded w-full"></div>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : error ? (
-          <p className="text-center text-red-500">{error}</p>
-        ) : (
-          <>
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <table className="w-full text-left border-collapse text-sm">
-                <thead>
-                  <tr className="bg-gray-100 text-gray-600 text-sm">
-                    <th className="px-6 py-3">Transaction ID</th>
-                    <th className="px-6 py-3">Sender</th>
-                    <th className="px-6 py-3">Sender Amount</th>
-                    <th className="px-6 py-3">Sender Currency</th>
-                    <th className="px-6 py-3">Recipient</th>
-                    <th className="px-6 py-3">Recipient Amount</th>
-                    <th className="px-6 py-3">Destination Currency</th>
-                    <th className="px-6 py-3">Transaction Type</th>
-                    <th className="px-6 py-3">Time (GMT)</th>
-                    <th className="px-6 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.length > 0 ? (
-                    filteredTransactions
-                      .slice(
-                        (currentPage - 1) * rowsPerPage,
-                        currentPage * rowsPerPage
-                      )
-                      .map((transaction) => (
-                        <tr
-                          key={transaction.transactionId}
-                          className="border-b hover:bg-gray-50 cursor-pointer"
-                          onClick={() => handleOpenModal(transaction)}
-                        >
-                          <td className="px-6 py-4">
-                            {transaction.transactionId}
-                          </td>
-                          <td className="px-6 py-4">
-                            {transaction.senderName}
-                          </td>
-                          <td className="px-6 py-4">
-                            {transaction.senderAmount}
-                          </td>
-                          <td className="px-6 py-4">
-                            {transaction.currencyIso3a}
-                          </td>
-                          <td className="px-6 py-4">
-                            {transaction.receiverName}
-                          </td>
-                          <td className="px-6 py-4">
-                            {Number(transaction.recipientAmount).toFixed(0)}
-                          </td>
-                          <td className="px-6 py-4">
-                            {transaction.receiverCurrencyIso3a}
-                          </td>
-                          <td className="px-6 py-4">
-                            {transaction.transactionType}
-                          </td>
-                          <td className="px-6 py-4">
-                            {formatDateTime(transaction.date)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`px-2 py-1 text-sm font-semibold rounded-lg ${
-                                transaction.status === "Success"
-                                  ? "text-green-700 bg-green-100"
-                                  : transaction.status === "Pending"
-                                  ? "text-yellow-700 bg-yellow-100"
-                                  : transaction.status === "Failed"
-                                  ? "text-red-700 bg-red-100"
-                                  : transaction.status === "Refunded"
-                                  ? "text-purple-700 bg-purple-100"
-                                  : transaction.status === "Under Review"
-                                  ? "text-blue-700 bg-blue-100"
-                                  : transaction.status === "Rejected"
-                                  ? "text-orange-700 bg-orange-100"
-                                  : transaction.status === "Escalated"
-                                  ? "text-amber-700 bg-amber-100"
-                                  : "text-black bg-gray-100"
-                              }`}
+          ) : error ? (
+            <p className="text-center text-red-500">{error}</p>
+          ) : (
+            <>
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-gray-100 text-gray-600 text-sm">
+                        <th className="px-6 py-3 hidden sm:table-cell">
+                          Transaction ID
+                        </th>
+                        <th className="px-6 py-3">Sender</th>
+                        <th className="px-6 py-3">Amount</th>
+                        <th className="px-6 py-3 hidden sm:table-cell">
+                          Currency
+                        </th>
+                        <th className="px-6 py-3 hidden md:table-cell">
+                          Recipient
+                        </th>
+                        <th className="px-6 py-3 hidden md:table-cell">
+                          Recipient Amount
+                        </th>
+                        <th className="px-6 py-3 hidden lg:table-cell">
+                          Destination Currency
+                        </th>
+                        <th className="px-6 py-3 hidden lg:table-cell">Type</th>
+                        <th className="px-6 py-3">Time</th>
+                        <th className="px-6 py-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTransactions.length > 0 ? (
+                        filteredTransactions
+                          .slice(
+                            (currentPage - 1) * rowsPerPage,
+                            currentPage * rowsPerPage
+                          )
+                          .map((transaction) => (
+                            <tr
+                              key={transaction.transactionId}
+                              className="border-b hover:bg-gray-50 cursor-pointer"
+                              onClick={() => handleOpenModal(transaction)}
                             >
-                              {transaction.status}
-                            </span>
+                              <td className="px-6 py-4 hidden sm:table-cell">
+                                {transaction.transactionId}
+                              </td>
+                              <td className="px-6 py-4">
+                                {transaction.senderName}
+                              </td>
+                              <td className="px-6 py-4">
+                                {transaction.senderAmount}
+                              </td>
+                              <td className="px-6 py-4 hidden sm:table-cell">
+                                {transaction.currencyIso3a}
+                              </td>
+                              <td className="px-6 py-4 hidden md:table-cell">
+                                {transaction.receiverName}
+                              </td>
+                              <td className="px-6 py-4 hidden md:table-cell">
+                                {Number(transaction.recipientAmount).toFixed(0)}
+                              </td>
+                              <td className="px-6 py-4 hidden lg:table-cell">
+                                {transaction.receiverCurrencyIso3a}
+                              </td>
+                              <td className="px-6 py-4 hidden lg:table-cell">
+                                {transaction.transactionType}
+                              </td>
+                              <td className="px-6 py-4">
+                                {formatDateTime(transaction.date)}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span
+                                  className={`px-2 py-1 text-sm font-semibold rounded-lg ${
+                                    transaction.status === "Success"
+                                      ? "text-green-700 bg-green-100"
+                                      : transaction.status === "Pending"
+                                      ? "text-yellow-700 bg-yellow-100"
+                                      : transaction.status === "Failed"
+                                      ? "text-red-700 bg-red-100"
+                                      : transaction.status === "Refunded"
+                                      ? "text-purple-700 bg-purple-100"
+                                      : transaction.status === "Under Review"
+                                      ? "text-blue-700 bg-blue-100"
+                                      : transaction.status === "Rejected"
+                                      ? "text-orange-700 bg-orange-100"
+                                      : transaction.status === "Escalated"
+                                      ? "text-amber-700 bg-amber-100"
+                                      : "text-black bg-gray-100"
+                                  }`}
+                                >
+                                  {transaction.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={10}
+                            className="px-6 py-4 text-center text-gray-500"
+                          >
+                            No transactions found.
                           </td>
                         </tr>
-                      ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={10}
-                        className="px-6 py-4 text-center text-gray-500"
-                      >
-                        No transactions found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {filteredTransactions.length > 0 && (
-              <div className="flex justify-center mt-6 space-x-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border rounded-md bg-blue-600 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <span className="px-4 py-2">
-                  Page {currentPage} of{" "}
-                  {Math.ceil(filteredTransactions.length / rowsPerPage)}
-                </span>
-                <button
-                  onClick={() => {
-                    const hasMoreData =
-                      currentPage * rowsPerPage < filteredTransactions.length;
-                    if (hasMoreData) {
-                      setCurrentPage((prev) => prev + 1);
-                    }
-                  }}
-                  disabled={
-                    currentPage * rowsPerPage >= filteredTransactions.length
-                  }
-                  className="px-4 py-2 border rounded-md bg-blue-600 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            )}
-          </>
-        )}
+
+              {filteredTransactions.length > 0 && (
+                <div className="flex justify-center mt-6 space-x-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border rounded-md bg-blue-600 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-4 py-2">
+                    Page {currentPage} of{" "}
+                    {Math.ceil(filteredTransactions.length / rowsPerPage)}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const hasMoreData =
+                        currentPage * rowsPerPage < filteredTransactions.length;
+                      if (hasMoreData) {
+                        setCurrentPage((prev) => prev + 1);
+                      }
+                    }}
+                    disabled={
+                      currentPage * rowsPerPage >= filteredTransactions.length
+                    }
+                    className="px-4 py-2 border rounded-md bg-blue-600 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {isModalOpen && (
-        <TransactionModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          transaction={selectedTransaction}
-        />
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <TransactionModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            transaction={selectedTransaction}
+          />
+        </div>
       )}
     </div>
   );

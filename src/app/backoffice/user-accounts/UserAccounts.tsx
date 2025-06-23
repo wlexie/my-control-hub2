@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import Sidebar from "../components/Sidebar";
-import { Search } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
 import DateFilter from "../components/DateFilter";
 import * as XLSX from "xlsx";
@@ -13,6 +13,7 @@ import {
 } from "./components/constants";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
+import { useMediaQuery } from "react-responsive";
 
 interface User {
   accountId: number;
@@ -29,6 +30,8 @@ interface User {
 }
 
 export default function UserAccounts() {
+  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const updateUserStatus = (userId: number, newStatus: Partial<User>) => {
     setAllUsers((prev) =>
@@ -50,12 +53,12 @@ export default function UserAccounts() {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const dateFilterRef = useRef<HTMLDivElement>(null);
 
-  const usersPerPage = 10;
+  const usersPerPage = isMobile ? 5 : 10;
 
   const fetchAllUsers = async () => {
     setLoading(true);
     const pageSize = 100;
-    const batchSize = 50; // how many pages to fetch per batch
+    const batchSize = 50;
     let currentPage = 1;
     let allResults: User[] = [];
 
@@ -85,12 +88,11 @@ export default function UserAccounts() {
         const results = await Promise.all(pages.map(fetchPage));
         const combined = results.flat();
 
-        if (combined.length === 0) break; // No more users
+        if (combined.length === 0) break;
 
         allResults = [...allResults, ...combined];
         currentPage += batchSize;
 
-        // Optional: small delay to prevent server overload
         await new Promise((res) => setTimeout(res, 100));
       }
     };
@@ -127,7 +129,6 @@ export default function UserAccounts() {
         (date >= dateRange.startDate.getTime() &&
           date <= dateRange.endDate.getTime());
 
-      // All tokens must match at least one field
       const matchesAllTokens = tokens.every((token) =>
         fields.some((field) => field.includes(token))
       );
@@ -254,7 +255,7 @@ export default function UserAccounts() {
             className="w-5 h-5 inline-block mr-1"
             alt="Kenya flag"
           />
-          Kenya
+          {!isMobile && "Kenya"}
         </>
       );
     } else if (code === "United Kingdom" || code === "GBR") {
@@ -265,7 +266,7 @@ export default function UserAccounts() {
             className="w-5 h-5 inline-block mr-1"
             alt="UK flag"
           />
-          United Kingdom
+          {!isMobile && "United Kingdom"}
         </>
       );
     } else if (code === "Tanzania") {
@@ -276,210 +277,292 @@ export default function UserAccounts() {
             className="w-5 h-5 inline-block mr-1"
             alt="Tanzania flag"
           />
-          Tanzania
+          {!isMobile && "Tanzania"}
         </>
       );
     } else {
-      return <span className="text-gray-400">N/A</span>;
+      return <span className="text-gray-400">{isMobile ? "" : "N/A"}</span>;
     }
   };
 
   return (
-    <div className="flex h-screen">
-      <div className="w-80 flex-shrink-0">
-        <Toaster position="top-right" />
-        <Sidebar />
-      </div>
-      <div className="flex-1 p-6 bg-white overflow-x-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-black">User & Accounts</h2>
-          <div className="flex gap-4">
-            <div className="relative w-[670px]">
+    <div className="flex h-screen relative">
+  
+      <Sidebar />
+      
+      {/* Main content with overlay for mobile */}
+      <div className={`flex-1 p-4 md:p-6 md:ml-80 bg-white overflow-x-auto ${isMobile && sidebarOpen ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <h2 className="text-xl md:text-2xl font-semibold text-black">User & Accounts</h2>
+          
+          <div className="flex flex-col md:flex-row w-full md:w-auto gap-3">
+            <div className="relative w-full md:w-[300px] lg:w-[400px] xl:w-[500px]">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by any field: name, email, phone, country, status..."
+                placeholder={isMobile ? "Search..." : "Search by any field: name, email, phone, country, status..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border rounded-md shadow-sm"
+                className="w-full px-4 py-2 pl-10 border rounded-md shadow-sm text-sm md:text-base"
               />
             </div>
-            <div className="relative" ref={dateFilterRef}>
-              <button
-                onClick={() => setShowDateFilter(!showDateFilter)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm"
-              >
-                <FaCalendarAlt />
-                {dateRange.startDate && dateRange.endDate ? (
-                  <span className="text-sm">
-                    {dateRange.startDate.toLocaleDateString("en-GB")} -{" "}
-                    {dateRange.endDate.toLocaleDateString("en-GB")}
-                  </span>
-                ) : (
-                  "Filter by date"
+            
+            <div className="flex gap-2 md:gap-4">
+              <div className="relative" ref={dateFilterRef}>
+                <button
+                  onClick={() => setShowDateFilter(!showDateFilter)}
+                  className="flex items-center gap-2 px-3 py-2 bg-white border rounded-md shadow-sm text-sm"
+                >
+                  <FaCalendarAlt className="text-sm" />
+                  {isMobile ? (
+                    <span>Date</span>
+                  ) : dateRange.startDate && dateRange.endDate ? (
+                    <span className="text-sm">
+                      {dateRange.startDate.toLocaleDateString("en-GB")} -{" "}
+                      {dateRange.endDate.toLocaleDateString("en-GB")}
+                    </span>
+                  ) : (
+                    "Filter by date"
+                  )}
+                </button>
+                {showDateFilter && (
+                  <div className={`absolute z-50 ${isMobile ? 'left-0' : 'right-0'} top-12`}>
+                    <DateFilter
+                      onChange={(start, end) => {
+                        setDateRange({ startDate: start, endDate: end });
+                        setShowDateFilter(false);
+                      }}
+                      onClear={() =>
+                        setDateRange({ startDate: null, endDate: null })
+                      }
+                      initialStartDate={dateRange.startDate}
+                      initialEndDate={dateRange.endDate}
+                      isOpen={showDateFilter}
+                      onClose={() => setShowDateFilter(false)}
+                    />
+                  </div>
                 )}
+              </div>
+              
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 px-3 py-2 bg-white border rounded-md shadow-sm text-sm"
+              >
+                <FaFileExport /> {isMobile ? "" : "Export"}
               </button>
-              {showDateFilter && (
-                <div className="absolute z-50 top-12 right-0">
-                  <DateFilter
-                    onChange={(start, end) => {
-                      setDateRange({ startDate: start, endDate: end });
-                      setShowDateFilter(false);
-                    }}
-                    onClear={() =>
-                      setDateRange({ startDate: null, endDate: null })
-                    }
-                    initialStartDate={dateRange.startDate}
-                    initialEndDate={dateRange.endDate}
-                    isOpen={showDateFilter}
-                    onClose={() => setShowDateFilter(false)}
-                  />
-                </div>
-              )}
             </div>
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm"
-            >
-              <FaFileExport /> Export
-            </button>
           </div>
         </div>
+        
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-left">
-              <tr>
-                <th className="px-4 py-3">USER ID</th>
-                <th className="px-4 py-3">USER</th>
-                <th className="px-4 py-3">PHONE</th>
-                <th className="px-4 py-3">EMAIL</th>
-                <th className="px-4 py-3">COUNTRY</th>
-                <th className="px-4 py-3">REGISTRATION DATE</th>
-                <th className="px-4 py-3">ACCOUNT STATUS</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-800">
+          {isMobile ? (
+            // Mobile card view
+            <div className="space-y-3">
               {loading ? (
                 [...Array(usersPerPage)].map((_, idx) => (
-                  <tr key={idx} className="animate-pulse">
-                    <td className="px-4 py-3">
-                      <div className="h-4 bg-gray-200 rounded w-16" />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-full bg-gray-200" />
-                        <div className="h-4 bg-gray-200 rounded w-24" />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="h-4 bg-gray-200 rounded w-20" />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="h-4 bg-gray-200 rounded w-28" />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="h-4 bg-gray-200 rounded w-20" />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="h-4 bg-gray-200 rounded w-24" />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="h-6 bg-gray-200 rounded w-20" />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="h-4 bg-gray-200 rounded w-6" />
-                    </td>
-                  </tr>
+                  <div key={idx} className="animate-pulse p-4 border rounded-lg">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2 mb-1"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                  </div>
                 ))
               ) : paginatedUsers.length > 0 ? (
                 paginatedUsers.map((user) => (
-                  <tr
+                  <div
                     key={user.accountId}
                     onClick={() => {
                       setSelectedUser(user);
                       setShowModal(true);
                     }}
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
                   >
-                    <td className="px-4 py-3 text-gray-500">
-                      {user.accountId ?? "N/A"}
-                    </td>
-
-                    <td className="px-4 py-3 flex items-center gap-2">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm ${getPastelColor(
-                          user.firstName + user.lastName
-                        )}`}
-                      >
-                        {getInitials(user.firstName + " " + user.lastName)}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs ${getPastelColor(
+                            user.firstName + user.lastName
+                          )}`}
+                        >
+                          {getInitials(user.firstName + " " + user.lastName)}
+                        </div>
+                        <span className="font-medium">
+                          {user.firstName} {user.lastName}
+                        </span>
                       </div>
-                      <span>
-                        {user.firstName} {user.lastName}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">{user.phone}</td>
-                    <td className="px-4 py-3 text-gray-500">{user.email}</td>
-                    <td className="px-4 py-3 flex items-center gap-2 text-gray-500">
-                      {getCountryDisplay(user.country)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {new Date(user.registrationDate).toLocaleDateString(
-                        "en-GB"
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
+                      <span className="text-xs text-gray-500">ID: {user.accountId}</span>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600 mb-1">
+                      <span className="font-medium">Email:</span> {user.email}
+                    </div>
+                    
+                    <div className="text-sm text-gray-600 mb-1">
+                      <span className="font-medium">Phone:</span> {user.phone}
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-2">
+                      <div className="text-xs text-gray-500">
+                        {new Date(user.registrationDate).toLocaleDateString("en-GB")}
+                      </div>
                       <span
-                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                           statusStyles[user.accountStatus]?.bg || "bg-gray-100"
                         } ${
-                          statusStyles[user.accountStatus]?.text ||
-                          "text-gray-600"
+                          statusStyles[user.accountStatus]?.text || "text-gray-600"
                         }`}
                       >
                         <span
-                          className={`w-2 h-2 rounded-full ${
-                            statusStyles[user.accountStatus]?.dot ||
-                            "bg-gray-400"
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            statusStyles[user.accountStatus]?.dot || "bg-gray-400"
                           }`}
                         />
                         {user.accountStatus}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">⋯</td>
-                  </tr>
+                    </div>
+                  </div>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={7} className="text-center py-4 text-gray-400">
-                    No users found.
-                  </td>
-                </tr>
+                <div className="text-center py-4 text-gray-400">
+                  No users found.
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            // Desktop table view
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50 text-gray-500 text-left">
+                <tr>
+                  <th className="px-4 py-3">USER ID</th>
+                  <th className="px-4 py-3">USER</th>
+                  <th className="px-4 py-3">PHONE</th>
+                  <th className="px-4 py-3">EMAIL</th>
+                  <th className="px-4 py-3">COUNTRY</th>
+                  <th className="px-4 py-3">REGISTRATION DATE</th>
+                  <th className="px-4 py-3">ACCOUNT STATUS</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-gray-800">
+                {loading ? (
+                  [...Array(usersPerPage)].map((_, idx) => (
+                    <tr key={idx} className="animate-pulse">
+                      <td className="px-4 py-3">
+                        <div className="h-4 bg-gray-200 rounded w-16" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-10 h-10 rounded-full bg-gray-200" />
+                          <div className="h-4 bg-gray-200 rounded w-24" />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-4 bg-gray-200 rounded w-20" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-4 bg-gray-200 rounded w-28" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-4 bg-gray-200 rounded w-20" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-4 bg-gray-200 rounded w-24" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-6 bg-gray-200 rounded w-20" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-4 bg-gray-200 rounded w-6" />
+                      </td>
+                    </tr>
+                  ))
+                ) : paginatedUsers.length > 0 ? (
+                  paginatedUsers.map((user) => (
+                    <tr
+                      key={user.accountId}
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setShowModal(true);
+                      }}
+                      className="cursor-pointer hover:bg-gray-50"
+                    >
+                      <td className="px-4 py-3 text-gray-500">
+                        {user.accountId ?? "N/A"}
+                      </td>
+                      <td className="px-4 py-3 flex items-center gap-2">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm ${getPastelColor(
+                            user.firstName + user.lastName
+                          )}`}
+                        >
+                          {getInitials(user.firstName + " " + user.lastName)}
+                        </div>
+                        <span>
+                          {user.firstName} {user.lastName}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">{user.phone}</td>
+                      <td className="px-4 py-3 text-gray-500">{user.email}</td>
+                      <td className="px-4 py-3 flex items-center gap-2 text-gray-500">
+                        {getCountryDisplay(user.country)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {new Date(user.registrationDate).toLocaleDateString(
+                          "en-GB"
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                            statusStyles[user.accountStatus]?.bg || "bg-gray-100"
+                          } ${
+                            statusStyles[user.accountStatus]?.text ||
+                            "text-gray-600"
+                          }`}
+                        >
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              statusStyles[user.accountStatus]?.dot ||
+                              "bg-gray-400"
+                            }`}
+                          />
+                          {user.accountStatus}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">⋯</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="text-center py-4 text-gray-400">
+                      No users found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
-        <div className="flex justify-center items-center mt-6 gap-4">
+        
+        <div className="flex flex-col md:flex-row justify-center items-center mt-6 gap-3 md:gap-4">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-600 text-white"
+            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-600 text-white text-sm md:text-base"
           >
             Previous
           </button>
           {!loading && (
-            <span className="text-sm">
+            <span className="text-xs md:text-sm text-center">
               Page {currentPage} of {totalPages} — {allUsers.length} customer
               {allUsers.length !== 1 && "s"}
             </span>
           )}
-
           <button
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
             disabled={currentPage >= totalPages}
-            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-600 text-white"
+            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-600 text-white text-sm md:text-base"
           >
             Next
           </button>
@@ -492,6 +575,7 @@ export default function UserAccounts() {
               open={showModal}
               onClose={() => setShowModal(false)}
               onUserUpdated={updateUserStatus}
+              
             />
           )}
         </AnimatePresence>
