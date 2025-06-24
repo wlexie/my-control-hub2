@@ -3,42 +3,78 @@
 
 import React from 'react';
 import {
-  AreaChart, // Changed from LineChart
-  Area,      // Changed from Line
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
+  Tooltip, // 1. ADDED: Import Tooltip component
 } from 'recharts';
 
 // --- DATA & STYLING CONFIGURATION ---
 
-// 1. Hardcoded data (no changes here)
+// 2. ADDED: 'date' field to show in the tooltip. Your original values are untouched.
 const chartData = [
-  { name: 'Mon', mobile: 2800000, paybill: 3600000, bank: 4600000, card: 5400000 },
-  { name: 'Tue', mobile: 2850000, paybill: 3650000, bank: 4650000, card: 5450000 },
-  { name: 'Wed', mobile: 2750000, paybill: 3700000, bank: 4700000, card: 5500000 },
-  { name: 'Thu', mobile: 2900000, paybill: 3600000, bank: 4600000, card: 5400000 },
-  { name: 'Fri', mobile: 2800000, paybill: 3650000, bank: 4650000, card: 5350000 },
-  { name: 'Sat', mobile: 2750000, paybill: 3700000, bank: 4700000, card: 5400000 },
-  { name: 'Sun', mobile: 2700000, paybill: 3600000, bank: 4600000, card: 5300000 },
+  { name: 'Mon', date: 'June 8',  mobile: 2800000, paybill: 3600000, bank: 4600000, card: 5400000 },
+  { name: 'Tue', date: 'June 9',  mobile: 2850000, paybill: 3650000, bank: 4650000, card: 5450000 },
+  { name: 'Wed', date: 'June 10', mobile: 2750000, paybill: 3700000, bank: 4700000, card: 5500000 },
+  { name: 'Thu', date: 'June 11', mobile: 2900000, paybill: 3600000, bank: 4600000, card: 5400000 },
+  { name: 'Fri', date: 'June 12', mobile: 2800000, paybill: 3650000, bank: 4650000, card: 5350000 },
+  { name: 'Sat', date: 'June 13', mobile: 2750000, paybill: 3700000, bank: 4700000, card: 5400000 },
+  { name: 'Sun', date: 'June 14', mobile: 2700000, paybill: 3600000, bank: 4600000, card: 5300000 },
 ];
 
-// 2. Stroke colors for the lines
+// Stroke colors for the lines (UNCHANGED)
 const STROKE_COLORS = {
-  mobile: '#f8b4b4', 
-  paybill: '#8884d8', 
-  bank: '#82ca9d',  
-  card: '#f5c94c',  
+  mobile: '#f8b4b4',
+  paybill: '#8884d8',
+  bank: '#82ca9d',
+  card: '#f5c94c',
 };
 
-// 3. NEW: Fill colors for the shaded areas (same colors with low opacity)
+// Fill colors for the shaded areas (UNCHANGED)
 const FILL_COLORS = {
-  mobile: '#f8b4b433', 
+  mobile: '#f8b4b433',
   paybill: '#8884d833',
-  bank: '#82ca9d33', 
-  card: '#f5c94c33',  
+  bank: '#82ca9d33',
+  card: '#f5c94c33',
 };
+
+// --- 3. ADDED: Custom Tooltip Component ---
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload; // Get data for the hovered point
+    const nameMap = { mobile: 'Mobile money', paybill: 'Paybill', bank: 'Bank', card: 'Card'};
+
+    // Sort payload to ensure consistent order in tooltip (Mobile, Paybill, Bank, Card)
+    const sortedPayload = [...payload].reverse();
+
+    return (
+      <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200/50">
+        <p className="font-bold text-gray-800">{`${label}, ${data.date}`}</p>
+        <div className="mt-3 space-y-3">
+          {sortedPayload.map((item, index) => (
+            <div key={index} className="flex justify-between items-center gap-8">
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-sm text-gray-600">{nameMap[item.dataKey]}</span>
+              </div>
+              <span className="font-bold text-sm text-gray-800">
+                {(item.value / 1000000).toFixed(1)}M
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 
 // --- SUB-COMPONENTS ---
 
@@ -64,11 +100,11 @@ const Volume = () => {
       {/* Responsive Chart Container */}
       <div style={{ width: '100%', height: 260 }}>
         <ResponsiveContainer>
-          <AreaChart // Use AreaChart instead of LineChart
+          <AreaChart
             data={chartData}
             margin={{ top: 20, right: 20, left: -20, bottom: 10 }}
           >
-            {/* Define gradient fills for a smoother look if desired (optional but nice) */}
+            {/* defs are UNCHANGED */}
             <defs>
               <linearGradient id="colorCard" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={STROKE_COLORS.card} stopOpacity={0.2}/>
@@ -105,8 +141,14 @@ const Volume = () => {
               tick={{ fill: '#64748b', fontSize: 11 }}
             />
             
-            {/* Chart Areas - Use <Area> instead of <Line> */}
-            {/* IMPORTANT: Render order matters. Render the highest values first. */}
+            {/* 4. ADDED: The Tooltip component itself */}
+            <Tooltip
+              cursor={{ stroke: '#374151', strokeWidth: 1, strokeDasharray: '5 5' }}
+              content={<CustomTooltip />}
+              animationDuration={50}
+            />
+
+            {/* Chart Areas are UNCHANGED */}
             <Area type="monotone" dataKey="card" stroke={STROKE_COLORS.card} fill="url(#colorCard)" strokeWidth={2.5} dot={false} />
             <Area type="monotone" dataKey="bank" stroke={STROKE_COLORS.bank} fill="url(#colorBank)" strokeWidth={2.5} dot={false} />
             <Area type="monotone" dataKey="paybill" stroke={STROKE_COLORS.paybill} fill="url(#colorPaybill)" strokeWidth={2.5} dot={false} />
@@ -115,7 +157,7 @@ const Volume = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Legend - No changes needed here */}
+      {/* Legend is UNCHANGED */}
       <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-2">
         <LegendItem color={STROKE_COLORS.mobile} label="Mobile money" />
         <LegendItem color={STROKE_COLORS.paybill} label="Paybill" />
@@ -123,7 +165,7 @@ const Volume = () => {
         <LegendItem color={STROKE_COLORS.card} label="Card" />
       </div>
 
-      {/* Weighted Average Footer - No changes needed here */}
+      {/* Weighted Average Footer is UNCHANGED */}
       <div className="bg-slate-100 p-3 py-2 rounded-lg flex justify-between items-center mt-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-blue-500"></div>

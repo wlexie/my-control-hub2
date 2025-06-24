@@ -19,7 +19,6 @@ const Login = () => {
     setError("");
     
     try {
-      // Make API call to send OTP
       const response = await axios.post(
         `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(email)}`
       );
@@ -39,91 +38,89 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen font-poppins items-center justify-center bg-gray-100">
-      <div className="w-full max-w-full overflow-hidden flex">
+    <div className="flex min-h-screen font-poppins bg-gray-100">
+      <div className="flex w-full">
         {/* Left Column: Image */}
-        <div className="w-1/2 relative">
+        {/* "hidden" hides this on mobile. "lg:block" makes it visible on large screens (1024px+). */}
+        <div className="relative hidden w-1/2 lg:block">
           <Image
             src="/user-access/images/lady.png"
-            alt="Lady"
-            width={500}
-            height={500}
+            alt="Person using a computer"
+            layout="fill"
+            objectFit="cover"
             loading="lazy"
-            className="h-screen w-full object-cover"
           />
         </div>
 
         {/* Right Column: Form */}
-        <div className="w-1/2 mt-32 px-24 pr-36">
-          <h2 className="text-4xl font-bold text-gray-800 mb-12 flex items-center gap-4">
-            <Image src="/user-access/images/logo.png" alt="Logo" width={40} height={35} />
-            Control Hub
-          </h2>
-          <h1 className="text-2xl text-gray-800 font-semibold mb-8">Login to your account</h1>
-          <p className="text-gray-400 font-medium text-lg mb-6">
-          Don&apos;t have an account?{" "}
-            <Link href="/" className="text-blue-600 underline">
-              Request for Access
-            </Link>
-          </p>
+        {/* "w-full" makes this full-width on mobile. "lg:w-1/2" makes it half-width on large screens. */}
+        <div className="flex w-full items-center justify-center p-8 lg:w-1/2 sm:p-12">
+          <div className="w-full max-w-md">
+            <h2 className="mb-10 flex items-center gap-4 text-3xl font-bold text-gray-800 lg:text-4xl">
+              <Image src="/user-access/images/logo.png" alt="Logo" width={40} height={35} />
+              Control Hub
+            </h2>
+            <h1 className="mb-6 text-xl font-semibold text-gray-800 sm:text-2xl">
+              Login to your account
+            </h1>
+            <p className="mb-8 text-base font-medium text-gray-500">
+              Don't have an account?{" "}
+              <Link href="/" className="text-blue-600 underline">
+                Request for Access
+              </Link>
+            </p>
 
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-100 text-red-800 px-4 py-2 rounded mb-4 text-center">
-              {error}
-            </div>
-          )}
+            {error && (
+              <div className="mb-4 rounded bg-red-100 px-4 py-2 text-center text-red-800">
+                {error}
+              </div>
+            )}
 
-          {/* Notification Message */}
-          {notification && (
-            <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4 text-center">
-              {notification}
-            </div>
-          )}
+            {notification && (
+              <div className="mb-4 rounded bg-green-100 px-4 py-2 text-center text-green-800">
+                {notification}
+              </div>
+            )}
 
-          {/* Login Form */}
-          <form className="space-y-6" onSubmit={handleLogin}>
-            {/* Email Input */}
-            <div className="relative mt-1">
-              <div className="absolute inset-y-0 left-5 flex items-center text-gray-400">
-                {/* Envelope Icon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
-                  <path d="M2 6l10 7 10-7" />
-                </svg>
+            <form className="space-y-6" onSubmit={handleLogin}>
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-gray-400">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+                    <path d="M2 6l10 7 10-7" />
+                  </svg>
+                </div>
+
+                <input
+                  type="email"
+                  className="w-full rounded-lg border border-gray-300 py-3 pl-12 pr-4 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                />
               </div>
 
-              {/* Input Field */}
-              <input
-                type="email"
-                className="w-full px-14 py-3 border text-lg border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-400"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-              />
-            </div>
-
-            {/* Login Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full mt-6 bg-gray-800 hover:bg-gray-900 text-white font-semibold text-xl py-3 rounded-lg transition duration-300 ${
-                isLoading ? "opacity-70 cursor-not-allowed" : ""
-              }`}
-            >
-              {isLoading ? "Sending OTP..." : "Continue"}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full rounded-lg bg-gray-800 py-3 text-lg font-semibold text-white transition duration-300 hover:bg-gray-900 ${
+                  isLoading ? "cursor-not-allowed opacity-70" : ""
+                }`}
+              >
+                {isLoading ? "Sending OTP..." : "Continue"}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

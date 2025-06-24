@@ -13,7 +13,7 @@ const StatCard = ({ pair, value, color, bgColor }) => (
 
 const Total = () => {
   return (
-    <div className="bg-white py-4 px-5 rounded-lg ">
+    <div className="bg-white py-4 pb-5 px-5 rounded-lg ">
       <h2 className="text-[16px] font-semibold text-gray-800">Total Net Position</h2>
 
       <div className="flex items-center gap-2 mt-4">

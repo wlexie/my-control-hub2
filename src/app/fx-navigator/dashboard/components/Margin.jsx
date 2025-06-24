@@ -18,7 +18,7 @@ const Margin = () => {
   return (
     // ---- ADDED flex and flex-col ----
     // This turns the entire card into a vertical flex container.
-    <div className="bg-white p-6 pt-8 pb-10 rounded-lg flex flex-col">
+    <div className="bg-white p-6 pt-9 pb-10 rounded-lg flex flex-col">
       <div className="flex justify-between items-center mb-7">
         <h2 className="text-lg font-semibold text-gray-800">Net Margin per Channel</h2>
         <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 shadow-sm">

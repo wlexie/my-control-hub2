@@ -25,22 +25,22 @@ export default function Home() {
         </div>
 
         {/* Scrollable Main Dashboard */}
-        <main className="flex-1 overflow-y-auto p-4 px-5">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+        <main className="flex-1 overflow-y-auto p-4 px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Left Column */}
-            <div className="lg:col-span-2 flex flex-col gap-3">
+            <div className="lg:col-span-2 flex flex-col gap-4">
               <Volume />
               <Reconciliation />
             </div>
 
             {/* Right Column */}
-            <div className="lg:col-span-2 flex flex-col gap-5">
+            <div className="lg:col-span-2 flex flex-col gap-4">
               <Total />
               <Margin />
             </div>
           </div>
              {/* --- NEW: Grid for the three rate cards --- */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
             <InterbankRateCard />
             <CostRateCard />
             <CustomerRateCard />
