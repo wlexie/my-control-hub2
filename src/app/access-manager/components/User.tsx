@@ -67,7 +67,7 @@ export default function User() {
   };
 
   return (
-    <div className="relative font-poppins">
+    <div className="relative ">
       <div
         className="flex cursor-pointer justify-between rounded-md bg-yellow p-2 py-1"
         onClick={handleModalToggle}
@@ -90,7 +90,7 @@ export default function User() {
       {/* Modal */}
       {isModalOpen && (
         <div
-          className="absolute left-28 -bottom-3 font-poppins transform translate-x-1/2 mb-2 bg-gray-100 text-gray-600 z-20 p-3 rounded-md w-48 shadow-xl"
+          className="absolute md:left-28 left-24 -bottom-3 font-poppins transform translate-x-1/2 mb-2 bg-gray-100 text-gray-600 z-20 p-3 rounded-md w-48 shadow-xl"
           ref={modalRef}
         >
           {/* Modal Header */}
