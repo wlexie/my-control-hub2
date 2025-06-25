@@ -137,9 +137,9 @@ const Sidebar: FC <SidebarProps> = ({ }) => {
       {/* Mobile: hamburger */}
       <button
         onClick={toggle}
-        className="fixed top-1 right-2 z-50 p-2 bg-blue-700 text-white rounded-md md:hidden"
+        className="fixed top-2 right-2 z-50 p-2 bg-blue-600 text-white rounded-md md:hidden"
       >
-        <Menu size={14} />
+        <Menu size={24} />
       </button>
 
       {/* Mobile: slide-in panel */}
