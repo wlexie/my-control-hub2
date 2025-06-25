@@ -161,7 +161,7 @@ const Sidebar: FC<SidebarProps> = () => {
             className="fixed inset-0 z-40 flex"
           >
             {/* Panel itself */}
-            <div className="md:w-4/5 w-full sm:w-3/5 h-screen bg-blue-700 flex flex-col">
+            <div className="md:w-4/5 w-full h-screen bg-blue-700 flex flex-col">
               {/* Note: I'm not re-using `content` here to avoid layout issues with scroll.
                   Instead, I've created a dedicated scrollable nav. */}
               {content}
