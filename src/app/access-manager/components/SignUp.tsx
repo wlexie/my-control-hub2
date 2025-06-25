@@ -42,7 +42,6 @@ export default function ControlHub() {
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // Simplified department list to remove duplicates for clarity
   const departments = [
     { value: "Tech", label: "Tech" },
     { value: "Finance", label: "Finance" },
@@ -65,6 +64,17 @@ export default function ControlHub() {
     if (error) setError(null);
   };
 
+  // 1. Create a function to reset the form's state.
+  const resetForm = () => {
+    setFormData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phoneNumber: ""
+    });
+    setDepartment("");
+  };
+
   const handleRequestAccess = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -79,8 +89,6 @@ export default function ControlHub() {
         department: department
       };
   
-      console.log("Data being sent to API:", requestData);
-  
       const response = await axios.post(
         "https://auth.tuma-app.com/api/account/save-system-user",
         null,
@@ -89,13 +97,14 @@ export default function ControlHub() {
         }
       );
   
-      console.log("API Response:", response.data);
       setApiResponse(response.data);
       
       if (response.data.status === "error") {
         setError(response.data.message);
       } else {
         setIsPopupOpen(true);
+        // 2. Call the reset function on successful submission.
+        resetForm();
       }
     } catch (err: unknown) {
       console.error("Error requesting access:", err);
@@ -114,26 +123,18 @@ export default function ControlHub() {
   };
   
   return (
-    // Main container: Covers the entire screen with a two-column layout.
-    // 'flex' arranges the image and form side-by-side on medium screens and up.
-    // 'min-h-screen' ensures it takes at least the full viewport height.
     <div className="flex min-h-screen w-full bg-white font-poppins">
-      {/* Left Column: Image - hidden on screens smaller than md breakpoint */}
       <div className="w-1/2 hidden md:block relative">
         <Image
           src="/user-access/images/lady.png"
           alt="A person looking at their phone"
-          fill // Use fill to cover the parent container
-          className="object-cover" // Ensures the image covers the area without distortion
-          priority // Prioritize loading this image as it's a large visual element
+          fill 
+          className="object-cover" 
+          priority 
         />
       </div>
 
-      {/* Right Column: Form - Takes full width on mobile and half on desktop */}
-      {/* Responsive padding (p-8, lg:p-12) and vertical spacing (space-y-6) create a clean layout at all sizes. */}
-      {/* overflow-y-auto allows scrolling if form content is too tall for the viewport. */}
       <div className="w-full md:w-1/2 p-8 lg:p-12 flex flex-col justify-center space-y-6 overflow-y-auto">
-        {/* Responsive font sizes for better readability on different devices */}
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
           <Image src="/user-access/images/logo.png" alt="Logo" width={35} height={30} />
           Control Hub
@@ -150,9 +151,7 @@ export default function ControlHub() {
 
         <div className="w-full border-t border-gray-200"></div>
 
-        {/* Form with consistent vertical spacing */}
         <form className="space-y-4" onSubmit={handleRequestAccess}>
-          {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-gray-600">
               First Name <span className="text-red-500">*</span>
@@ -167,7 +166,6 @@ export default function ControlHub() {
             />
           </div>
 
-          {/* Last Name */}
           <div>
             <label className="block text-sm font-medium text-gray-600">
               Last Name <span className="text-red-500">*</span>
@@ -182,9 +180,7 @@ export default function ControlHub() {
             />
           </div>
 
-          {/* Email & Phone container: Stacks vertically on mobile (flex-col) and sits side-by-side on desktop (md:flex-row) */}
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Email */}
             <div className="w-full md:w-1/2">
               <label className="block text-sm font-medium text-gray-600">
                 Email <span className="text-red-500">*</span>
@@ -199,7 +195,6 @@ export default function ControlHub() {
               />
             </div>
             
-            {/* Phone Number */}
             <div className="w-full md:w-1/2">
               <label className="block text-sm font-medium text-gray-600">
                 Phone Number <span className="text-red-500">*</span>
@@ -215,13 +210,12 @@ export default function ControlHub() {
             </div>
           </div>
 
-          {/* Department Dropdown */}
           <div className="relative">
             <label className="block text-sm font-medium text-gray-600">
               Department <span className="text-red-500">*</span>
             </label>
             <div 
-              className="mt-1 w-full px-3 py-2 border text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none flex justify-between items-center cursor-pointer"
+              className="mt-1 md:w-[250px] w-full px-3 py-2 border text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none flex justify-between items-center cursor-pointer"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <span>{department || "Select Department"}</span>
@@ -250,7 +244,6 @@ export default function ControlHub() {
             </div>
           )}
 
-          {/* Button with responsive text size and improved disabled state */}
           <button
             type="submit"
             disabled={loading || !department || !formData.firstName || !formData.lastName || !formData.email || !formData.phoneNumber}
@@ -261,7 +254,6 @@ export default function ControlHub() {
         </form>
       </div>
       
-      {/* Use your actual Popup component or this placeholder */}
       {apiResponse?.status === "created" && (
         <PlaceholderPopup 
           isOpen={isPopupOpen} 
