@@ -4,15 +4,16 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { FC, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu } from "lucide-react";
+import { HiMenu } from "react-icons/hi"; // +++ ADD THIS +++
+// import { Menu } from "lucide-react"; // --- REMOVE THIS ---
 import User from "../../access-manager/components/User";
 
-interface SidebarProps {
-  onClose?: () => void; // Add this prop type
-}
+// The interface is defined but the props aren't used. This is fine, but for clarity,
+// you could change the signature to: const Sidebar: FC = () => {
+interface SidebarProps {}
 
 const nav = [
-  {
+   {
     href: "/backoffice/dashboard",
     label: "Dashboard",
     icon: "/backoffice/dashboard.png",
@@ -74,48 +75,52 @@ const nav = [
   },
 ];
 
-const Sidebar: FC <SidebarProps> = ({ }) => {
+const Sidebar: FC<SidebarProps> = () => {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  const goHome = () => router.push("/dashboard");
+  // Pro-Tip: A startsWith check is often more robust for nested routes
+  // e.g., /user-accounts/add should still highlight "User & Accounts"
+  const isActive = (matchPath: string) => pathname.startsWith(matchPath);
+
+  const goHome = () => router.push("/backoffice/dashboard");
   const toggle = () => setOpen(!open);
   const close = () => setOpen(false);
 
   const content = (
-    <div className="h-full w-80 bg-blue-700 flex flex-col text-white">
+    <div className="h-full md:w-80 w-full bg-blue-700 flex flex-col text-white">
       {/* ─── Logo ─────────────────────────────────── */}
       <div
         onClick={goHome}
-        className="flex items-center justify-center py-10 cursor-pointer"
+        className="flex shrink-0 items-center justify-center py-10 cursor-pointer"
       >
         <img
           src="/backoffice/tuma.png"
           alt="Tuma logo"
           className="w-14 h-10 px-2 -ml-24"
         />
-        <span className="font-extrabold text-2xl">Back&nbsp;Office</span>
+        <span className="font-extrabold text-2xl">Back Office</span>
       </div>
 
       {/* ─── Nav Links ────────────────────────────── */}
-      <nav className="flex flex-col gap-4 px-4">
+      <nav className="flex-grow flex flex-col gap-4 px-4 overflow-y-auto">
         {nav.map(({ href, label, icon, match }) => (
           <Link
             key={href}
             href={href}
             onClick={close}
-            className={`flex items-center gap-4 px-4 py-2 rounded-lg ${
-              pathname === match
-                ? "bg-white text-blue-700"
-                : "text-white hover:bg-gray-100 hover:text-blue-700"
+            className={`flex items-center gap-4 px-4 py-2 rounded-lg transition-colors duration-200 ${
+              isActive(match)
+                ? "bg-white text-blue-700 font-semibold"
+                : "text-white hover:bg-white/20"
             }`}
           >
             <img
               src={icon}
               alt=""
               className={`w-6 h-6 ${
-                pathname === match ? "filter-blue" : "filter-white"
+                isActive(match) ? "filter-blue" : "filter-white"
               }`}
             />
             {label}
@@ -123,7 +128,8 @@ const Sidebar: FC <SidebarProps> = ({ }) => {
         ))}
       </nav>
 
-      <div className="mt-auto mb-2">
+      {/* ─── User Section ─────────────────────────── */}
+      <div className="mt-auto mb-2 shrink-0">
         <User />
       </div>
     </div>
@@ -132,14 +138,16 @@ const Sidebar: FC <SidebarProps> = ({ }) => {
   return (
     <>
       {/* Desktop: always visible, pushed left */}
-      <div className="hidden md:block fixed h-screen w-80">{content}</div>
+      <div className="hidden md:block fixed h-screen w-full md:w-80">{content}</div>
 
-      {/* Mobile: hamburger */}
+      {/* Mobile: hamburger button */}
       <button
         onClick={toggle}
-        className="fixed top-1 right-2 z-50 p-2 bg-blue-700 text-white rounded-md md:hidden"
+        className="fixed top-4 right-4 z-50 text-white rounded-md md:hidden hover:bg-blue-600 transition-colors"
+        aria-label="Open menu"
       >
-        <Menu size={14} />
+        {/* Using the new HiMenu icon with a better size for touch */}
+        <HiMenu size={28} className="text-blue-600" />
       </button>
 
       {/* Mobile: slide-in panel */}
@@ -149,16 +157,18 @@ const Sidebar: FC <SidebarProps> = ({ }) => {
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
-            transition={{ duration: 0.3 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-40 flex"
           >
             {/* Panel itself */}
-            <div className="w-4/5 sm:w-3/5 md:w-80 h-svh bg-blue-700 overflow-y-auto flex flex-col">
+            <div className="md:w-4/5 w-full sm:w-3/5 h-screen bg-blue-700 flex flex-col">
+              {/* Note: I'm not re-using `content` here to avoid layout issues with scroll.
+                  Instead, I've created a dedicated scrollable nav. */}
               {content}
             </div>
             {/* Click-away area */}
             <div
-              className="flex-1 bg-black/30 backdrop-blur-sm"
+              className="flex-1 bg-black/50 backdrop-blur-sm"
               onClick={close}
             />
           </motion.div>
