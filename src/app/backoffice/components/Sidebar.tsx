@@ -143,7 +143,7 @@ const Sidebar: FC<SidebarProps> = () => {
       {/* Mobile: hamburger button */}
       <button
         onClick={toggle}
-        className="fixed top-4 right-4 z-50 text-white rounded-md md:hidden hover:bg-blue-600 transition-colors"
+        className="fixed top-4 right-4 z-40 text-white rounded-md md:hidden hover:bg-blue-600 transition-colors"
         aria-label="Open menu"
       >
         {/* Using the new HiMenu icon with a better size for touch */}
