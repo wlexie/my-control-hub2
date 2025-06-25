@@ -3,13 +3,19 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Popup from "./Popup"; // Make sure you have a corresponding Popup component
+// 1. Removed unused 'Popup' import.
 import axios from "axios";
 import { IoIosArrowDown } from "react-icons/io";
 
-// A placeholder for the Popup component if you don't have one.
-// Replace this with your actual Popup component.
-const PlaceholderPopup: React.FC<{ isOpen: boolean; onClose: () => void; response: any }> = ({ isOpen, onClose, response }) => {
+// 2. Defined a specific type for the API response to avoid using 'any'.
+interface ApiResponse {
+  status: string;
+  message: string;
+  account_key?: string;
+}
+
+// 3. Used the specific ApiResponse type here in the component's props.
+const PlaceholderPopup: React.FC<{ isOpen: boolean; onClose: () => void; response: ApiResponse | null }> = ({ isOpen, onClose, response }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
@@ -34,11 +40,8 @@ export default function ControlHub() {
     phoneNumber: ""
   });
   const [loading, setLoading] = useState(false);
-  const [apiResponse, setApiResponse] = useState<{
-    status: string;
-    message: string;
-    account_key?: string;
-  } | null>(null);
+  // 4. Used the specific ApiResponse type for the state as well.
+  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -64,7 +67,6 @@ export default function ControlHub() {
     if (error) setError(null);
   };
 
-  // 1. Create a function to reset the form's state.
   const resetForm = () => {
     setFormData({
       firstName: "",
@@ -103,7 +105,6 @@ export default function ControlHub() {
         setError(response.data.message);
       } else {
         setIsPopupOpen(true);
-        // 2. Call the reset function on successful submission.
         resetForm();
       }
     } catch (err: unknown) {
@@ -215,7 +216,7 @@ export default function ControlHub() {
               Department <span className="text-red-500">*</span>
             </label>
             <div 
-              className="mt-1 md:w-[250px] w-full px-3 py-2 border text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none flex justify-between items-center cursor-pointer"
+              className="mt-1 w-full px-3 py-2 border text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none flex justify-between items-center cursor-pointer"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <span>{department || "Select Department"}</span>

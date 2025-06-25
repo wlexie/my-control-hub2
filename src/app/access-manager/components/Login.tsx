@@ -64,7 +64,7 @@ const Login = () => {
               Login to your account
             </h1>
             <p className="mb-8 text-base font-medium text-gray-500">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link href="/" className="text-blue-600 underline">
                 Request for Access
               </Link>
