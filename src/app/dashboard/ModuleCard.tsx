@@ -33,10 +33,10 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         />
       </div>
       <h3 className="text-[20px] font-semibold text-gray-800 mb-2">{name}</h3>
-      <span className="text-[14px] text-center font-[600] text-[#2A282F]">
+      <span className="text-[17px] text-center font-[600] text-[#2A282F]">
         {title}
       </span>
-      <p className="text-[12px] text-center text-[#625F68] flex-grow mb-3 leading-relaxed">
+      <p className="text-[15px] text-center text-[#625F68] mt-1 flex-grow mb-3 leading-relaxed">
         {description}
       </p>
       <button

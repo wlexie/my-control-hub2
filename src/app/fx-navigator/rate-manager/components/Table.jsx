@@ -129,7 +129,7 @@ const Table = ({ baseCurrency, targetCurrency }) => {
           {data.map((row, index) => (
             <tr key={index} className="border-t text-[17px] border-gray-200">
               <td className="p-3 flex items-center gap-3">
-                <span className="p-3 bg-gray-200 my-2 rounded-full">
+                <span className="p-3 bg-gray-200 my-2 hidden md:block rounded-full">
                   <img src={row.icon} alt={row.paymentRecords} className="w-6 h-6" />
                 </span>
                 <span className="text-[#101820] font-[600] text-[14px] text-center">

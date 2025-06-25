@@ -13,83 +13,96 @@ const ConfirmUpdate = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center font-poppins justify-end bg-opacity-30 z-50">
-      <div className="bg-white p-6 w-[760px] px-10 h-screen rounded-lg shadow-lg flex flex-col">
-        <h2 className="text-3xl text-center text-gray-500 font-[700] mt-32">Confirm Changes</h2>
-      
-        <button className="absolute top-3 right-3" onClick={onClose}>
-          <Image src={closeIcon} alt="Close Modal" width={25} height={35} />
-        </button>
-
-        <div className="overflow-x-auto mx-8 rounded-t-xl mt-4 p-4">
-          <table className="w-full text-left text-gray-700">
-            <thead>
-              <tr className="text-gray-500 font-[300] text-left text-[16px]">
-                <th className="p-3">Payment Method</th>
-                <th className="p-3">Final Rate</th>
-                <th className="p-3">Markup (%)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row, index) => (
-                <tr key={index} className="text-[17px] border-gray-200">
-                  <td className="p-3 flex items-center gap-3">
-                    <span className="p-3 bg-gray-200 my-2 rounded-full">
-                      <img src={row.icon} alt={row.paymentRecords} className="w-6 h-6" />
-                    </span>
-                    <span className="text-[#101820] font-[600] text-center">
-                      {row.paymentRecords}
-                    </span>
-                  </td>
-              
-                  <td className="p-3">
-                    <span className="block font-[600] bg-[#27AE601A] text-[#27AE60] p-2 pl-2 mr-8 rounded-md">
-                      {row.finalRate}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <span className="block font-[600] bg-purple-100 text-purple-800 p-2 pl-2 mr-6 rounded-md">
-                      {row.markup}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    // MODAL OVERLAY:
+    // Aligns content to the bottom on mobile (items-end) and to the right on desktop (md:justify-end).
+    <div 
+      className="fixed inset-0 flex items-end justify-center md:items-center md:justify-end font-poppins bg-black/10 bg-opacity-40 z-50"
+      onClick={onClose} // Close modal on backdrop click
+    >
+      {/* MODAL CONTENT PANEL: */}
+      <div
+        // Stop clicks inside the modal from closing it
+        onClick={(e) => e.stopPropagation()} 
+        className={`
+          bg-white flex flex-col transform transition-transform duration-300 ease-in-out
+          
+          // --- MOBILE STYLES (Bottom Sheet) ---
+          w-full h-[90vh] rounded-t-2xl shadow-lg
+          
+          // --- DESKTOP STYLES (Side Panel) ---
+          md:w-[760px] md:h-screen md:max-h-full md:rounded-l-2xl md:rounded-t-none
+          
+          // --- ANIMATION ---
+          // Slides up from bottom on mobile, no vertical slide on desktop
+          ${isOpen ? 'translate-y-0' : 'translate-y-full'}
+          md:translate-y-0 
+        `}
+      >
+        {/* HEADER: A flexible header is better for responsiveness than absolute positioning */}
+        <div className="flex justify-between items-center p-4 border-b md:p-6 md:px-10 md:border-b-0">
+          <h2 className="text-xl md:text-2xl text-gray-700 font-bold">Confirm Changes</h2>
+          <button onClick={onClose} className="p-2">
+            <Image src={closeIcon} alt="Close Modal" width={20} height={20} />
+          </button>
         </div>
 
-       {/**<div className="mt-4 p-4 rounded-b-xl">
-          <div className="flex items-center justify-center gap-4">
-            <label className="text-gray-700 text-[18px] font-medium">Expiry Date:</label>
-            <span className="font-[600]">
-              {expiryDate.toLocaleString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </span>
+        {/* SCROLLABLE CONTENT AREA */}
+        <div className="flex-grow overflow-y-auto p-4 md:px-10">
+          <div className="overflow-x-auto rounded-xl bg-gray-50/50 p-2 md:p-4">
+            <table className="w-full text-left text-gray-700">
+              <thead>
+                <tr className="text-gray-500 font-normal text-sm md:text-base">
+                  <th className="p-3">Payment Method</th>
+                  <th className="p-3">Final Rate</th>
+                  <th className="p-3">Markup (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row, index) => (
+                  <tr key={index} className="text-sm md:text-base border-t border-gray-200">
+                    <td className="p-3 flex items-center gap-3">
+                      <span className="p-2 bg-gray-200 my-1 rounded-full md:p-3">
+                        <img src={row.icon} alt={row.paymentRecords} className="w-5 h-5 md:w-6 md:h-6" />
+                      </span>
+                      <span className="text-[#101820] font-semibold text-center">
+                        {row.paymentRecords}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className="block font-semibold bg-[#27AE601A] text-[#27AE60] p-2 rounded-md">
+                        {row.finalRate}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className="block font-semibold bg-purple-100 text-purple-800 p-2 rounded-md">
+                        {row.markup}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>  */} 
-        
-        <span className="mt-16 mx-24">
-          <p className="text-center text-gray-400 text-2xl">
-            Confirm you want to proceed with applying these rates to all payment methods?
-          </p>
-        </span>
 
-        <div className="mt-auto mx-12 flex gap-4 p-4 mb-5">
+          <div className="text-center my-8 md:my-12 px-2 md:px-12">
+            <p className="text-gray-500 text-base md:text-xl">
+              Are you sure you want to proceed with applying these rates to all payment methods?
+            </p>
+          </div>
+        </div>
+        
+        {/* FOOTER: Buttons stick to the bottom */}
+        <div className="mt-auto flex gap-4 p-4 border-t md:p-6 md:px-10">
           <button
             onClick={onClose}
-            className="px-6 py-4 text-[18px] w-full font-[600] text-white bg-gray-500 rounded-lg hover:bg-gray-600 transition-colors"
+            className="px-6 py-3 text-base md:text-lg w-full font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
           >
             Go Back
           </button>
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-6 py-4 text-[18px] w-full font-[600] text-white bg-[#27AE60] rounded-lg hover:bg-green-700 transition-colors disabled:opacity-70"
+            className="px-6 py-3 text-base md:text-lg w-full font-semibold text-white bg-[#27AE60] rounded-lg hover:bg-green-700 transition-colors disabled:opacity-70"
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
@@ -97,7 +110,7 @@ const ConfirmUpdate = ({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Updating Rates...
+                Updating...
               </span>
             ) : 'Confirm Update'}
           </button>

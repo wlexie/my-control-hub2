@@ -1,8 +1,14 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import Image from 'next/image';
-import closeIcon from '../../../../../public/fx/images/close.png';
-import api from "../../../../utils/apiService"; 
-import UpdateWeighted from './UpdateWeighted';
+import api from "../../../../utils/apiService"; // Your actual API service
+import UpdateWeighted from './UpdateWeighted'; // Your actual success modal
+
+// Assuming this is the path to your close icon
+const closeIcon = '/fx/images/close.png';
+
+// --- Main Update1 Component ---
 
 const Update1 = ({ 
   isOpen, 
@@ -11,12 +17,26 @@ const Update1 = ({
   onRateChange,
   baseCurrency,
   targetCurrency,
-  getFlagUrl
+  getFlagUrl // This function is passed down as a prop
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [apiResponse, setApiResponse] = useState(null);
+  
+  // State to control the enter animation
+  const [isAnimatingIn, setIsAnimatingIn] = useState(false);
 
+  // Effect to trigger the animation
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => setIsAnimatingIn(true), 10);
+      return () => clearTimeout(timer);
+    } else {
+      setIsAnimatingIn(false);
+    }
+  }, [isOpen]);
+
+  // Handle Escape key to close
   useEffect(() => {
     const handleEsc = (event) => {
       if (event.key === "Escape") onClose();
@@ -25,6 +45,9 @@ const Update1 = ({
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
+  //
+  // --- THIS IS YOUR ORIGINAL API CALL LOGIC, FULLY RESTORED ---
+  //
   const handleSetNewRate = async () => {
     setIsLoading(true);
     try {
@@ -55,110 +78,95 @@ const Update1 = ({
 
   const handleCloseSuccessModal = () => {
     setShowSuccessModal(false);
-    onClose();
+    onClose(); // Close the main Update1 modal as well
   };
 
   if (!isOpen) return null;
 
   return (
     <>
-      <div className="fixed inset-0 flex items-center font-poppins justify-end bg-black/20 bg-opacity-0 z-50">
-        <div className="bg-[#F3F5F8] p-6 w-[740px] px-10 h-screen rounded-lg shadow-lg flex flex-col">
-          {/* Header */}
-          <div className="flex justify-between">
-            <span className="flex flex-col">
-              <h2 className="text-xl font-bold mb-4">Tuma App Rates</h2>
-              <p className="text-gray-500 text-[18px] mb-8 font-[500]">
-                Current Rate: 1 {baseCurrency?.code} = {rateValue} {targetCurrency?.code}
-              </p>
-            </span>
-
-            <button className="absolute top-3 right-3" onClick={onClose}>
-              <Image src={closeIcon} alt="Close Modal" width={40} height={35} />
-            </button>
-          </div>
-
-          {/* Rate Input Section */}
-          <div className="bg-white rounded-xl items-center flex px-2 p-5">
-            <p className="text-[18px] font-[700] mr-4">Current Bank Rate</p>
-            <span className="border items-center flex rounded-lg px-3 py-2 max-w-[350px]">
-              <h1 className="pr-4 mr-2 text-[20px] font-semibold">1</h1>
-              <span className="px-2 rounded-lg flex gap-3 py-1 bg-[#F3F5F8]">
-                <Image 
-                  src={getFlagUrl(baseCurrency.country)} 
-                  alt={baseCurrency.code} 
-                  width={30} 
-                  height={16} 
-                  className="py-1 rounded-md"
-                />
-                <p className="ml-1 mr-2 text-[17px] font-500">{baseCurrency.code}</p>
-                <Image src="/fx/svgs/arrow.svg" alt="Arrow" width={16} height={20} className="mr-1" />
-              </span>
-            </span>
-            <p className="mx-5 text-gray-800 text-[24px] font-[600]">=</p>
-            <span className="border items-center flex rounded-lg py-2 max-w-[350px]">
-              <input
-                type="text"
-                value={rateValue}
-                onChange={onRateChange}
-                className="font-[600] text-[20px] w-[100px] pl-3 font-500 outline-none"
-              />
-              <span className="bg-[#F3F5F8] rounded-lg flex mx-2 px-2 py-1">
-                <Image 
-                  src={getFlagUrl(targetCurrency.country)} 
-                  alt={targetCurrency.code} 
-                  width={35} 
-                  height={20} 
-                  className="py-1 rounded-md"
-                />           
-                <p className="mx-5 text-[17px] font-500">{targetCurrency.code}</p>          
-                <Image src="/fx/svgs/arrow.svg" alt="Arrow" width={16} height={20} className="mr-2" />
-              </span>
-            </span>
-          </div>
-
-          {/* Footer Buttons */}
-          <div className="mt-auto flex justify-between gap-4 p-4 mb-5">
-            {isLoading ? (
-              <div className="flex justify-center items-center w-full">
-                <div className="dots-spinner">
-                  <div className="dot"></div>
-                  <div className="dot"></div>
-                  <div className="dot"></div>
-                  <div className="dot"></div>
-                </div>
+      {/* Backdrop with opacity transition */}
+      <div
+        className={`fixed inset-0 flex font-poppins bg-black/40 z-50 transition-opacity duration-300
+          ${isAnimatingIn ? 'opacity-100' : 'opacity-0'}
+          items-end md:items-center md:justify-end`}
+        onClick={onClose}
+      >
+        {/* Modal Panel with responsive transforms and styling */}
+        <div
+          className={`bg-[#F3F5F8] shadow-lg transform transition-transform duration-300 ease-out
+            w-full h-[90vh] rounded-t-2xl 
+            md:w-[740px] md:h-screen md:rounded-t-none md:rounded-l-lg
+            ${isAnimatingIn ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}`}
+          onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing the modal
+        >
+          {/* Scrollable Content Wrapper */}
+          <div className="flex flex-col h-full p-6 overflow-y-auto">
+            {/* Header */}
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex-1">
+                <h2 className="text-xl font-bold mb-2">Tuma App Rates</h2>
+                <p className="text-gray-500 text-base font-medium">
+                  Current Rate: 1 {baseCurrency?.code} = {rateValue} {targetCurrency?.code}
+                </p>
               </div>
-            ) : (
-              <>
-                <button
-                  onClick={onClose}
-                  className="px-28 py-3 text-[16px] font-[600] text-[#276EF1] border-[#276EF1] border rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSetNewRate}
-                  className="px-24 py-3 text-[16px] font-[600] text-white bg-[#276EF1] rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Set New Rate
-                </button>
-              </>
-            )}
+              <button className="p-1 -mt-2 -mr-2" onClick={onClose}>
+                <Image src={closeIcon} alt="Close Modal" width={30} height={35} />
+              </button>
+            </div>
+
+            {/* Rate Input Section */}
+            <div className="bg-white rounded-xl items-center flex flex-wrap justify-center gap-2 p-4">
+                <p className="text-base font-bold mr-4 w-full md:w-auto text-center md:text-left">Current Bank Rate</p>
+                {/* Base Currency */}
+                <span className="border items-center flex rounded-lg p-1 md:p-2">
+                    <h1 className="px-2 text-lg font-semibold">1</h1>
+                    <span className="px-2 rounded-lg flex items-center md:gap-1 md:gap-2 py-1 bg-[#F3F5F8]">
+                        <Image src={getFlagUrl(baseCurrency?.country)} alt={baseCurrency?.code || 'flag'} width={24} height={16} className="rounded-sm w-[18px] md:w-[24px] mr-1" />
+                        <p className="text-base font-medium">{baseCurrency?.code}</p>
+                    </span>
+                </span>
+                <p className="md:mx-2 text-gray-800 text-2xl font-semibold">=</p>
+                {/* Target Currency */}
+                <span className="border items-center flex rounded-lg p-1 md:p-2">
+<input type="number" value={rateValue || ''} onChange={onRateChange} className="font-semibold text-lg md:w-24 w-15 pl-2 outline-none" />                    <span className="bg-[#F3F5F8] rounded-lg flex items-center mx-2 px-2 py-1  md:gap-2">
+                        <Image src={getFlagUrl(targetCurrency?.country)} alt={targetCurrency?.code || 'flag'} width={24} height={16} className="rounded-sm md:w-[24px] mr-1 w-[18px]" />           
+                        <p className="text-base font-medium">{targetCurrency?.code}</p>          
+                    </span>
+                </span>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="mt-auto flex flex-col md:flex-row gap-4 pt-6">
+              {isLoading ? (
+                <div className="flex justify-center items-center w-full py-3"><div className="dots-spinner"></div></div>
+              ) : (
+                <>
+                  <button onClick={onClose} className="w-full md:w-1/2 py-3 text-base font-semibold text-[#276EF1] border-[#276EF1] border rounded-lg hover:bg-blue-50 transition">
+                    Cancel
+                  </button>
+                  <button onClick={handleSetNewRate} className="w-full md:w-1/2 py-3 text-base font-semibold text-white bg-[#276EF1] rounded-lg hover:bg-blue-700 transition">
+                    Set New Rate
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
-
+      
+      {/* Success Modal */}
       {apiResponse && (
         <UpdateWeighted 
           isOpen={showSuccessModal}
           onClose={handleCloseSuccessModal}
-          apiResponse={apiResponse.data} // Pass the data object directly
+          apiResponse={apiResponse.data} // Passing apiResponse.data as in your original
           baseCurrency={baseCurrency}
           targetCurrency={targetCurrency}
         />
       )}
 
-      {/* Spinner Styles */}
+      {/* Spinner Styles from your original code */}
       <style jsx>{`
         .dots-spinner {
           display: inline-block;
@@ -172,7 +180,7 @@ const Update1 = ({
           width: 13px;
           height: 13px;
           border-radius: 50%;
-          background: #6b7280;
+          background: #276EF1;
           animation-timing-function: cubic-bezier(0, 1, 1, 0);
         }
         .dot:nth-child(1) {

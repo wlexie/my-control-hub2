@@ -1,13 +1,30 @@
+"use client";
+
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import logo from '../../../../public/fx/images/logo.png';
-import User from '../../access-manager/components/User';
 import { useRouter, usePathname } from 'next/navigation';
 
-// --- Icon Import from React Icons ---
+// --- Component & Asset Imports ---
+import logo from '../../../../public/fx/images/logo.png';
+import User from '../../access-manager/components/User'; // Assuming this component exists
+
+// --- Icon Imports from React Icons ---
 import { MdOutlineCurrencyExchange } from "react-icons/md";
 
-// --- Icon Components (for better organization) ---
+// --- SVG Icon Components (for better organization and consistent styling) ---
+
+const HamburgerIcon = (props) => (
+  <svg {...props} className="w-6 h-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+  </svg>
+);
+
+const CloseIcon = (props) => (
+  <svg {...props} className="w-6 h-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+  </svg>
+);
 
 const DashboardIcon = (props) => (
   <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" {...props}>
@@ -15,63 +32,18 @@ const DashboardIcon = (props) => (
   </svg>
 );
 
-// Wrapper for the react-icons component
-const RateManagerIcon = (props) => (
-  <MdOutlineCurrencyExchange size={22} {...props} />
-);
-
-const MessagesIcon = (props) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" {...props}>
-    <path d="M21 11.5C21 16.1944 16.9706 20 12 20C10.4022 20 8.88867 19.6317 7.55847 18.9813L3 20L4.63566 16.681C3.6218 15.4997 3 13.9995 3 12.5C3 7.80558 7.02944 4 12 4C16.9706 4 21 7.80558 21 11.5Z" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="9" cy="11" r="0.7" fill="currentColor" />
-    <circle cx="12" cy="11" r="0.7" fill="currentColor" />
-    <circle cx="15" cy="11" r="0.7" fill="currentColor" />
-  </svg>
-);
-
-const TrendsIcon = (props) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" {...props}>
-    <path d="M4 4V20H20" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M6 18L10 12L14 16L20 10" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M20 12V10H18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const ReportsIcon = (props) => (
-  <svg width="22" height="22" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" {...props}>
-    <path d="M7.45375 0.929688H1.125V14.5672H12.375V5.70344M7.45375 0.929688L12.375 5.70344M7.45375 0.929688V5.70344H12.375M3.625 17.1234H14.875V8.37344M3 8.37344H10.5M3 5.24844H5.5M3 11.4984H10.5" strokeWidth="1.8" strokeLinejoin="round" />
-  </svg>
-);
-
-const SettingsIcon = (props) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M12 2v2"></path>
-    <path d="M12 20v2"></path>
-    <path d="M4.93 4.93l1.41 1.41"></path>
-    <path d="M17.66 17.66l1.41 1.41"></path>
-    <path d="M2 12h2"></path>
-    <path d="M20 12h2"></path>
-    <path d="M6.34 17.66l-1.41 1.41"></path>
-    <path d="M19.07 4.93l-1.41 1.41"></path>
-    <circle cx="12" cy="12" r="3"></circle>
-  </svg>
-);
+const RateManagerIcon = (props) => <MdOutlineCurrencyExchange size={22} {...props} />;
+const MessagesIcon = (props) => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" {...props}> <path d="M21 11.5C21 16.1944 16.9706 20 12 20C10.4022 20 8.88867 19.6317 7.55847 18.9813L3 20L4.63566 16.681C3.6218 15.4997 3 13.9995 3 12.5C3 7.80558 7.02944 4 12 4C16.9706 4 21 7.80558 21 11.5Z" strokeLinecap="round" strokeLinejoin="round" /> <circle cx="9" cy="11" r="0.7" fill="currentColor" /> <circle cx="12" cy="11" r="0.7" fill="currentColor" /> <circle cx="15" cy="11" r="0.7" fill="currentColor" /> </svg> );
+const TrendsIcon = (props) => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" {...props}> <path d="M4 4V20H20" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /> <path d="M6 18L10 12L14 16L20 10" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /> <path d="M20 12V10H18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /> </svg> );
+const ReportsIcon = (props) => ( <svg width="22" height="22" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" {...props}> <path d="M7.45375 0.929688H1.125V14.5672H12.375V5.70344M7.45375 0.929688L12.375 5.70344M7.45375 0.929688V5.70344H12.375M3.625 17.1234H14.875V8.37344M3 8.37344H10.5M3 5.24844H5.5M3 11.4984H10.5" strokeWidth="1.8" strokeLinejoin="round" /> </svg> );
+const SettingsIcon = (props) => ( <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}> <path d="M12 2v2"></path> <path d="M12 20v2"></path> <path d="M4.93 4.93l1.41 1.41"></path> <path d="M17.66 17.66l1.41 1.41"></path> <path d="M2 12h2"></path> <path d="M20 12h2"></path> <path d="M6.34 17.66l-1.41 1.41"></path> <path d="M19.07 4.93l-1.41 1.41"></path> <circle cx="12" cy="12" r="3"></circle> </svg> );
 
 
-// --- Main Sidebar Component ---
-
-export default function SideNav() {
-  const router = useRouter();
-  const pathname = usePathname();
-
-  const handleLogoClick = () => {
-    router.push('/dashboard'); 
-  };
-
-  // Data-driven approach for navigation links
+// --- Reusable Nav Links Component ---
+const NavLinkItems = ({ onLinkClick, pathname }) => {
   const navLinks = [
     { href: '/fx-navigator/dashboard', label: 'Dashboard', Icon: DashboardIcon },
-    { href: '/fx-navigator/rate-manager', label: 'Rate Manager', Icon: RateManagerIcon }, // <-- Updated Icon
+    { href: '/fx-navigator/rate-manager', label: 'Rate Manager', Icon: RateManagerIcon },
     { href: '/omnisupport', label: 'All Messages', Icon: MessagesIcon },
     { href: '/fx-navigator/trends', label: 'Trends', Icon: TrendsIcon },
     { href: '/fx-navigator/reports', label: 'Reports', Icon: ReportsIcon },
@@ -79,41 +51,123 @@ export default function SideNav() {
   ];
 
   return (
-    <div className="w-1/4 min-h-screen font-poppins px-4 pt-8 bg-blue-600 text-white flex flex-col">
-      <div 
-        className="flex items-start mb-12 cursor-pointer"
-        onClick={handleLogoClick}
-      >
-        <Image src={logo} alt="Logo" width={35} height={24} />
-        <div className="font-semibold text-xl mt-1 ml-3">FX Navigator</div>
-      </div>
+    <nav className="flex flex-col space-y-1 px-4">
+      {navLinks.map((link) => {
+        const isActive = pathname.startsWith(link.href);
+        return (
+          <Link href={link.href} key={link.label} onClick={onLinkClick}>
+            <div
+              className={`group flex items-center w-full pl-4 pr-4 py-2 rounded-lg cursor-pointer transition-colors duration-200
+                ${
+                  isActive
+                    ? 'bg-white text-blue-600'
+                    : 'text-white hover:bg-blue-500 hover:text-white'
+                }
+              `}
+            >
+              <link.Icon className="mr-4" />
+              <span className="text-lg font-medium">{link.label}</span>
+            </div>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+};
 
-      <nav className="flex flex-col space-y-1">
-        {navLinks.map((link) => {
-          const isActive = pathname.startsWith(link.href);
-          return (
-            <Link href={link.href} key={link.label}>
-              <div
-                className={`group flex items-center w-full pl-4 pr-4 py-2 rounded-lg cursor-pointer transition-colors duration-200
-                  ${
-                    isActive
-                      ? 'bg-white text-blue-600'
-                      : 'text-white hover:bg-blue-500 hover:text-white'
-                  }
-                `}
-              >
-                <link.Icon className="mr-4" />
-                <span className="text-lg font-medium">{link.label}</span>
+
+// --- Main SideNav Component ---
+export default function SideNav() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  const handleLogoClick = () => {
+    router.push('/dashboard'); 
+    closeMobileMenu();
+  };
+
+  return (
+    <>
+      {/* ===== DESKTOP SIDEBAR ===== */}
+      {/* Hidden on mobile (default), becomes a flexbox column on medium screens and up */}
+      <aside className="hidden md:flex md:flex-col w-full md:w-64 bg-blue-600 text-white font-poppins flex-shrink-0">
+        <div className="flex flex-col flex-grow">
+          {/* Logo */}
+          <div 
+            className="flex items-start px-4 pt-8 mb-12 cursor-pointer"
+            onClick={handleLogoClick}
+          >
+            <Image src={logo} alt="Logo" width={35} height={24} />
+            <div className="font-semibold text-xl mt-1 ml-3">FX Navigator</div>
+          </div>
+          
+          <NavLinkItems pathname={pathname} onLinkClick={() => {}} />
+
+          {/* User Section at the bottom */}
+          <div className="mt-auto p-4">
+            <User />
+          </div>
+        </div>
+      </aside>
+
+      {/* This entire block is hidden on medium screens and up */}
+      <div className="md:hidden">
+        {/* Mobile Header Bar */}
+        <header className="flex items-center justify-between p-4 bg-white text-gray-700  sticky top-0 z-40">
+           <div 
+            className="flex items-center cursor-pointer"
+            onClick={handleLogoClick}
+          >
+            <Image src={logo} alt="Logo" width={35} height={24} />
+            <span className="font-semibold text-xl ml-3 text-blue-600">FX Navigator</span>
+          </div>
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-2 rounded-md text-blue-600 hover:bg-blue-50 focus:outline-none"
+            aria-label="Open menu"
+          >
+            <HamburgerIcon />
+          </button>
+        </header>
+
+        {/* Mobile Menu Overlay (Drawer) */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 z-50 w-full flex" 
+            role="dialog" 
+            aria-modal="true"
+          >
+            {/* Backdrop: Closes menu on click */}
+            <div 
+              className="fixed inset-0 bg-black/50 bg-opacity-40" 
+              onClick={closeMobileMenu}
+            ></div>
+
+            {/* Menu Panel */}
+            <div className="relative flex flex-col w-full  h-full bg-blue-600 text-white font-poppins p-4 shadow-xl">
+              <div className="flex items-center justify-between mb-8">
+                <span className="font-semibold text-xl">Menu</span>
+                <button 
+                  onClick={closeMobileMenu}
+                  className="p-2 rounded-md text-white hover:bg-blue-500 focus:outline-none"
+                  aria-label="Close menu"
+                >
+                  <CloseIcon />
+                </button>
               </div>
-            </Link>
-          );
-        })}
-      </nav>
+              
+              <NavLinkItems pathname={pathname} onLinkClick={closeMobileMenu} />
 
-      {/* Bottom Section */}
-      <div className="mt-auto mb-4">
-        <User />
+              <div className="mt-auto">
+                <User />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }

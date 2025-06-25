@@ -156,9 +156,11 @@ const VerifyOTPContent = () => {
 
   if (isVerified) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 font-poppins text-2xl text-green-600">
-        <p>OTP Verified Successfully! Redirecting...</p>
-      </div>
+      <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4 font-poppins">
+  <p className="text-center text-xl font-medium text-green-600 md:text-2xl">
+    OTP Verified Successfully! Redirecting...
+  </p>
+</div>
     );
   }
 

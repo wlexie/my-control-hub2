@@ -1,17 +1,18 @@
+// ... (imports and other code remain the same)
+"use client";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import api from "../../../../utils/apiService";
 import Image from "next/image";
 import Update from "./Update";
-import { ChevronDown, Check } from "lucide-react"; // We still need icons
+import { ChevronDown, Check } from "lucide-react";
 
-//A. Define Currency Pairs and a Custom Hook at the top ---
-
+// --- A. Definitions and Custom Hook ---
 const CURRENCY_PAIRS = [
   { base: "GBP", target: "KES" },
   { base: "USD", target: "KES" },
   { base: "EUR", target: "KES" },
-    { base: "ZAR", target: "KES" },
-
+  { base: "ZAR", target: "KES" },
 ];
 
 const useClickOutside = (ref, handler) => {
@@ -29,9 +30,7 @@ const useClickOutside = (ref, handler) => {
   }, [ref, handler]);
 };
 
-
 // --- B. Main Section Component ---
-
 const Section = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rates, setRates] = useState({
@@ -45,17 +44,13 @@ const Section = () => {
   useClickOutside(dropdownRef, () => setIsDropdownOpen(false));
 
   // --- C. API and Data Handling ---
-
   const fetchRates = useCallback(async (base, target) => {
     try {
       const response = await api.get(
         `/treasury/latest-exchange-rate?baseCurrency=${base}&targetCurrency=${target}`
       );
       
-      // --- HERE IS THE CONSOLE LOG ---
-      // This will log the entire data object from the API response to your browser console.
       console.log(`[${base}/${target}] Fetched Rates Data:`, response.data);
-      // -----------------------------
 
       const responseData = response.data;
       
@@ -68,8 +63,8 @@ const Section = () => {
   
       if (responseData.updatedAt) {
         const updatedDate = new Date(responseData.updatedAt);
-        updatedDate.setHours(updatedDate.getHours() + 3); // EAT
-  
+        updatedDate.setHours(updatedDate.getHours() + 3);
+
         const formattedDate = updatedDate.toLocaleDateString("en-GB", {
           day: "2-digit", month: "2-digit", year: "2-digit",
         });
@@ -94,7 +89,6 @@ const Section = () => {
   };
 
   // --- D. Render Logic ---
-
   return (
     <section className="p-6 bg-white rounded-xl font-poppins">
       <div className="flex flex-wrap items-center justify-between mb-6">
@@ -119,7 +113,7 @@ const Section = () => {
                 </button>
 
                 {isDropdownOpen && (
-                    <div className="absolute z-10 w-2/3 text-[14px] mt-2 bg-white border border-gray-200 rounded-lg shadow-xl">
+                    <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl text-[14px]">
                         <ul className="py-1">
                             {CURRENCY_PAIRS.map((pair) => (
                                 <li key={`${pair.base}-${pair.target}`} onClick={() => handlePairSelect(pair)}
@@ -127,7 +121,7 @@ const Section = () => {
                                     {selectedPair.base === pair.base && selectedPair.target === pair.target ? (
                                         <Check className="w-4 h-4 mr-2 text-blue-600" />
                                     ) : (
-                                        <div className="w-5 h-5 mr-2" />
+                                        <div className="w-4 h-4 mr-2" /> // Adjusted for alignment
                                     )}
                                     <span>{pair.base} → {pair.target}</span>
                                 </li>
@@ -140,14 +134,21 @@ const Section = () => {
           
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-6 py-2 h-fit bg-[#276EF1] font-semibold text-white rounded-lg text-base shadow hover:bg-blue-700 transition"
+            className="md:px-6 px-2 py-1 md:py-2 h-fit bg-[#276EF1] font-semibold text-white rounded-lg text-[14px] md:text-base 
+             hover:bg-blue-700 transition"
           >
             Update Rate
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {/* 
+        HERE IS THE CHANGE:
+        - `grid-cols-2` sets the default to two columns for small screens.
+        - `gap-4` is a slightly smaller gap which works well for mobile.
+        - `lg:grid-cols-4` overrides the default on large screens to show all four cards in a row.
+      */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <RateCard icon="/fx/svgs/paybill.svg" label="Paybill" rate={rates.paybill} color="#27AAE1" />
         <RateCard icon="/fx/svgs/mpesa.svg" label="MPESA" rate={rates.mpesa} color="#3CA8A4" />
         <RateCard icon="/fx/svgs/Bank.svg" label="Bank" rate={rates.bank} color="#276EF1" />
@@ -159,14 +160,12 @@ const Section = () => {
   );
 };
 
-
 // --- E. RateCard Component ---
-
 const RateCard = ({ icon, label, rate, color }) => (
-    <div className="flex items-center p-3 bg-white border border-gray-200 rounded-xl">
-        <Image src={icon} alt={label} className={`mr-4 rounded-full ${label === "MPESA" ? "px-3 py-4" : "p-3"} bg-[#F3F5F8]`} width={50} height={50} />
+    <div className="flex items-center md:p-3 p-1 bg-white border border-gray-200 rounded-xl">
+        <Image src={icon} alt={label} className={`md:mr-4 mr-2 rounded-full ${label === "MPESA" ? "px-3 py-4" : "p-3"} bg-[#F3F5F8]`} width={50} height={50} />
         <span className="flex flex-col">
-            <h1 className="font-bold text-base text-[#101820]">
+            <h1 className="font-semibold md:text-base text-[12px] text-[#101820]">
                 {rate != null ? `KES ${Number(rate).toFixed(2)}` : "Loading..."}
             </h1>
             <p className="mt-1 text-xs w-fit px-2 rounded-md font-medium" style={{ color: color, backgroundColor: `${color}1A` }}>
