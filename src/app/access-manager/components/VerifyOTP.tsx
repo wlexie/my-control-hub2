@@ -165,7 +165,6 @@ const VerifyOTPContent = () => {
   return (
     <div className="flex min-h-screen font-poppins bg-gray-100">
       <div className="flex w-full">
-        {/* Left Column: Image - Hidden on small screens, visible on large screens */}
         <div className="relative hidden w-1/2 lg:block">
           <Image
             src="/user-access/images/lady.png"
@@ -175,8 +174,6 @@ const VerifyOTPContent = () => {
             priority
           />
         </div>
-
-        {/* Right Column: Form - Takes full width on small screens and is centered */}
         <div className="flex w-full items-center justify-center p-8 lg:w-1/2 sm:p-12">
           <div className="w-full max-w-md">
             <h2 className="mb-8 flex items-center justify-center gap-4 text-3xl font-bold text-gray-800 md:justify-start lg:text-4xl">
@@ -207,7 +204,10 @@ const VerifyOTPContent = () => {
                 {otp.map((digit, index) => (
                   <input
                     key={index}
-                    ref={(el) => (inputRefs.current[index] = el)}
+                    // --- THE FIX IS HERE ---
+                    ref={(el) => {
+                      inputRefs.current[index] = el;
+                    }}
                     id={`otp-${index}`}
                     type="text"
                     inputMode="numeric"
