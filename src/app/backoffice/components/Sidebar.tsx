@@ -2,12 +2,13 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { FC, useState } from "react";
+// --- FIX 1: 'FC' has been removed from this import ---
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { HiMenu } from "react-icons/hi";
+// --- FIX 3: Import the 'close' icon ---
+import { HiMenu, HiX } from "react-icons/hi";
 import User from "../../access-manager/components/User";
 
-// --- FIX 1: The 'match' properties now have the full path ---
 const nav = [
   {
     href: "/backoffice/dashboard",
@@ -71,13 +72,11 @@ const nav = [
   },
 ];
 
-// --- FIX 2: Removed the empty interface and FC type annotation ---
 const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  // This function now works correctly with the updated `nav` array
   const isActive = (matchPath: string) => pathname.startsWith(matchPath);
 
   const goHome = () => router.push("/backoffice/dashboard");
@@ -139,11 +138,12 @@ const Sidebar = () => {
       {/* Mobile: hamburger button */}
       <button
         onClick={toggle}
-        className="fixed top-4 right-4 z-50  text-white rounded-lg md:hidden hover:bg-blue-600 transition-colors"
-        aria-label="Open menu"
+        // --- FIX 2: Added background and padding, ensured icon is visible ---
+        className="fixed top-4 right-4 z-50 p-2 bg-blue-700 text-white rounded-lg md:hidden hover:bg-blue-600 transition-colors"
+        aria-label="Toggle menu"
       >
-        {/* The icon color should be white to be visible on the blue button */}
-        <HiMenu size={28} className="text-blue-600" />
+        {/* --- FIX 3: Switch between Menu and Close icon --- */}
+        {open ? <HiX size={28} /> : <HiMenu size={28} />}
       </button>
 
       {/* Mobile: slide-in panel */}
