@@ -4,84 +4,80 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { FC, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { HiMenu } from "react-icons/hi"; // +++ ADD THIS +++
-// import { Menu } from "lucide-react"; // --- REMOVE THIS ---
+import { HiMenu } from "react-icons/hi";
 import User from "../../access-manager/components/User";
 
-// The interface is defined but the props aren't used. This is fine, but for clarity,
-// you could change the signature to: const Sidebar: FC = () => {
-interface SidebarProps {}
-
+// --- FIX 1: The 'match' properties now have the full path ---
 const nav = [
-   {
+  {
     href: "/backoffice/dashboard",
     label: "Dashboard",
     icon: "/backoffice/dashboard.png",
-    match: "/dashboard",
+    match: "/backoffice/dashboard",
   },
   {
     href: "/backoffice/transactions",
     label: "Transactions",
     icon: "/backoffice/transactions.png",
-    match: "/transactions",
+    match: "/backoffice/transactions",
   },
   {
     href: "/backoffice/special-limits",
     label: "Special Limits",
     icon: "/backoffice/special.png",
-    match: "/special-limits",
+    match: "/backoffice/special-limits",
   },
   {
     href: "/backoffice/reconciliation",
     label: "Reconciliation",
     icon: "/backoffice/recon.png",
-    match: "/reconciliation",
+    match: "/backoffice/reconciliation",
   },
   {
     href: "/backoffice/user-accounts",
     label: "User & Accounts",
     icon: "/backoffice/users.png",
-    match: "/user-accounts",
+    match: "/backoffice/user-accounts",
   },
   {
     href: "/backoffice/fees",
     label: "Fees & Commissions",
     icon: "/backoffice/fees.png",
-    match: "/fees",
+    match: "/backoffice/fees",
   },
   {
     href: "/backoffice/compliance",
     label: "Compliance & Security",
     icon: "/backoffice/compliance.png",
-    match: "/compliance",
+    match: "/backoffice/compliance",
   },
   {
     href: "/backoffice/reports",
     label: "Reports & Analytics",
     icon: "/backoffice/reports.png",
-    match: "/reports",
+    match: "/backoffice/reports",
   },
   {
     href: "/backoffice/support",
     label: "Support & Disputes",
     icon: "/backoffice/support.png",
-    match: "/support",
+    match: "/backoffice/support",
   },
   {
     href: "/backoffice/permissions",
     label: "Settings & Permissions",
     icon: "/backoffice/settings.png",
-    match: "/permissions",
+    match: "/backoffice/permissions",
   },
 ];
 
-const Sidebar: FC<SidebarProps> = () => {
+// --- FIX 2: Removed the empty interface and FC type annotation ---
+const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  // Pro-Tip: A startsWith check is often more robust for nested routes
-  // e.g., /user-accounts/add should still highlight "User & Accounts"
+  // This function now works correctly with the updated `nav` array
   const isActive = (matchPath: string) => pathname.startsWith(matchPath);
 
   const goHome = () => router.push("/backoffice/dashboard");
@@ -100,7 +96,7 @@ const Sidebar: FC<SidebarProps> = () => {
           alt="Tuma logo"
           className="w-14 h-10 px-2 -ml-24"
         />
-        <span className="font-extrabold text-2xl">Back Office</span>
+        <span className="font-extrabold text-2xl">Back Office</span>
       </div>
 
       {/* ─── Nav Links ────────────────────────────── */}
@@ -143,10 +139,10 @@ const Sidebar: FC<SidebarProps> = () => {
       {/* Mobile: hamburger button */}
       <button
         onClick={toggle}
-        className="fixed top-4 right-4 z-40 text-white rounded-md md:hidden hover:bg-blue-600 transition-colors"
+        className="fixed top-4 right-4 z-50  text-white rounded-lg md:hidden hover:bg-blue-600 transition-colors"
         aria-label="Open menu"
       >
-        {/* Using the new HiMenu icon with a better size for touch */}
+        {/* The icon color should be white to be visible on the blue button */}
         <HiMenu size={28} className="text-blue-600" />
       </button>
 
@@ -161,9 +157,7 @@ const Sidebar: FC<SidebarProps> = () => {
             className="fixed inset-0 z-40 flex"
           >
             {/* Panel itself */}
-            <div className="md:w-4/5 w-full h-screen bg-blue-700 flex flex-col">
-              {/* Note: I'm not re-using `content` here to avoid layout issues with scroll.
-                  Instead, I've created a dedicated scrollable nav. */}
+            <div className="w-4/5 sm:w-3/5 h-screen bg-blue-700 flex flex-col">
               {content}
             </div>
             {/* Click-away area */}
