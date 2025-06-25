@@ -1,4 +1,5 @@
 "use client";
+
 import {
   LineChart,
   Line,
@@ -55,19 +56,15 @@ export default function AverageTimeChart() {
         </button>
       </div>
 
-      <div className="flex gap-6">
-        {/* Line Graph with Dots */}
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Chart Section */}
         <div className="flex-1 relative">
           <ResponsiveContainer width="100%" height={250}>
             <LineChart
               data={data}
               margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
             >
-              <CartesianGrid
-                horizontal={true}
-                vertical={false}
-                strokeDasharray="3 3"
-              />
+              <CartesianGrid horizontal vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="name" hide />
               <YAxis hide domain={[0, 20]} />
               <Tooltip formatter={(value) => `${value} Seconds`} />
@@ -77,16 +74,14 @@ export default function AverageTimeChart() {
                 stroke="url(#lineGradient)"
                 strokeWidth={2}
                 dot={({ cx, cy, payload }) => (
-                  <g>
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r={6}
-                      fill={payload.color}
-                      stroke="white"
-                      strokeWidth={2}
-                    />
-                  </g>
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={6}
+                    fill={payload.color}
+                    stroke="white"
+                    strokeWidth={2}
+                  />
                 )}
                 activeDot={false}
               />
@@ -111,7 +106,7 @@ export default function AverageTimeChart() {
             </LineChart>
           </ResponsiveContainer>
 
-          {/* Icons under dots */}
+          {/* Icons under chart */}
           <div className="flex justify-around mt-4 px-2">
             {data.map((item, index) => (
               <Image
@@ -125,8 +120,8 @@ export default function AverageTimeChart() {
           </div>
         </div>
 
-        {/* Right side: Transaction Details */}
-        <div className="flex-1 space-y-3 ">
+        {/* Transaction Details */}
+        <div className="flex-1 space-y-3 pt-4 md:pt-0">
           {data.map((item, index) => (
             <div key={index} className="flex items-center space-x-3">
               <div className="w-10 h-10 flex items-center justify-center">

@@ -29,23 +29,27 @@ const DateFilter: React.FC<DateFilterProps> = ({
     key: "selection",
   });
 
-  // Time states
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("23:59");
 
-  // Initialize times when dates change
   useEffect(() => {
     if (selectedRange.startDate) {
       const startDate = initialStartDate || selectedRange.startDate;
-      const hours = startDate.getHours().toString().padStart(2, "0");
-      const minutes = startDate.getMinutes().toString().padStart(2, "0");
-      setStartTime(`${hours}:${minutes}`);
+      setStartTime(
+        `${startDate.getHours().toString().padStart(2, "0")}:${startDate
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`
+      );
     }
     if (selectedRange.endDate) {
       const endDate = initialEndDate || selectedRange.endDate;
-      const hours = endDate.getHours().toString().padStart(2, "0");
-      const minutes = endDate.getMinutes().toString().padStart(2, "0");
-      setEndTime(`${hours}:${minutes}`);
+      setEndTime(
+        `${endDate.getHours().toString().padStart(2, "0")}:${endDate
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`
+      );
     }
   }, [selectedRange, initialStartDate, initialEndDate]);
 
@@ -62,7 +66,6 @@ const DateFilter: React.FC<DateFilterProps> = ({
 
   const handleApplyFilter = () => {
     if (selectedRange.startDate && selectedRange.endDate) {
-      // Apply the time to the dates
       const [startHours, startMinutes] = startTime.split(":").map(Number);
       const [endHours, endMinutes] = endTime.split(":").map(Number);
 
@@ -94,17 +97,18 @@ const DateFilter: React.FC<DateFilterProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-2xl">
+    <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-2xl mx-auto overflow-y-auto max-h-[90vh]">
       <DateRangePicker
         ranges={[selectedRange]}
         onChange={handleSelect}
         moveRangeOnFirstSelection={false}
         rangeColors={["#3b82f6"]}
         maxDate={new Date()}
+        className="w-full"
       />
 
       {/* Time Selection */}
-      <div className="flex gap-4 mt-4">
+      <div className="flex flex-col md:flex-row gap-4 mt-4">
         <div className="flex items-center gap-2">
           <FaClock className="text-gray-500" />
           <span className="text-sm text-gray-700">Start Time:</span>
@@ -112,7 +116,7 @@ const DateFilter: React.FC<DateFilterProps> = ({
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="border rounded p-2"
+            className="border rounded p-2 text-sm"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -122,12 +126,13 @@ const DateFilter: React.FC<DateFilterProps> = ({
             type="time"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            className="border rounded p-2"
+            className="border rounded p-2 text-sm"
           />
         </div>
       </div>
 
-      <div className="flex justify-between gap-2 pt-4 border-t border-gray-200">
+      {/* Actions */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 pt-4 border-t border-gray-200 mt-4">
         {onClear && (
           <button
             onClick={handleClearFilter}

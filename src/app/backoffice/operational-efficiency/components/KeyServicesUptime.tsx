@@ -17,7 +17,7 @@ const services = [
     name: "FX Rates API",
     percentage: 94,
     change: "+07% Increase",
-    ringColor: "#93C5FD",
+    ringColor: "#9CA3AF",
     changeColor: "text-green-600",
     changeBg: "bg-green-100",
     type: "increase",
@@ -85,22 +85,25 @@ export default function KeyServicesUptime() {
           Percentage Uptime Of Key Services
         </h3>
         <button className="flex items-center text-sm px-4 py-1.5 bg-[#2563EB] text-white rounded-md font-medium shadow-sm">
-          Weekly <span className="ml-2 text-sm">▼</span>
+          Weekly 
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {services.map((service, index) => (
-          <div key={index} className="flex items-center space-x-3">
+          <div
+            key={index}
+            className="flex items-center justify-between sm:justify-start sm:space-x-4"
+          >
             <div className="flex flex-col">
-              <p className="text-md font-semibold text-[#0F172A]">
+              <p className="text-sm font-medium text-[#0F172A]">
                 {service.name}
               </p>
-              <p className="text-xl font-bold text-[#0F172A] mt-1">
+              <p className="text-2xl font-bold text-[#0F172A] mt-1">
                 {service.percentage}%
               </p>
               <div
-                className={`text-xs mt-2 px-2 py-1   rounded-full font-medium flex items-center w-fit ${service.changeColor} ${service.changeBg}`}
+                className={`text-xs mt-2 px-2 py-1 rounded-full font-medium flex items-center w-fit ${service.changeColor} ${service.changeBg}`}
               >
                 {service.type === "increase" ? (
                   <TrendingUp className="w-3.5 h-3.5 mr-1" />
@@ -110,7 +113,7 @@ export default function KeyServicesUptime() {
                 {service.change}
               </div>
             </div>
-            <div className="ml-10">
+            <div className="ml-17">
               <ProgressRing
                 radius={28}
                 stroke={8}

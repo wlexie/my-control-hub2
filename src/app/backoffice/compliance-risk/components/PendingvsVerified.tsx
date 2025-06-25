@@ -42,7 +42,7 @@ export default function PendingVsVerified() {
           Pending vs. Verified
         </h3>
         <button className="text-sm px-3 py-1 bg-blue-100 text-blue-600 rounded-md">
-          {filter} ▼
+          {filter} 
         </button>
       </div>
 
