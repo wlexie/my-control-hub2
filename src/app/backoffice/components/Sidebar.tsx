@@ -138,12 +138,10 @@ const Sidebar = () => {
       {/* Mobile: hamburger button */}
       <button
         onClick={toggle}
-        // --- FIX 2: Added background and padding, ensured icon is visible ---
-        className="fixed top-4 right-4 z-50 p-2 bg-blue-700 text-white rounded-lg md:hidden hover:bg-blue-600 transition-colors"
+        className="fixed top-4 right-4 z-50  text-white rounded-lg md:hidden hover:bg-blue-600 transition-colors"
         aria-label="Toggle menu"
       >
-        {/* --- FIX 3: Switch between Menu and Close icon --- */}
-        {open ? <HiX size={28} /> : <HiMenu size={28} />}
+        {open ? <HiX size={28} className="text-blue-600"/> : <HiMenu size={28} className="text-blue-600" />}
       </button>
 
       {/* Mobile: slide-in panel */}
