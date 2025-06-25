@@ -56,14 +56,15 @@ export default function Dashboard() {
             <TableGraph />
           </div>
 
-          <div className="grid grid-cols-5 gap-6 items-stretch justify-center mt-5">
-            <div className="col-span-3 bg-white p-4 rounded-2xl">
-              <CustomerSegmentationChart />
-            </div>
-            <div className="col-span-2 bg-white p-4 rounded-2xl text-2xl">
-              <CountrySegmentationCard />
-            </div>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch justify-center mt-5">
+  <div className="bg-white p-4 rounded-2xl md:col-span-3">
+    <CustomerSegmentationChart />
+  </div>
+  <div className="bg-white p-4 rounded-2xl text-2xl md:col-span-2">
+    <CountrySegmentationCard />
+  </div>
+</div>
+
 
           <CustomerLifetimeValueChart />
           <TotalCustomers />

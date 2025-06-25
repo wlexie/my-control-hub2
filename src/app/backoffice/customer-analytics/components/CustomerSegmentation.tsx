@@ -60,7 +60,7 @@ export function CustomerSegmentationChart() {
       </div>
 
       {/* Legend */}
-      <div className="flex gap-6 text-xs font-medium text-gray-700 px-4 md:px-8 mb-2">
+      <div className="flex gap-5 text-xs font-medium text-gray-700 px-4 md:px-8 mb-2">
         {Object.entries(COLORS).map(([key, color]) => (
           <div key={key} className="flex items-center gap-2">
             <span
@@ -73,62 +73,65 @@ export function CustomerSegmentationChart() {
       </div>
 
       {/* Chart */}
-      <CardContent className="mt-2 h-[360px] px-4 md:px-8">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis
-              dataKey="name"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => `${value / 1000}k`}
-            />
-            <Tooltip
-              cursor={{ fill: "transparent" }}
-              contentStyle={{
-                borderRadius: "8px",
-                backgroundColor: "white",
-                border: "1px solid #e5e7eb",
-                fontSize: "12px",
-              }}
-              formatter={(value: number, name: string) => [
-                `${value.toLocaleString()}`,
-                name,
-              ]}
-            />
-            <Bar
-              dataKey="Active"
-              fill={COLORS.Active}
-              radius={[4, 4, 0, 0]}
-              barSize={12}
-            />
-            <Bar
-              dataKey="Inactive"
-              fill={COLORS.Inactive}
-              radius={[4, 4, 0, 0]}
-              barSize={12}
-            />
-            <Bar
-              dataKey="Dormant"
-              fill={COLORS.Dormant}
-              radius={[4, 4, 0, 0]}
-              barSize={12}
-            />
-            <Bar
-              dataKey="High"
-              fill={COLORS.High}
-              radius={[4, 4, 0, 0]}
-              barSize={12}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
+     <CardContent className="mt-2 h-[360px] px-4 md:px-8 overflow-x-auto">
+  <div className="min-w-[620px] md:min-w-0 h-full">
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <XAxis
+          dataKey="name"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+        />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value) => `${value / 1000}k`}
+        />
+        <Tooltip
+          cursor={{ fill: "transparent" }}
+          contentStyle={{
+            borderRadius: "8px",
+            backgroundColor: "white",
+            border: "1px solid #e5e7eb",
+            fontSize: "12px",
+          }}
+          formatter={(value: number, name: string) => [
+            `${value.toLocaleString()}`,
+            name,
+          ]}
+        />
+        <Bar
+          dataKey="Active"
+          fill={COLORS.Active}
+          radius={[4, 4, 0, 0]}
+          barSize={12}
+        />
+        <Bar
+          dataKey="Inactive"
+          fill={COLORS.Inactive}
+          radius={[4, 4, 0, 0]}
+          barSize={12}
+        />
+        <Bar
+          dataKey="Dormant"
+          fill={COLORS.Dormant}
+          radius={[4, 4, 0, 0]}
+          barSize={12}
+        />
+        <Bar
+          dataKey="High"
+          fill={COLORS.High}
+          radius={[4, 4, 0, 0]}
+          barSize={12}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+</CardContent>
+
     </div>
   );
 }

@@ -43,12 +43,13 @@ const CustomTooltip = ({
 export default function CustomerLifetimeValueChart() {
   return (
     <div className="w-full px-4 py-6 bg-white rounded-lg">
-      <div className="flex justify-between items-center mb-4">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <div>
-          <h2 className="text-2xl text-black font-semibold">
+          <h2 className="text-xl md:text-2xl text-black font-semibold">
             Average Customer Lifetime Value (CLV)
           </h2>
-          <p className="text-md text-gray-500 mt-1">
+          <p className="text-sm md:text-md text-gray-500 mt-1">
             All Customers:{" "}
             <span className="text-[#1E5EFF] font-semibold">75,523</span>{" "}
             <span className="text-green-500 ml-1">▲ 27%</span>{" "}
@@ -60,23 +61,31 @@ export default function CustomerLifetimeValueChart() {
         </button>
       </div>
 
-      <div className="h-[260px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid stroke="#eee" vertical={false} />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="#1E5EFF"
-              strokeWidth={2}
-              dot={{ stroke: "#1E5EFF", strokeWidth: 2, r: 4, fill: "#fff" }}
-              activeDot={{ r: 6 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      {/* Scrollable Chart Area */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[600px] h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid stroke="#eee" vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#1E5EFF"
+                strokeWidth={2}
+                dot={{
+                  stroke: "#1E5EFF",
+                  strokeWidth: 2,
+                  r: 4,
+                  fill: "#fff",
+                }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

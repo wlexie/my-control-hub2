@@ -56,19 +56,22 @@ export function CountrySegmentationCard() {
         <Popover>
           <PopoverTrigger asChild>
             <Button className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg">
-              Monthly <ChevronDown className="w-4 h-4" />
+              Yearly <ChevronDown className="w-4 h-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-40 text-sm">Yearly</PopoverContent>
+          <PopoverContent className="w-40 text-sm">Monthly</PopoverContent>
         </Popover>
       </div>
 
       {/* Country Rows */}
-      <div className="space-y-16 px-4 md:px-8">
+      <div className="flex flex-col gap-8 md:gap-10 px-4 md:px-8">
         {countries.map((country) => (
-          <div key={country.name} className="flex items-center justify-between">
-            {/* Left: Flag, Name, Customers */}
-            <div className="flex items-center gap-4">
+          <div
+            key={country.name}
+            className="flex flex-col md:flex-row md:items-center md:justify-between"
+          >
+            {/* Flag + Name + Customers */}
+            <div className="flex items-center gap-4 mb-2 md:mb-0 mt-3">
               <Image
                 src={country.flag}
                 alt={country.name}
@@ -86,8 +89,8 @@ export function CountrySegmentationCard() {
               </div>
             </div>
 
-            {/* Center: Progress bar */}
-            <div className="flex-1 mx-4">
+            {/* Progress bar */}
+            <div className="w-full md:flex-1 md:mx-4 mb-4 md:mb-0 ">
               <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full"
@@ -99,8 +102,8 @@ export function CountrySegmentationCard() {
               </div>
             </div>
 
-            {/* Right: Revenue + % */}
-            <div className="text-right min-w-[90px]">
+            {/* Revenue */}
+            <div className="text-left md:text-right min-w-[90px]">
               <p className="text-sm md:text-base font-medium text-gray-800">
                 £{country.revenue.toLocaleString()}
               </p>
