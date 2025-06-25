@@ -248,7 +248,7 @@ export default function ControlHub() {
           <button
             type="submit"
             disabled={loading || !department || !formData.firstName || !formData.lastName || !formData.email || !formData.phoneNumber}
-            className="w-full mt-6 bg-gray-800 hover:bg-gray-900 text-white font-semibold text-lg py-2.5 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-6 bg-gray-800 hover:bg-gray-950 text-white font-semibold text-lg py-2.5 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Processing..." : "Request for Access"}
           </button>
