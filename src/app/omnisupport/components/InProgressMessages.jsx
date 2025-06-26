@@ -5,6 +5,7 @@ import PropTypes from "prop-types";
 
 // Helper function to format timestamps for display
 const formatTimestamp = (timestampStr) => {
+    // ... (this function remains unchanged)
     if (!timestampStr) return "";
     const date = new Date(timestampStr);
     const today = new Date();
@@ -25,12 +26,19 @@ const formatTimestamp = (timestampStr) => {
 
 export default function InProgressMessages({ conversations = [], onSelectChat, activeChat, searchTerm = "" }) {
   
-  // Filter the conversations based on the search term from the parent component
   const filteredConversations = useMemo(() => {
     return conversations
       .filter(conv => (conv.contactName || '').toLowerCase().includes(searchTerm.toLowerCase()))
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }, [conversations, searchTerm]);
+      .sort((a, b) => {
+        // 1. If an active chat is selected, bring it to the top.
+        if (activeChat) {
+          if (a.id === activeChat.id) return -1; // a should come first
+          if (b.id === activeChat.id) return 1;  // b should come first
+        }
+        // 2. For all other items, sort by the most recent message timestamp.
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+  }, [conversations, searchTerm, activeChat]);
 
   return (
     <div className="max-w-lg mx-auto font-poppins bg-white flex flex-col">
@@ -44,7 +52,7 @@ export default function InProgressMessages({ conversations = [], onSelectChat, a
             <div 
               key={conv.id} 
               className={`cursor-pointer px-4 py-2 border-b flex justify-between items-center transition ${
-                activeChat?.id === conv.id ? "bg-gray-100" : "bg-white hover:bg-gray-50"
+                activeChat?.id === conv.id ? "bg-gray-100" : "bg-white hover:bg-gray-100"
               }`} 
               onClick={() => onSelectChat(conv)}
             >
@@ -58,11 +66,7 @@ export default function InProgressMessages({ conversations = [], onSelectChat, a
                     <p className="text-gray-500 text-xs truncate max-w-[270px]">{conv.content}</p>
                   </div>
                   <div className="ml-auto flex items-center shrink-0 pl-2">
-                    <p className="text-xs text-gray-400 whitespace-nowrap">{formatTimestamp(conv.timestamp)}</p>
-                    {/* 
-                      Show a dot only if there's a new message from the customer 
-                      AND it's not the chat we currently have open.
-                    */}
+                    <p className="text-[11px] text-gray-400 whitespace-nowrap">{formatTimestamp(conv.timestamp)}</p>
                     {conv.hasNewMessage && activeChat?.id !== conv.id && (
                         <span className="ml-2 w-3 h-3 bg-blue-500 rounded-full"></span>
                     )}
