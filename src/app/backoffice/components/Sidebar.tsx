@@ -155,12 +155,12 @@ const Sidebar = () => {
             className="fixed inset-0 z-40 flex"
           >
             {/* Panel itself */}
-            <div className="w-4/5 sm:w-3/5 h-screen bg-blue-700 flex flex-col">
+            <div className="w-full sm:w-3/5 h-screen bg-blue-700 flex flex-col">
               {content}
             </div>
             {/* Click-away area */}
             <div
-              className="flex-1 bg-black/50 backdrop-blur-sm"
+              className="flex-1 bg-black/50 w backdrop-blur-sm"
               onClick={close}
             />
           </motion.div>

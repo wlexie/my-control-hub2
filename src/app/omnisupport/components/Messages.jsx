@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import NewContact from './NewContact';
-import ChatManager from './ChatManager'; // <-- Import the new data "brain"
+import ChatManager from './ChatManager';
 import { Search } from 'lucide-react';
 
-export default function Messages({ onSelectChat, activeChat }) { // Receive activeChat for the manager
+export default function Messages({ onSelectChat, activeChat }) {
   const [activeTab, setActiveTab] = useState('Unread');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
@@ -18,7 +18,7 @@ export default function Messages({ onSelectChat, activeChat }) { // Receive acti
       content: '',
       timestamp: new Date().toISOString(),
       hasNewMessage: false,
-      hasSentMessage: false, // It's a new chat, we haven't sent anything yet
+      hasSentMessage: false,
     };
     onSelectChat(newConversation);
     setModalOpen(false);
@@ -65,22 +65,18 @@ export default function Messages({ onSelectChat, activeChat }) { // Receive acti
           </button>
         ))}
       </div>
-
-      {/* 
-        KEY CHANGE:
-        The content area now renders the ChatManager, which handles all data fetching
-        and decides which list to show based on the activeTab.
-      */}
+      
       <div className="flex-1 overflow-y-auto">
         <ChatManager
           activeTab={activeTab}
           searchTerm={searchTerm}
           onSelectChat={onSelectChat}
           activeChat={activeChat}
+          // CHANGE: Pass the setActiveTab function down as a prop
+          setActiveTab={setActiveTab}
         />
       </div>
 
-      {/* Modal for New Contact */}
       <NewContact
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}

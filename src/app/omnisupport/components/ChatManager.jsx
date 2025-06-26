@@ -7,8 +7,10 @@ import InProgressMessages from "./InProgressMessages";
 import ClosedMessages from "./ClosedMessages";
 
 const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
+const OPENED_IDS_STORAGE_KEY = 'tuma-openedUnreadIds';
 
 const parseMessageContent = (contentString) => {
+    // ... (this function remains unchanged)
     if (!contentString || contentString === "{}") return { type: 'empty', content: 'No message content' };
     try {
         const parsed = JSON.parse(contentString);
@@ -23,16 +25,34 @@ const parseMessageContent = (contentString) => {
     }
 };
 
-export default function ChatManager({ activeTab, searchTerm, onSelectChat, activeChat }) {
+export default function ChatManager({ activeTab, searchTerm, onSelectChat, activeChat, setActiveTab }) {
     const [unreadConversations, setUnreadConversations] = useState([]);
     const [inProgressConversations, setInProgressConversations] = useState([]);
     const [closedConversations, setClosedConversations] = useState([]);
-    const [openedUnreadIds, setOpenedUnreadIds] = useState(new Set());
+    const [openedUnreadIds, setOpenedUnreadIds] = useState(() => {
+        try {
+            const storedIds = localStorage.getItem(OPENED_IDS_STORAGE_KEY);
+            return storedIds ? new Set(JSON.parse(storedIds)) : new Set();
+        } catch (error) {
+            console.error("Failed to parse openedUnreadIds from localStorage", error);
+            return new Set();
+        }
+    });
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const isInitialLoad = useRef(true);
 
+    useEffect(() => {
+        try {
+            localStorage.setItem(OPENED_IDS_STORAGE_KEY, JSON.stringify(Array.from(openedUnreadIds)));
+        } catch (error) {
+            console.error("Failed to save openedUnreadIds to localStorage", error);
+        }
+    }, [openedUnreadIds]);
+
     const fetchAndProcessConversations = useCallback(async () => {
+        // ... (This function can remain exactly as it is. It syncs data in the background)
         if (isInitialLoad.current) setLoading(true);
         setError(null);
         try {
@@ -50,8 +70,7 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
                     content: parsed.content,
                     timestamp: conv.lastReceivedAt,
                     messageType: parsed.type,
-                    isClosed: true, // *** ADDED: Flag for Conversation.jsx
-                    // *** ADDED: The data structure Conversation.jsx expects for the header
+                    isClosed: true, 
                     messages: [{ from: { name: conv.contactName, phoneNumber: conv.msisdn } }]
                 };
             });
@@ -83,8 +102,7 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
                         hasSentMessage: hasSentMessage,
                         hasNewMessage: lastMessage.direction === 'received',
                         messageType: parsed.type,
-                        isClosed: false, // *** ADDED: Flag for Conversation.jsx
-                        // *** ADDED: The data structure Conversation.jsx expects for the header
+                        isClosed: false, 
                         messages: [{ from: { name: conversation.contactName, phoneNumber: conversation.msisdn } }]
                     };
                 });
@@ -119,17 +137,34 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
     }, [fetchAndProcessConversations]);
 
     const handleLocalSelectChat = (selectedConversation) => {
-        const isCurrentlyUnread = unreadConversations.some(c => c.id === selectedConversation.id);
-        if (isCurrentlyUnread) {
-            setOpenedUnreadIds(prev => new Set(prev).add(selectedConversation.id));
-        }
+        // This is the most crucial step. It updates the `activeChat` prop for all children.
         onSelectChat(selectedConversation);
+
+        // Step 2: Check if the selected conversation is currently in the "Unread" list.
+        const isCurrentlyUnread = unreadConversations.some(c => c.id === selectedConversation.id);
+
+        if (isCurrentlyUnread) {
+            // A. Remove it from the `unreadConversations` state.
+            setUnreadConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+
+            // We filter it out of the previous list first to prevent any potential duplicates.
+            setInProgressConversations(prev => {
+                const otherConversations = prev.filter(c => c.id !== selectedConversation.id);
+                return [selectedConversation, ...otherConversations];
+            });
+
+            // C. Persist its ID so it remains "In-Progress" on the next data fetch.
+            setOpenedUnreadIds(prev => new Set(prev).add(selectedConversation.id));
+
+            // D. Switch the tab to "In-Progress" so the user sees where it went.
+            setActiveTab('In-Progress');
+        }
     };
 
     if (loading) return <div className="p-4 text-center text-gray-500">Loading conversations...</div>;
     if (error) return <div className="p-4 text-center text-red-500">{error}</div>;
 
-    // This part remains unchanged
+    // This part remains unchanged. The magic happens in the handler above.
     return (
         <div className="mt-2">
             {activeTab === 'Unread' && ( <UnreadMessages conversations={unreadConversations} onSelectChat={handleLocalSelectChat} searchTerm={searchTerm} /> )}
