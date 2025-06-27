@@ -77,7 +77,7 @@ const Section = () => {
     } catch (error) {
       console.error("Error fetching rates:", error);
     }
-  }, []);
+  }, );
 
   useEffect(() => {
     fetchRates(selectedPair.base, selectedPair.target);

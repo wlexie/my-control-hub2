@@ -66,7 +66,7 @@ const UpdateMarkup = ({ isOpen, onClose, apiResponse, baseCurrency, targetCurren
     const numericValue = parseFloat(value);
     
     if (value === "" || isNaN(numericValue)) {
-      newData[index].markup = value === "" ? "" : newData[index].markup; // Allow temp invalid state
+      newData[index].markup = value === "" ? "" : newData[index].markup; 
       newData[index].finalRate = "";
       newData[index].calculatedMarkup = "";
       setData(newData);
@@ -76,7 +76,7 @@ const UpdateMarkup = ({ isOpen, onClose, apiResponse, baseCurrency, targetCurren
     newData[index].markup = value;
     const markupDecimal = numericValue / 100;
     const baseRate = parseFloat(newData[index].tumaRate);
-    newData[index].finalRate = (baseRate * (1 + markupDecimal)).toFixed(2); // Markup adds to the rate
+    newData[index].finalRate = (baseRate * (1 - markupDecimal)).toFixed(2); 
     newData[index].calculatedMarkup = numericValue.toFixed(2);
     setData(newData);
   };

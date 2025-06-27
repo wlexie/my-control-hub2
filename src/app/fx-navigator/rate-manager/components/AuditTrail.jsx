@@ -49,7 +49,7 @@ export default function AuditTrail() {
     };
   
     fetchData();
-  }, []); // IMPORTANT: Fixed dependency array to prevent infinite API calls
+  },); // IMPORTANT: Fixed dependency array to prevent infinite API calls
 
   const handleRowClick = (id) => {
     setExpandedRowId(expandedRowId === id ? null : id);
