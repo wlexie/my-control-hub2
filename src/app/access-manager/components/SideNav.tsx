@@ -82,7 +82,7 @@ export default function SideNav() {
       >
         <span className="p-1 py-2 bg-white rounded">
           <Image 
-            src="/user-access/svgs/logo.svg" 
+            src="/fx/images/logo.png" 
             alt="Logo" 
             width={25} 
             height={28} 
