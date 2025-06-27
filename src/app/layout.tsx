@@ -24,7 +24,7 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "Tuma Control Hub",
-  description: "Instant Money Transfer",
+  description: "UK to Africa",
 };
 
 export default function RootLayout({
