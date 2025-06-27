@@ -52,12 +52,12 @@ export default function Operations() {
         <KeyServicesUptime />
       </div>
 
-      <div className="grid grid-cols-5 gap-6 px-4">
-        <div className="col-span-3 bg-white p-4 rounded-2xl h-full flex flex-col mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch justify-center mt-5">
+        <div className="md:col-span-3 bg-white p-4 rounded-2xl">
           <OpenvsResolved />
         </div>
-        <div className="col-span-2 bg-white p-4 rounded-2xl h-full flex flex-col mt-4">
-          <SupportIssues />
+        <div className="md:col-span-2 bg-white p-4 rounded-2xl">
+          <SupportIssues/>
         </div>
       </div>
 
@@ -65,14 +65,16 @@ export default function Operations() {
         <Breakout />
       </div>
 
-      <div className="grid grid-cols-5 gap-6 px-4">
-        <div className="col-span-3 bg-white p-4 rounded-2xl h-full flex flex-col mt-4">
-          <AverageTimeChart />
-        </div>
-        <div className="col-span-2 bg-white p-4 rounded-2xl h-full flex flex-col mt-4">
-          <DowntimeIncidentsChart />
-        </div>
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 px-4">
+  <div className="col-span-1 md:col-span-3 bg-white p-4 rounded-2xl h-full flex flex-col mt-4">
+    <AverageTimeChart />
+  </div>
+
+  <div className="col-span-1 md:col-span-2 bg-white p-4 rounded-2xl h-full flex flex-col mt-4">
+    <DowntimeIncidentsChart />
+  </div>
+</div>
+
 
       {isDateFilterOpen && (
         <div className="fixed inset-0 bg-black/30 z-50 flex justify-center items-start pt-10">

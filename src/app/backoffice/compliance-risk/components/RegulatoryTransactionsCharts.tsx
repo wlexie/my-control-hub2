@@ -1,4 +1,3 @@
-// components/RegulatoryTransactionsChart.tsx
 "use client";
 
 import {
@@ -24,26 +23,33 @@ const data = [
 export default function RegulatoryTransactionsChart() {
   return (
     <div className="bg-white p-6 rounded-xl border-0 mb-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="font-semibold text-2xl text-gray-800">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+        <h2 className="font-semibold text-xl sm:text-2xl text-gray-800">
           Transactions Above Regulatory Limits.
         </h2>
-        <button className="text-sm bg-blue-100 text-blue-600 px-3 py-1 rounded-md">
-          Weekly ▾
+        <button className="text-sm bg-blue-100 text-blue-600 px-3 py-1 rounded-md w-max">
+          Weekly 
         </button>
       </div>
-      <ResponsiveContainer width="100%" height={400}>
-        <BarChart data={data} stackOffset="sign">
-          <XAxis dataKey="date" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="£5,000" stackId="a" fill="#2970FF" />
-          <Bar dataKey="£13,000" stackId="a" fill="#5393FF" />
-          <Bar dataKey="£18,000" stackId="a" fill="#7DB1FF" />
-          <Bar dataKey="£25,000" stackId="a" fill="#AACDFF" />
-        </BarChart>
-      </ResponsiveContainer>
+
+      {/* Scrollable Chart on Mobile */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[600px] md:min-w-0 h-[400px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} stackOffset="sign">
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="£5,000" stackId="a" fill="#2970FF" />
+              <Bar dataKey="£13,000" stackId="a" fill="#5393FF" />
+              <Bar dataKey="£18,000" stackId="a" fill="#7DB1FF" />
+              <Bar dataKey="£25,000" stackId="a" fill="#AACDFF" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }

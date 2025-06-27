@@ -16,25 +16,13 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const barData = {
   labels: [
-    "JAN",
-    "FEB",
-    "MAR",
-    "APR",
-    "MAY",
-    "JUN",
-    "JUL",
-    "AUG",
-    "SEP",
-    "OCT",
-    "NOV",
-    "DEC",
+    "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
   ],
   datasets: [
     {
       label: "Chargebacks",
-      data: [
-        850, 2700, 2100, 2800, 3400, 2000, 2700, 3900, 1200, 1600, 2700, 1900,
-      ],
+      data: [850, 2700, 2100, 2800, 3400, 2000, 2700, 3900, 1200, 1600, 2700, 1900],
       backgroundColor: "#FDB515",
       borderRadius: 6,
       barThickness: 24,
@@ -99,7 +87,7 @@ export default function ChargebackTrends() {
   const [filter] = useState("Yearly");
 
   return (
-    <div className="w-full p-4 rounded-lg">
+    <div className="w-full p-4 rounded-lg bg-white">
       {/* Header */}
       <div className="flex justify-between items-center mb-2">
         <div>
@@ -109,14 +97,12 @@ export default function ChargebackTrends() {
           <p className="text-sm font-medium text-gray-600">2024</p>
         </div>
         <button className="text-sm px-3 py-1 bg-blue-100 text-blue-600 rounded-md">
-          {filter} ▼
+          {filter} 
         </button>
       </div>
 
       {/* KPIs */}
-
       <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-sm font-medium text-gray-700 mb-4">
-        {/* Total Value */}
         <div className="flex items-center gap-2">
           <span>Total Value of Chargebacks:</span>
           <span className="text-[#1D8F6E] font-semibold">£1,680.35</span>
@@ -128,7 +114,6 @@ export default function ChargebackTrends() {
           </span>
         </div>
 
-        {/* Total Count */}
         <div className="flex items-center gap-2">
           <span>Total No. of Chargebacks:</span>
           <span className="text-[#F04438] font-semibold">20</span>
@@ -142,8 +127,10 @@ export default function ChargebackTrends() {
       </div>
 
       {/* Chart */}
-      <div className="h-72 w-full">
-        <Bar data={barData} options={barOptions} />
+      <div className="overflow-x-auto">
+        <div className="h-72 min-w-[640px] md:min-w-0 w-full">
+          <Bar data={barData} options={barOptions} />
+        </div>
       </div>
     </div>
   );

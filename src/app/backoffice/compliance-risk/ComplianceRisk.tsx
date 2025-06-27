@@ -50,14 +50,15 @@ export default function ComplianceRisk() {
 
       <div className="px-6 md:px-12 relative z-2">
         <div className="flex flex-col space-y-8">
-          <div className="grid grid-cols-5 gap-6 items-stretch justify-center mt-5">
-            <div className="col-span-3 bg-white p-4 rounded-2xl">
-              <FraudGraph />
-            </div>
-            <div className="col-span-2 bg-white p-4 rounded-2xl">
-              <PendingVsVerified />
-            </div>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch justify-center mt-5">
+  <div className="md:col-span-3 bg-white p-4 rounded-2xl">
+    <FraudGraph />
+  </div>
+  <div className="md:col-span-2 bg-white p-4 rounded-2xl">
+    <PendingVsVerified />
+  </div>
+</div>
+
 
           <div className="bg-white p-4 rounded-2xl">
             <ChargebackTrends />
@@ -68,14 +69,15 @@ export default function ComplianceRisk() {
           </div>
         </div>
 
-        <div className="grid grid-cols-5 gap-6 items-stretch justify-center mt-5">
-          <div className="col-span-3 bg-white p-4 rounded-2xl">
-            <FlaggedTransactionsChart />
-          </div>
-          <div className="col-span-2 w-full bg-white p-4 rounded-2xl">
-            <KYCVerificationStats />
-          </div>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch justify-center mt-5">
+  <div className="md:col-span-3 bg-white p-4 rounded-2xl">
+    <FlaggedTransactionsChart />
+  </div>
+  <div className="md:col-span-2 bg-white p-4 rounded-2xl">
+    <KYCVerificationStats/>
+  </div>
+</div>
+
       </div>
 
       {isDateFilterOpen && (
