@@ -27,24 +27,24 @@ export default function Messages({ onSelectChat, activeChat }) {
   return (
     <div className="bg-white pt-5 flex flex-col shadow-lg h-full">
       {/* Header with Search and New Button */}
-      <div className="flex justify-between px-4 items-center gap-4">
-        <h2 className="text-lg mt-5 font-semibold">Messages</h2>
-        <div className="flex items-center gap-3">
-          <div className="relative mt-5 flex-grow">
+      <div className="flex justify-between px-4 items-center gap-2 md:gap-4">
+        <h2 className="text-lg md:mt-5 font-semibold">Messages</h2>
+        <div className="flex items-center gap-1 md:gap-3">
+          <div className="relative ml-3 md:ml-0 md:mt-5 flex-grow">
             <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
             <input
               type="text"
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="md:w-full w-4/5 pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <button
             onClick={() => setModalOpen(true)}
-            className="border border-blue-600 text-blue-600 px-4 py-1 mt-5 rounded-xl font-medium flex items-center gap-2 hover:bg-blue-100 whitespace-nowrap"
+            className="border border-blue-600 text-blue-600 px-4 py-1 md:mt-5 rounded-xl font-medium flex items-center gap-2 hover:bg-blue-100 whitespace-nowrap"
           >
-            New <span className="text-xl">+</span>
+            New <span className="md:text-xl text-lg">+</span>
           </button>
         </div>
       </div>
