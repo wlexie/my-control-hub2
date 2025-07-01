@@ -58,6 +58,11 @@ export const pastelColors = [
     text: "text-orange-600",
     dot: "bg-orange-500",
   },
+  "Temporary Blocked": {
+    bg: "bg-red-100",
+    text: "text-red-600",
+    dot: "bg-red-500",
+  },
   "Temporary_Blocked": {
     bg: "bg-red-100",
     text: "text-red-600",

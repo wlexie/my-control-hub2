@@ -123,6 +123,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     }
   };
 
+
+
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50">
       <AnimatePresence>
@@ -136,10 +138,13 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="md:hidden absolute bottom-0 left-0 right-0 h-[90vh] bg-white rounded-t-3xl shadow-xl flex flex-col"
             >
+             
               <div className="flex justify-between items-center p-4 border-b">
                 <h2 className="text-lg font-bold text-gray-900">
                   {transaction.transactionId}
                 </h2>
+               
+
                 <button
                   onClick={onClose}
                   className="text-gray-500 hover:text-gray-700 text-xl"
@@ -161,7 +166,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   <p className="text-gray-400 mt-1 text-sm">
                     {statusDetails.reason}
                   </p>
+                  
+
                 </div>
+
 
                 {/* Transaction Details */}
                 <div className="space-y-3">
