@@ -1,15 +1,15 @@
 'use client';
-import { useState } from 'react';
+//import { useState } from 'react';
 
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import logo from '../../../../public/omnisupport/images/logo.png';
-import set from '../../../../public/omnisupport/images/settings.png';
+//import set from '../../../../public/omnisupport/images/settings.png';
 import User from '../../access-manager/components/User';
 import { AiOutlineMessage } from "react-icons/ai";
 import { FiX } from "react-icons/fi"; // Import the close icon
-import { MdDomainVerification } from "react-icons/md";
+//import { MdDomainVerification } from "react-icons/md";
 import { useRouter } from 'next/navigation';
 
 // Update component to accept an optional onClose prop
