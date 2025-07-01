@@ -63,7 +63,7 @@ export default function InProgressMessages({ conversations = [], onSelectChat, a
                 <div className="flex justify-between items-start w-full">
                   <div>
                     <p className="font-medium text-gray-900 mb-1 text-sm">{conv.contactName || conv.msisdn}</p>
-                    <p className="text-gray-500 text-xs truncate max-w-[270px]">{conv.content}</p>
+                    <p className="text-gray-500 text-xs truncate max-w-[260px]">{conv.content}</p>
                   </div>
                   <div className="ml-auto flex items-center shrink-0 pl-2">
                     <p className="text-xs text-gray-400 whitespace-nowrap">{formatTimestamp(conv.timestamp)}</p>

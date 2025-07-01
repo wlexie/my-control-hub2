@@ -13,7 +13,8 @@ export function middleware(request: NextRequest) {
   
   // A list of all your top-level protected routes
   const protectedPaths = 
-  ['/dashboard', 
+  [ 
+    '/dashboard', 
     '/backoffice/transactions', 
     '/backoffice/dashboard',
     '/backoffice/user-accounts',
