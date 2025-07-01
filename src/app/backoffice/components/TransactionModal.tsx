@@ -181,12 +181,32 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       </p>
                       <p className="text-gray-500">Exchange Rate:</p>
                       <p>{transaction.exchangeRate}</p>
+                      <p className="text-gray-500">Transfer Fee:</p>
+                      <p>0.00</p>
                       <p className="text-gray-500">Payment Method:</p>
                       <p>{transaction.transactionType}</p>
                       <p className="text-gray-500">Bank Name:</p>
                       <p>{transaction.bankName || "N/A"}</p>
                       <p className="text-gray-500">Transaction ID:</p>
                       <p className="truncate">{transaction.transactionId}</p>
+                      <p className="text-gray-500">User ID:</p>
+                      <p>{transaction.userId || "N/A"}</p>
+                      <p className="text-gray-500">Tuma Reference:</p>
+                      <p>{transaction.transactionKey || "N/A"}</p>
+                      <p className="text-gray-500">Trust Payment:</p>
+                      <p>{transaction.tpReference || "N/A"}</p>
+                      <p className="text-gray-500">Settlement Reference:</p>
+                      <p>{transaction.settlementReference || "N/A"}</p>
+                      <p className="text-gray-500">MPESA Reference:</p>
+                      <p>{transaction.mpesaReference || "N/A"}</p>
+                      <p className="text-gray-500">Origin:</p>
+                      <p>UK</p>
+                      <p className="text-gray-500">Destination:</p>
+                      <p>Kenya</p>
+                      <p className="text-gray-500">Time Sent:</p>
+                      <p>{formatDateTime(transaction.date)}</p>
+                      <p className="text-gray-500">Time Received:</p>
+                      <p>{formatDateEAT(transaction.date)}</p>
                     </div>
                   </div>
 

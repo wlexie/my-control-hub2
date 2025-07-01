@@ -339,7 +339,7 @@ export default function UserDetailsModal({
                   <div className="bg-gray-50 p-4 rounded-xl text-sm space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-600">User ID</span>
-                      <span className="font-medium">{userId}</span>
+                      <span className="font-medium">TUMA{userId}</span>
                     </div>
 
                     <div className="flex justify-between">
