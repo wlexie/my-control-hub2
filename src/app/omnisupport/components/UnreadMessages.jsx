@@ -24,7 +24,6 @@ const formatTimestamp = (timestampStr) => {
 };
 
 export default function UnreadMessages({ conversations = [], onSelectChat, searchTerm = "" }) {
-  // Filter the conversations based on the search term from the parent component
   const filteredConversations = useMemo(() => {
     return conversations
       .filter(conv => 
