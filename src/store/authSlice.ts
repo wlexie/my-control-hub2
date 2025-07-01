@@ -4,12 +4,12 @@ import { jwtDecode } from 'jwt-decode';
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
-  tokenExpiry: number | null; // Add this line
+  tokenExpiry: number | null; 
   user: {
     email: string;
     firstName: string;
     lastName: string;
-    roles: string[];
+    roles: string[]; 
     permissions: string[];
   } | null;
 }
@@ -27,7 +27,7 @@ export const authSlice = createSlice({
   reducers: {
     setCredentials: (state, action: PayloadAction<{
       accessToken: string;
-      refreshToken: string;
+      refreshToken: string;  
       tokenExpiry?: number; 
     }>) => {
       const { accessToken, refreshToken, tokenExpiry } = action.payload;

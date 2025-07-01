@@ -24,7 +24,7 @@ export default function User() {
   
   const firstName = user?.firstName || '';
   const lastName = user?.lastName || '';
- // const email = user?.email || '';
+  // const email = user?.email || '';
   const userInitials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 
   const handleModalToggle = () => {
@@ -57,13 +57,16 @@ export default function User() {
     localStorage.removeItem('persist:root'); // If using redux-persist
     sessionStorage.clear();
     
+    // Clear the accessToken cookie by setting its expiration date to the past
+    document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+    
     // Optional: Call your API logout endpoint if needed
     // await axios.post('/api/auth/logout');
     
     // Redirect to login page
     router.push('/login');
     
-    console.log('User logged out successfully');
+    console.log('User logged out successfully and accessToken cookie cleared.');
   };
 
   return (

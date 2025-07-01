@@ -1,10 +1,10 @@
-// components/dashboard/Sidebar.tsx
 "use client";
 
 import React from "react";
 import { useDispatch } from 'react-redux';
-import { clearCredentials } from '../../store/authSlice'; 
-
+import { clearCredentials } from '../../store/authSlice';
+// --- CHANGE #1: REMOVED THE js-cookie IMPORT ---
+// import Cookies from 'js-cookie'; 
 import {
   IoSettingsOutline,
   IoNotificationsOutline,
@@ -12,7 +12,6 @@ import {
 } from "react-icons/io5";
 import { HiOutlineUsers } from "react-icons/hi2";
 
-// --- START: CORRECTED SidebarItem Component ---
 interface SidebarItemProps {
   icon: React.ElementType;
   label: string;
@@ -21,6 +20,7 @@ interface SidebarItemProps {
   isActive?: boolean;
 }
 
+// This component is unchanged
 const SidebarItem: React.FC<SidebarItemProps> = ({
   icon: Icon,
   label,
@@ -29,19 +29,17 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   isActive,
 }) => {
   return (
-    // The main container is now a vertical flex column and the "group"
     <div
       onClick={onClick}
       className="relative flex flex-col items-center group cursor-pointer w-full py-2"
     >
-      {/* This DIV is the circular background for the icon */}
       <div
         className={`
           relative flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200
           ${
             isActive
-              ? "bg-indigo-100" // Active state background
-              : "bg-transparent group-hover:bg-gray-100" // Hover state background
+              ? "bg-indigo-100"
+              : "bg-transparent group-hover:bg-gray-100"
           }
         `}
       >
@@ -51,8 +49,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
             transition-colors duration-200
             ${
               isActive
-                ? "text-indigo-600" // Active state icon color
-                : "text-gray-500 group-hover:text-gray-700" // Hover state icon color
+                ? "text-indigo-600"
+                : "text-gray-500 group-hover:text-gray-700"
             }
           `}
         />
@@ -62,15 +60,13 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
           </span>
         )}
       </div>
-
-      {/* This SPAN is the label. It appears below the icon on hover or when active. */}
       <span
         className={`
           mt-1 text-xs font-medium transition-opacity duration-200
           ${
             isActive
-              ? "text-indigo-600 opacity-100" // Active state label is always visible
-              : "text-gray-700 opacity-0 group-hover:opacity-100" // Hover state label fades in
+              ? "text-indigo-600 opacity-100"
+              : "text-gray-700 opacity-0 group-hover:opacity-100"
           }
         `}
       >
@@ -79,24 +75,45 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
     </div>
   );
 };
-// --- END: CORRECTED SidebarItem Component ---
 
 const Sidebar = () => {
   const [activeItem, setActiveItem] = React.useState<string | null>("users");
-  const dispatch = useDispatch(); 
+  const dispatch = useDispatch();
 
+  // ----- START OF UPDATED SECTION -----
   const handleLogout = () => {
+    console.log("Starting logout process...");
+    
+    // 1. Clear Redux state
     dispatch(clearCredentials());
+    console.log("Redux state cleared");
+
+    // 2. Clear the accessToken cookie by setting its expiration date to the past (native method)
+    //document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+    console.log("accessToken cookie cleared via native API");
+    
+    // 3. Clear other client storage
     localStorage.removeItem('persist:root');
     sessionStorage.clear();
-    window.location.href = '/';
+    console.log("Local/Session storage cleared");
+
+    // 4. Force hard navigation to redirect
+    console.log("Redirecting to login...");
+    window.location.href = '/login';
   };
+  // ----- END OF UPDATED SECTION -----
+
 
   const notificationCount = 3;
 
   return (
     <div className="h-full w-20 bg-white shadow-md flex flex-col items-center py-6 space-y-2 font-poppins">
-      <div className="mb-4">{/** <User /> */}</div>
+      <div className="mb-4">
+        {/* User avatar or placeholder */}
+        <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
+          <span className="text-gray-600">U</span>
+        </div>
+      </div>
 
       <SidebarItem
         icon={IoSettingsOutline}

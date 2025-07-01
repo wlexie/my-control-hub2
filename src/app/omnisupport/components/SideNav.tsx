@@ -2,17 +2,18 @@
 import { useState } from 'react';
 
 import { usePathname } from 'next/navigation';
-
 import Image from 'next/image';
 import Link from 'next/link';
 import logo from '../../../../public/omnisupport/images/logo.png';
 import set from '../../../../public/omnisupport/images/settings.png';
 import User from '../../access-manager/components/User';
 import { AiOutlineMessage } from "react-icons/ai";
+import { FiX } from "react-icons/fi"; // Import the close icon
 import { MdDomainVerification } from "react-icons/md";
 import { useRouter } from 'next/navigation';
 
-export default function SideNav() {
+// Update component to accept an optional onClose prop
+export default function SideNav({ onClose }: { onClose?: () => void }) {
   const router = useRouter();
   const pathname = usePathname(); // Get current route
 
@@ -21,14 +22,33 @@ export default function SideNav() {
   };
 
   return (
-    <div className="w-full h-screen font-poppins  px-4 pt-8 bg-blue-600 text-white flex flex-col">
-      <div className="flex justify-start mb-16">
-        <Image src={logo} alt="Logo" width={40} height={24}
-                 onClick={handleLogoClick}
-       />
-        <div className="font-semibold text-[20px] font-lufga mt-2 ml-3">
-          Omnisupport
+    <div className="w-full h-screen font-poppins px-4 pt-8 bg-blue-600 text-white flex flex-col">
+      {/* Updated Header to include the close button */}
+      <div className="flex justify-between items-center mb-16">
+        <div className="flex items-center">
+            <Image 
+                src={logo} 
+                alt="Logo" 
+                width={40} 
+                height={24}
+                onClick={handleLogoClick}
+                className="cursor-pointer"
+            />
+            <div className="font-semibold text-[20px] font-lufga mt-2 ml-3">
+                Omnisupport
+            </div>
         </div>
+        {/* --- CLOSE BUTTON (MOBILE ONLY) --- */}
+        {/* This button only shows if the onClose function is passed */}
+        {onClose && (
+            <button
+                onClick={onClose}
+                className="md:hidden p-1 text-white"
+                aria-label="Close navigation menu"
+            >
+                <FiX size={28} />
+            </button>
+        )}
       </div>
 
       <div className="relative group ">

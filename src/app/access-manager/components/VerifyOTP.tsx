@@ -1,3 +1,5 @@
+// This should be located at a path like `pages/verify-otp.tsx` or `app/verify-otp/page.tsx`
+
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
@@ -5,8 +7,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import axios from "axios";
 import { useDispatch } from "react-redux";
-import { setCredentials } from "../../../store/authSlice"; // Verify path
+import { setCredentials } from "../../../store/authSlice"; // Make sure this path is correct
 import { jwtDecode } from "jwt-decode";
+import Cookies from "js-cookie"; // The required import for handling cookies
 
 interface DecodedToken {
   exp: number;
@@ -68,21 +71,27 @@ const VerifyOTPContent = () => {
 
   const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
     event.preventDefault();
-    const pastedData = event.clipboardData.getData("text/plain").replace(/\D/g, "").slice(0, otp.length);
+    const pastedData = event.clipboardData
+      .getData("text/plain")
+      .replace(/\D/g, "")
+      .slice(0, otp.length);
     if (!pastedData) return;
-    
+
     const newOtp = [...otp];
     const targetInput = event.target as HTMLInputElement;
     const startIndex = inputRefs.current.indexOf(targetInput) ?? 0;
 
     for (let i = 0; i < pastedData.length; i++) {
-        if (startIndex + i < otp.length) {
-            newOtp[startIndex + i] = pastedData[i];
-        }
+      if (startIndex + i < otp.length) {
+        newOtp[startIndex + i] = pastedData[i];
+      }
     }
     setOtp(newOtp);
 
-    const lastFilledIndex = Math.min(startIndex + pastedData.length, otp.length - 1);
+    const lastFilledIndex = Math.min(
+      startIndex + pastedData.length,
+      otp.length - 1
+    );
     inputRefs.current[lastFilledIndex]?.focus();
   };
 
@@ -106,6 +115,19 @@ const VerifyOTPContent = () => {
       );
 
       if (response.status === 200 && response.data.accessToken) {
+        // ---- START: THE CORRECTED COOKIE-SETTING LOGIC ----
+
+        // 1. SET THE COOKIE WITH A ROOT PATH
+        // This makes the authentication state available to the server-side middleware
+        // on all pages, not just the page it was set on.
+        Cookies.set("accessToken", response.data.accessToken, {
+          expires: 1, // Expires in 1 day
+          secure: process.env.NODE_ENV === "production", // Use secure cookies on HTTPS
+          path: '/', // <-- This is the important addition
+        });
+
+        // 2. UPDATE REDUX (This remains unchanged)
+        // This updates your client-side UI state immediately.
         const decodedToken = jwtDecode<DecodedToken>(response.data.accessToken);
         const tokenExpiry = decodedToken.exp * 1000;
         dispatch(
@@ -115,15 +137,19 @@ const VerifyOTPContent = () => {
             tokenExpiry: tokenExpiry,
           })
         );
+
+        // ---- END: THE CORRECTED COOKIE-SETTING LOGIC ----
+
         setIsVerified(true);
-        router.push("/dashboard");
+        router.push("/dashboard"); // This will now work correctly
       } else {
         setError("Invalid OTP or unexpected response. Please try again.");
         setOtp(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       }
     } catch (err) {
-      const specificErrorMsg = axios.isAxiosError(err) && err.response?.data?.message
+      const specificErrorMsg =
+        axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
           : "Invalid OTP. Please try again.";
       setError(specificErrorMsg);
@@ -140,11 +166,14 @@ const VerifyOTPContent = () => {
     setIsLoading(true);
     try {
       await axios.post(
-        `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(email)}`
+        `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(
+          email
+        )}`
       );
       alert("A new OTP has been sent to your email.");
     } catch (err) {
-      const resendErrorMsg = axios.isAxiosError(err) && err.response?.data?.message
+      const resendErrorMsg =
+        axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
           : "Failed to resend OTP. Please try again.";
       alert(resendErrorMsg);
@@ -157,10 +186,10 @@ const VerifyOTPContent = () => {
   if (isVerified) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4 font-poppins">
-  <p className="text-center text-xl font-medium text-green-600 md:text-2xl">
-    OTP Verified Successfully! Redirecting...
-  </p>
-</div>
+        <p className="text-center text-xl font-medium text-green-600 md:text-2xl">
+          OTP Verified Successfully! Redirecting...
+        </p>
+      </div>
     );
   }
 
@@ -194,19 +223,18 @@ const VerifyOTPContent = () => {
               Enter the code sent to <br className="sm:hidden" />
               <span className="font-medium text-gray-900">{email}</span>
             </p>
-            
+
             {error && (
               <div className="mb-4 rounded bg-red-100 px-4 py-2 text-center text-red-800">
                 {error}
               </div>
             )}
-            
+
             <form className="w-full space-y-6" onSubmit={handleSubmit}>
               <div className="flex justify-center gap-2 sm:gap-4">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
-                    // --- THE FIX IS HERE ---
                     ref={(el) => {
                       inputRefs.current[index] = el;
                     }}
@@ -254,6 +282,7 @@ const VerifyOTPContent = () => {
   );
 };
 
+// This wrapper handles the case where `useSearchParams` is used.
 const VerifyOTP = () => {
   return (
     <Suspense

@@ -65,7 +65,7 @@ export default function User() {
       {/* Modal */}
       {isModalOpen && (
         <div
-          className="absolute left-28 -bottom-3 font-poppins transform translate-x-1/2 mb-2 bg-white border z-10 p-3 rounded-md w-48 shadow-lg"
+          className="absolute md:left-28 left-6 -bottom-3 font-poppins transform translate-x-1/2 mb-2 bg-white border z-10 p-3 rounded-md md:w-48 w-32 shadow-lg"
           ref={modalRef}
         >
           {/* Modal Content */}
