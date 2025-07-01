@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
 
   //console.log(`MIDDLEWARE: Path: ${pathname}, Token Exists: ${!!token}`);
 
-  const isPublicAuthPath = pathname.startsWith('/login') || pathname.startsWith('/verify-otp') || pathname.startsWith('/');
+  //const isPublicAuthPath = pathname.startsWith('/login') || pathname.startsWith('/verify-otp') || pathname.startsWith('/');
   
   // A list of all your top-level protected routes
   const protectedPaths = 
