@@ -23,6 +23,8 @@ export function middleware(request: NextRequest) {
     '/backoffice/customer-analytics',
     '/backoffice/compliance-risk',
     '/backoffice/operational-efficiency',
+    '/backoffice/transactions', 
+
 
     //fx routes
     '/fx-navigator/dashboard',
