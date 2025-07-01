@@ -1,3 +1,5 @@
+// src/components/Conversation.jsx
+
 import React, { useState, useEffect, useRef, useMemo, useCallback, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
@@ -80,9 +82,9 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
         try {
           const parsedContent = JSON.parse(msg.content);
           let type = 'unsupported', payload = null;
-          if (parsedContent.text?.trim()) type = 'text', payload = parsedContent.text;
-          else if (parsedContent.image?.url) type = 'image', payload = { url: parsedContent.image.url };
-          else if (parsedContent.file?.url) type = 'file', payload = { url: parsedContent.file.url };
+          if (parsedContent.text?.trim()) { type = 'text'; payload = parsedContent.text; }
+          else if (parsedContent.image?.url) { type = 'image'; payload = { url: parsedContent.image.url }; }
+          else if (parsedContent.file?.url) { type = 'file'; payload = { url: parsedContent.file.url }; }
           return { ...msg, type, payload };
         } catch { return null; }
       }).filter(Boolean);
@@ -124,18 +126,102 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   useEffect(() => { document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen); }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen]);
 
   // --- EVENT HANDLERS ---
-  const sendMessage = async () => { /* ... (your existing logic) ... */ };
+  const sendMessage = async () => {
+    if (newMessage.trim() === '' || !selectedChat) return;
+
+    const recipientPhoneNumber = selectedChat.messages?.[0]?.from?.phoneNumber;
+    if (!recipientPhoneNumber) {
+        console.error('Recipient phone number could not be determined.');
+        return;
+    }
+
+    // Optimistic UI update
+    const userMsg = {
+        id: `temp-${Date.now()}`,
+        payload: newMessage,
+        createdAt: new Date().toISOString(),
+        direction: 'sent',
+        type: 'text',
+    };
+    setMessages(prevMessages => [...prevMessages, userMsg]);
+    setNewMessage('');
+    setShowEmojiPicker(false);
+
+    try {
+        await axios.post('/api/sendMessage', { recipientPhone: recipientPhoneNumber, message: newMessage });
+        // Poll for the real message from the server
+        setTimeout(() => fetchFullConversation(true), 1500);
+    } catch (error) {
+        console.error('Error sending message:', error.response?.data || error);
+        // Optional: Add logic to show an error on the message itself
+    }
+  };
+
   const addEmoji = (emoji) => { setNewMessage(prev => prev + emoji.native); };
-  const handleCloseChat = async () => { /* ... (your existing logic) ... */ };
-  const handleFileUpload = async (file) => { /* ... (your existing logic) ... */ };
-  const handleFileChange = (e) => handleFileUpload(e.target.files[0]);
+
+  const handleCloseChat = async () => {
+    if (!selectedChat || !selectedChat.id) return;
+    try {
+        await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`);
+        setSelectedChat(null); // Deselect the chat, which should hide the conversation view
+    } catch (error) {
+        console.error("Error closing conversation:", error.response?.data || error.message);
+        alert("Failed to close the conversation. Please try again.");
+    } finally {
+        setIsModalOpen(false);
+    }
+  };
+
+  const handleFileUpload = async (file) => {
+    if (!file || !selectedChat) return;
+    const recipientPhoneNumber = selectedChat.messages?.[0]?.from?.phoneNumber;
+    if (!recipientPhoneNumber) {
+        alert("Could not determine the recipient's phone number.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('recipientPhone', recipientPhoneNumber);
+
+    setIsUploading(true);
+    try {
+        const response = await axios.post('/api/sendMessage', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        if (response.data.success) {
+            // Poll for the real message from the server
+            setTimeout(() => fetchFullConversation(true), 1500);
+        } else {
+            throw new Error(response.data.error || "File upload failed on the server.");
+        }
+    } catch (error) {
+        console.error("Error uploading file:", error);
+        alert("File upload failed. Please try again.");
+    } finally {
+        setIsUploading(false);
+        // Clear file input to allow uploading the same file again
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+  
   const handleSelectTemplate = (text) => { setNewMessage(text); setIsTemplatesModalOpen(false); };
   const handleNoteIconClick = (id) => { setActiveNoteEditorId(id); setCurrentNoteText(messageNotes[id] || ""); };
-  const handleSaveNote = () => { if (!activeNoteEditorId) return; setMessageNotes(prev => ({ ...prev, [activeNoteEditorId]: currentNoteText })); setActiveNoteEditorId(null); };
-  const handleCancelNote = () => setActiveNoteEditorId(null);
+  const handleSaveNote = () => { if (!activeNoteEditorId) return; setMessageNotes(prev => ({ ...prev, [activeNoteEditorId]: currentNoteText })); setActiveNoteEditorId(null); setCurrentNoteText(""); };
+  const handleCancelNote = () => { setActiveNoteEditorId(null); setCurrentNoteText(""); };
   const handleDragEnter = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current++; if (e.dataTransfer.items?.length > 0) setIsDraggingOver(true); };
   const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current === 0) setIsDraggingOver(false); };
-  const handleDragOver = (e) => e.preventDefault();
+  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
   const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(false); dragCounter.current = 0; if (e.dataTransfer.files?.length > 0) { handleFileUpload(e.dataTransfer.files[0]); e.dataTransfer.clearData(); } };
 
   // --- JSX RENDER ---
@@ -191,11 +277,12 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                         <div className={`flex w-full mt-2 items-end gap-2 ${isSent ? 'justify-end' : 'justify-start'}`}>
                           {!isSent && <div className={`flex-shrink-0 w-6 h-6 ${userAvatarColor} rounded-full text-xs font-semibold text-white flex items-center justify-center self-end`}>{userInitials}</div>}
                           
-                          {/* THE RESPONSIVE MESSAGE BUBBLE CONTAINER */}
                           <div className={`flex items-end max-w-[85%] sm:max-w-[75%] md:max-w-xl ${isSent ? 'flex-row-reverse' : ''}`}>
                             <div className={`px-3 py-2 rounded-2xl ${isSent ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
                               {msg.type === 'text' && <p className="break-words whitespace-pre-wrap">{msg.payload}</p>}
                               {msg.type === 'image' && <img src={msg.payload.url} alt="User attachment" className="rounded-lg max-w-[200px] cursor-pointer" onClick={() => setLightboxImage(msg.payload.url)} />}
+                              {/* New file type rendering logic can be added here */}
+                              {msg.type === 'file' && <a href={msg.payload.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-300 hover:text-white underline"><Paperclip size={16} /><span>File Attachment</span></a>}
                               {!isSent && <div className="mt-1 text-right text-xs text-gray-500">{formatMessageTimestamp(msg.createdAt)}</div>}
                             </div>
                             <div className="flex items-center mx-2 text-gray-400">
@@ -232,7 +319,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                   <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => setShowEmojiPicker(p => !p)}><Smile className="w-5 h-5" /></button>
                   <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => setIsTemplatesModalOpen(true)}><Pin className="w-5 h-5" /></button>
                 </div>
-                <button onClick={sendMessage} className="p-2 ml-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-300" disabled={!newMessage.trim()}><Send className="w-5 h-5" /></button>
+                <button onClick={sendMessage} className="p-2 ml-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-300" disabled={!newMessage.trim() && !isUploading}><Send className="w-5 h-5" /></button>
               </div>
             )}
           </footer>

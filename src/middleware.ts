@@ -50,7 +50,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (isPublicAuthPath && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
   
   // If none of the above rules match, allow the request to proceed
