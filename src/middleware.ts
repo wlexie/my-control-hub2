@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
 
   //console.log(`MIDDLEWARE: Path: ${pathname}, Token Exists: ${!!token}`);
 
-  const isPublicAuthPath = pathname.startsWith('/login') || pathname.startsWith('/verify-otp');
+  const isPublicAuthPath = pathname.startsWith('/login') || pathname.startsWith('/verify-otp') || pathname.startsWith('/');
   
   // A list of all your top-level protected routes
   const protectedPaths = 
@@ -49,9 +49,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  if (isPublicAuthPath && token) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  //if (isPublicAuthPath && token) {
+   // return NextResponse.redirect(new URL('/', request.url));
+ // }
   
   // If none of the above rules match, allow the request to proceed
   return NextResponse.next();

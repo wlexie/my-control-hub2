@@ -55,15 +55,15 @@ const Login = () => {
         {/* Right Column: Form */}
         {/* "w-full" makes this full-width on mobile. "lg:w-1/2" makes it half-width on large screens. */}
         <div className="flex w-full items-center justify-center p-8 lg:w-1/2 sm:p-12">
-          <div className="w-full max-w-md">
-            <h2 className="mb-10 flex items-center gap-4 text-3xl font-bold text-gray-800 lg:text-4xl">
+          <div className="w-full max-w-sm  md:max-w-md">
+            <h2 className="md:mb-10 mb-6 flex items-center gap-4 text-3xl font-bold text-gray-800 lg:text-4xl">
               <Image src="/user-access/images/logo.png" alt="Logo" width={40} height={35} />
               Control Hub
             </h2>
-            <h1 className="mb-6 text-xl font-semibold text-gray-800 sm:text-2xl">
+            <h1 className="md:mb-6 mb-4 text-xl font-semibold text-gray-800 sm:text-2xl">
               Login to your account
             </h1>
-            <p className="mb-8 text-base font-medium text-gray-500">
+            <p className="md:mb-8 mb-5 text-base font-medium text-gray-500">
               Don&apos;t have an account?{" "}
               <Link href="/" className="text-blue-600 underline">
                 Request for Access

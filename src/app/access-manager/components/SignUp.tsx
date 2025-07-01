@@ -135,7 +135,7 @@ export default function ControlHub() {
         />
       </div>
 
-      <div className="w-full md:w-1/2 p-8 lg:p-12 flex flex-col justify-center space-y-6 overflow-y-auto">
+      <div className="w-full md:w-1/2 p-4 px-8 md:p-20 md:pr-32 flex flex-col justify-center md:space-y-6 space-y-4 overflow-y-auto">
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
           <Image src="/user-access/images/logo.png" alt="Logo" width={35} height={30} />
           Control Hub
