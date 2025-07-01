@@ -186,7 +186,7 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
-    console.log("Current user from store:", user);
+   // console.log("Current user from store:", user);
   }, [user]);
 
   const filteredModules = allModulesData.filter((module) => {
