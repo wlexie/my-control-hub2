@@ -12,7 +12,7 @@ import { IoSettingsOutline, IoNotificationsOutline } from "react-icons/io5";
 import { MdOutlineLogout } from "react-icons/md";
 import { HiOutlineUsers } from "react-icons/hi2";
 
-// Data for modules (assuming it's correct)
+// Data for modules (assuming it's correc
 const allModulesData = [
     {
     name: "Back Office Suite",
