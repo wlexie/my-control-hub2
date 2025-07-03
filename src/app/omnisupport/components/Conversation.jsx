@@ -1,5 +1,3 @@
-// src/components/Conversation.jsx
-
 import React, { useState, useEffect, useRef, useMemo, useCallback, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
@@ -63,20 +61,26 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const textareaRef = useRef(null);
   const noteTextareaRef = useRef(null);
   const dragCounter = useRef(0);
-
+  
   // --- DERIVED STATE & MEMOIZED VALUES ---
-  const userName = selectedChat?.messages?.[0]?.from?.name || 'Unknown Contact';
+  const userName = selectedChat?.contactName || selectedChat?.messages?.[0]?.from?.name || 'Unknown Contact';
+  const userPhoneNumber = selectedChat?.msisdn || selectedChat?.messages?.[0]?.from?.phoneNumber || '';
   const userInitials = getInitials(userName);
   const userAvatarColor = useMemo(() => getColorForId(selectedChat?.id), [selectedChat?.id]);
 
   // --- DATA FETCHING ---
   const fetchFullConversation = useCallback(async (isBackgroundPoll = false) => {
-    if (!selectedChat?.id) { setMessages([]); return; }
+    const identifier = selectedChat?.id || selectedChat?.msisdn;
+    if (!identifier) { 
+        setMessages([]); 
+        return; 
+    }
+    
     if (!isBackgroundPoll) { setLoadingMessages(true); }
     setErrorMessages(null);
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/messages/${selectedChat.id}?page=0&size=50`);
+      const response = await axios.get(`${API_BASE_URL}/messages/${identifier}?page=0&size=50`);
       const fetchedMessages = response.data.content || response.data || [];
       const processedMessages = fetchedMessages.map(msg => {
         try {
@@ -88,33 +92,67 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
           return { ...msg, type, payload };
         } catch { return null; }
       }).filter(Boolean);
-
-      if (isBackgroundPoll) {
-        setMessages(current => {
-          const existingIds = new Set(current.map(m => m.id));
-          const newUnique = processedMessages.filter(m => !existingIds.has(m.id));
-          return newUnique.length > 0 ? [...current, ...newUnique].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) : current;
+      
+      // This logic prevents message duplication from optimistic updates + polling
+      setMessages(currentMessages => {
+        // Create a map of the real messages from the server for quick lookups.
+        const serverMessagesMap = new Map(processedMessages.map(m => [m.id, m]));
+        
+        // Find any temporary (optimistic) messages in our current state
+        // that have NOT been confirmed by the server yet.
+        const pendingOptimisticMessages = currentMessages.filter(localMsg => {
+          if (!localMsg.id.toString().startsWith('temp-')) {
+            return false; // Not an optimistic message
+          }
+          // Check if a sent message with the same content has arrived from the server.
+          // This is a simple way to confirm the message. A more robust method would
+          // involve a unique client-side ID that gets echoed back by the server.
+          let isConfirmed = false;
+          for (const serverMsg of processedMessages) {
+              if (serverMsg.direction === 'sent' && serverMsg.payload === localMsg.payload) {
+                  isConfirmed = true;
+                  break;
+              }
+          }
+          return !isConfirmed;
         });
-      } else {
-        setMessages([...processedMessages].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)));
-      }
+
+        // The new state is all the server messages, plus any unconfirmed optimistic ones.
+        const newMessages = [...processedMessages, ...pendingOptimisticMessages];
+        
+        // De-duplicate one last time to be safe and sort by date.
+        return Array.from(new Map(newMessages.map(m => [m.id, m])).values())
+                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      });
+
     } catch (err) {
-      console.error("Error fetching conversation:", err);
-      if (!isBackgroundPoll) setErrorMessages("Failed to load conversation history.");
+      if (err.response?.status !== 404) {
+        console.error("Error fetching conversation:", err);
+        if (!isBackgroundPoll) setErrorMessages("Failed to load conversation history.");
+      } else {
+        // It's a new conversation, so clear any old messages
+        if (!isBackgroundPoll) setMessages([]);
+      }
     } finally {
       if (!isBackgroundPoll) setLoadingMessages(false);
     }
-  }, [selectedChat?.id]);
+  }, [selectedChat?.id, selectedChat?.msisdn]);
 
   // --- SIDE EFFECTS ---
   useEffect(() => { if (textareaRef.current) { textareaRef.current.style.height = 'auto'; textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; } }, [newMessage]);
   useEffect(() => { if (noteTextareaRef.current) { noteTextareaRef.current.style.height = 'auto'; noteTextareaRef.current.style.height = `${noteTextareaRef.current.scrollHeight}px`; } }, [currentNoteText]);
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }); }, [messages]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   useEffect(() => {
-    if (selectedChat?.id) { fetchFullConversation(false); }
-    else { setMessages([]); }
-    setNewMessage(''); setShowEmojiPicker(false); setActiveNoteEditorId(null);
+    setMessages([]); // Always clear messages on chat change
+    setNewMessage(''); 
+    setShowEmojiPicker(false); 
+    setActiveNoteEditorId(null);
+    
+    // When a new chat is selected, fetch its history.
+    if (selectedChat?.id) {
+        fetchFullConversation(false);
+    }
   }, [selectedChat?.id, fetchFullConversation]);
   
   useEffect(() => {
@@ -129,13 +167,12 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const sendMessage = async () => {
     if (newMessage.trim() === '' || !selectedChat) return;
 
-    const recipientPhoneNumber = selectedChat.messages?.[0]?.from?.phoneNumber;
+    const recipientPhoneNumber = selectedChat.msisdn || userPhoneNumber;
     if (!recipientPhoneNumber) {
-        console.error('Recipient phone number could not be determined.');
+        console.error('Recipient phone number (msisdn) could not be determined.');
         return;
     }
 
-    // Optimistic UI update
     const userMsg = {
         id: `temp-${Date.now()}`,
         payload: newMessage,
@@ -149,32 +186,17 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
 
     try {
         await axios.post('/api/sendMessage', { recipientPhone: recipientPhoneNumber, message: newMessage });
-        // Poll for the real message from the server
         setTimeout(() => fetchFullConversation(true), 1500);
     } catch (error) {
         console.error('Error sending message:', error.response?.data || error);
-        // Optional: Add logic to show an error on the message itself
+        setMessages(prev => prev.filter(m => m.id !== userMsg.id));
+        alert('Failed to send message.');
     }
   };
-
-  const addEmoji = (emoji) => { setNewMessage(prev => prev + emoji.native); };
-
-  const handleCloseChat = async () => {
-    if (!selectedChat || !selectedChat.id) return;
-    try {
-        await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`);
-        setSelectedChat(null); // Deselect the chat, which should hide the conversation view
-    } catch (error) {
-        console.error("Error closing conversation:", error.response?.data || error.message);
-        alert("Failed to close the conversation. Please try again.");
-    } finally {
-        setIsModalOpen(false);
-    }
-  };
-
+  
   const handleFileUpload = async (file) => {
     if (!file || !selectedChat) return;
-    const recipientPhoneNumber = selectedChat.messages?.[0]?.from?.phoneNumber;
+    const recipientPhoneNumber = selectedChat.msisdn || userPhoneNumber;
     if (!recipientPhoneNumber) {
         alert("Could not determine the recipient's phone number.");
         return;
@@ -191,7 +213,6 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
         });
 
         if (response.data.success) {
-            // Poll for the real message from the server
             setTimeout(() => fetchFullConversation(true), 1500);
         } else {
             throw new Error(response.data.error || "File upload failed on the server.");
@@ -201,28 +222,85 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
         alert("File upload failed. Please try again.");
     } finally {
         setIsUploading(false);
-        // Clear file input to allow uploading the same file again
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      handleFileUpload(file);
+  const addEmoji = (emoji) => { setNewMessage(prev => prev + emoji.native); };
+  
+  const handleCloseChat = async () => {
+    if (!selectedChat || !selectedChat.id) return;
+    try {
+        await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`);
+        setSelectedChat(null); // Deselect the chat, which should hide the conversation view
+    } catch (error) {
+        console.error("Error closing conversation:", error.response?.data || error.message);
+        alert("Failed to close the conversation. Please try again.");
+    } finally {
+        setIsModalOpen(false);
     }
   };
+
+  const handleFileChange = (e) => { 
+    const file = e.target.files[0]; 
+    if (file) { 
+      handleFileUpload(file); 
+    } 
+  };
   
-  const handleSelectTemplate = (text) => { setNewMessage(text); setIsTemplatesModalOpen(false); };
-  const handleNoteIconClick = (id) => { setActiveNoteEditorId(id); setCurrentNoteText(messageNotes[id] || ""); };
-  const handleSaveNote = () => { if (!activeNoteEditorId) return; setMessageNotes(prev => ({ ...prev, [activeNoteEditorId]: currentNoteText })); setActiveNoteEditorId(null); setCurrentNoteText(""); };
-  const handleCancelNote = () => { setActiveNoteEditorId(null); setCurrentNoteText(""); };
-  const handleDragEnter = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current++; if (e.dataTransfer.items?.length > 0) setIsDraggingOver(true); };
-  const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current === 0) setIsDraggingOver(false); };
-  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
-  const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(false); dragCounter.current = 0; if (e.dataTransfer.files?.length > 0) { handleFileUpload(e.dataTransfer.files[0]); e.dataTransfer.clearData(); } };
+  const handleSelectTemplate = (text) => { 
+    setNewMessage(text); 
+    setIsTemplatesModalOpen(false); 
+  };
+
+  const handleNoteIconClick = (id) => { 
+    setActiveNoteEditorId(id); 
+    setCurrentNoteText(messageNotes[id] || ""); 
+  };
+
+  const handleSaveNote = () => { 
+    if (!activeNoteEditorId) return; 
+    setMessageNotes(prev => ({ ...prev, [activeNoteEditorId]: currentNoteText })); 
+    setActiveNoteEditorId(null); 
+    setCurrentNoteText(""); 
+  };
+
+  const handleCancelNote = () => { 
+    setActiveNoteEditorId(null); 
+    setCurrentNoteText(""); 
+  };
+
+  const handleDragEnter = (e) => { 
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    dragCounter.current++; 
+    if (e.dataTransfer.items?.length > 0) setIsDraggingOver(true); 
+  };
+
+  const handleDragLeave = (e) => { 
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    dragCounter.current--; 
+    if (dragCounter.current === 0) setIsDraggingOver(false); 
+  };
+
+  const handleDragOver = (e) => { 
+    e.preventDefault(); 
+    e.stopPropagation(); 
+  };
+
+  const handleDrop = (e) => { 
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    setIsDraggingOver(false); 
+    dragCounter.current = 0; 
+    if (e.dataTransfer.files?.length > 0) { 
+      handleFileUpload(e.dataTransfer.files[0]); 
+      e.dataTransfer.clearData(); 
+    } 
+  };
 
   // --- JSX RENDER ---
   return (
@@ -248,7 +326,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
               <div className={`flex items-center justify-center w-10 h-10 ${userAvatarColor} rounded-full font-semibold text-white`}>{userInitials}</div>
               <div>
                 <h2 className="text-sm font-semibold text-gray-800">{userName}</h2>
-                <p className="text-xs text-gray-500">{selectedChat.messages?.[0]?.from?.phoneNumber || ''}</p>
+                <p className="text-xs text-gray-500">{userPhoneNumber}</p>
               </div>
             </div>
             {!selectedChat.isClosed && (
@@ -281,7 +359,6 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                             <div className={`px-3 py-2 rounded-2xl ${isSent ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
                               {msg.type === 'text' && <p className="break-words whitespace-pre-wrap">{msg.payload}</p>}
                               {msg.type === 'image' && <img src={msg.payload.url} alt="User attachment" className="rounded-lg max-w-[200px] cursor-pointer" onClick={() => setLightboxImage(msg.payload.url)} />}
-                              {/* New file type rendering logic can be added here */}
                               {msg.type === 'file' && <a href={msg.payload.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-300 hover:text-white underline"><Paperclip size={16} /><span>File Attachment</span></a>}
                               {!isSent && <div className="mt-1 text-right text-xs text-gray-500">{formatMessageTimestamp(msg.createdAt)}</div>}
                             </div>
