@@ -19,7 +19,7 @@ import TemplatesModal from './TemplatesModal';
 // ---  CONFIGURATION CONSTANTS  ---
 // =================================================================================
 const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
-const POLLING_INTERVAL = 5000; // Poll for new messages every 5 seconds
+const POLLING_INTERVAL = 5000; 
 
 // =================================================================================
 // ---  HELPER UTILITY FUNCTIONS  ---
