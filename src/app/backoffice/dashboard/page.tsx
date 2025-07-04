@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { CustomerRetention } from "./CustomerRetention";
 import CustomerSegmentation from "./CustomerSegmentation";
 import Header from "./Header";
 import LatestTransactions from "./LatestTransactions";
