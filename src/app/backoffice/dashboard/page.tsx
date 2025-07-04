@@ -10,6 +10,9 @@ import { TransactionStatuses } from "./TransactionStatuses";
 import TransactionTotalsSection from "./TransactionTotalsSection.tsx";
 import AverageTransactionTime from "./AverageTransactionTime";
 import DateFilter from "@/app/backoffice/components/DateFilter";
+import AverageTransactionSize from "./AverageTransactionSize";
+import SizeByCorridor from "./SizeByCorridor";
+import UniqueCustomersChart from "./UniqueCustomers";
 
 export default function Dashboard() {
   const [currency, setCurrency] = useState("GBP");
@@ -80,10 +83,18 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl">
-          <CustomerRetention />
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          <div className="md:col-span-2 bg-white p-4 rounded-2xl">
+            <AverageTransactionSize />
+          </div>
+          <div className="md:col-span-3 bg-white p-4 rounded-2xl">
+            <SizeByCorridor />
+          </div>
         </div>
 
+        <div className="bg-white p-4 rounded-2xl">
+          <UniqueCustomersChart />
+        </div>
         <div className="bg-white p-4 rounded-2xl">
           <LatestTransactions />
         </div>
