@@ -10,7 +10,7 @@ import TransactionTotalsSection from "./TransactionTotalsSection.tsx";
 import AverageTransactionTime from "./AverageTransactionTime";
 import DateFilter from "@/app/backoffice/components/DateFilter";
 import AverageTransactionSize from "./AverageTransactionSize";
-import SizeByCorridor from "./SizeByCorridor";
+import SizeByCorridor from "./SizeByCountry";
 import UniqueCustomersChart from "./UniqueCustomers";
 
 export default function Dashboard() {

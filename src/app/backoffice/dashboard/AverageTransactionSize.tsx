@@ -52,7 +52,7 @@ export default function AverageTransactionSize() {
         </button>
       </div>
 
-      <div className="space-y-9">
+      <div className="space-y-13">
         {data.map((item, index) => (
           <div key={item.name} className="flex flex-col space-y-2">
             <div className="flex items-center justify-between text-sm">
