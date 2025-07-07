@@ -324,15 +324,6 @@ const TransactionsPage = () => {
     }
   };
 
-  const handleDateChange = (startDate: Date, endDate: Date) => {
-    setDateRange({ startDate, endDate });
-    setShowDateFilter(false);
-  };
-
-  const clearDateFilter = () => {
-    setDateRange({ startDate: null, endDate: null });
-  };
-
   const handleOpenModal = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setIsModalOpen(true);
