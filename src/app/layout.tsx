@@ -48,7 +48,11 @@ export default function RootLayout({
           */}
           <LayoutGatekeeper>
             {children}
-            <Toaster position="top-right" reverseOrder={false} />
+            <Toaster
+              position="top-right"
+              reverseOrder={false}
+              toastOptions={{ duration: 4000 }}
+            />
           </LayoutGatekeeper>
         </ReduxProvider>
       </body>

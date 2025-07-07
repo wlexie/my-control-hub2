@@ -13,6 +13,7 @@ import {
 } from "./components/constants";
 import { AnimatePresence } from "framer-motion";
 import { useMediaQuery } from "react-responsive";
+import toast from "react-hot-toast";
 
 interface User {
   accountId: number;
@@ -71,8 +72,8 @@ export default function UserAccounts() {
       const users = Array.isArray(data.content)
         ? data.content
         : Array.isArray(data)
-        ? data
-        : [];
+          ? data
+          : [];
 
       return users;
     };
@@ -149,100 +150,109 @@ export default function UserAccounts() {
     [key: string]: string | number | undefined;
   };
   const handleExport = async () => {
-    const extendedData: ExportedUserRow[] = [];
+    const toastId = toast.loading("Export in progress...");
 
-    for (const u of filteredUsers) {
-      try {
-        const res = await fetch(
-          `https://api.tuma-app.com/api/account/client-profile?userId=${u.accountId}`
-        );
-        const user = await res.json();
+    try {
+      const extendedData: ExportedUserRow[] = [];
 
-        const doc = user.documents?.[0] ?? {};
-        const tx = user.transaction ?? {};
-        const fullName = `${user.firstName} ${user.lastName}`;
-        const totalTx =
-          tx.totalTransactions?.successfulTransactions +
-            tx.totalTransactions?.failedTransactions || 0;
+      for (const u of filteredUsers) {
+        try {
+          const res = await fetch(
+            `https://api.tuma-app.com/api/account/client-profile?userId=${u.accountId}`
+          );
+          const user = await res.json();
 
-        extendedData.push({
-          "User ID": user.accountId,
-          "Full Name": fullName,
-          Email: user.email,
-          Phone: user.phone,
-          Country: user.country || "—",
-          "Account Status": user.accountStatus,
-          "Verification Status": user.kycStatus,
-          "KYC Status": user.step,
-          "Account Key": user.accountKey,
-          "Onfido Applicant ID": user.onfidoApplicantId || "—",
-          "Date of Registration": new Date(user.createdAt).toLocaleString(
-            "en-GB",
-            {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            }
-          ),
+          const doc = user.documents?.[0] ?? {};
+          const tx = user.transaction ?? {};
+          const fullName = `${user.firstName} ${user.lastName}`;
+          const totalTx =
+            tx.totalTransactions?.successfulTransactions +
+              tx.totalTransactions?.failedTransactions || 0;
 
-          // Document fields
-          Gender: doc.gender || "—",
-          "Date of Birth": doc.dateOfBirth
-            ? new Date(doc.dateOfBirth).toLocaleDateString("en-GB")
-            : "—",
-          Nationality: doc.nationality || "—",
-          "Document Type": doc.type || "—",
-          "Document Number": doc.documentNumber || "—",
-          "Issuing Country": doc.issuingCountry || "—",
-
-          // Transaction data
-          "Last Transaction Date": tx.lastTransactionDate
-            ? new Date(tx.lastTransactionDate).toLocaleString("en-GB", {
+          extendedData.push({
+            "User ID": user.accountId,
+            "Full Name": fullName,
+            Email: user.email,
+            Phone: user.phone,
+            Country: user.country || "—",
+            "Account Status": user.accountStatus,
+            "Verification Status": user.kycStatus,
+            "KYC Status": user.step,
+            "Account Key": user.accountKey,
+            "Onfido Applicant ID": user.onfidoApplicantId || "—",
+            "Date of Registration": new Date(user.createdAt).toLocaleString(
+              "en-GB",
+              {
                 day: "2-digit",
                 month: "2-digit",
                 year: "numeric",
                 hour: "2-digit",
                 minute: "2-digit",
                 hour12: false,
-              })
-            : "—",
-          "Total Transactions": totalTx,
-          "Successful Transactions":
-            tx.totalTransactions?.successfulTransactions ?? "—",
-          "Failed Transactions":
-            tx.totalTransactions?.failedTransactions ?? "—",
-          "Total Transaction Value (KES)":
-            tx.totalTransactionsValue?.toFixed(2) ?? "—",
-        });
-      } catch (err) {
-        console.error(
-          "Failed to fetch user profile for export",
-          u.accountId,
-          err
-        );
+              }
+            ),
+
+            // Document fields
+            Gender: doc.gender || "—",
+            "Date of Birth": doc.dateOfBirth
+              ? new Date(doc.dateOfBirth).toLocaleDateString("en-GB")
+              : "—",
+            Nationality: doc.nationality || "—",
+            "Document Type": doc.type || "—",
+            "Document Number": doc.documentNumber || "—",
+            "Issuing Country": doc.issuingCountry || "—",
+
+            // Transaction data
+            "Last Transaction Date": tx.lastTransactionDate
+              ? new Date(tx.lastTransactionDate).toLocaleString("en-GB", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                })
+              : "—",
+            "Total Transactions": totalTx,
+            "Successful Transactions":
+              tx.totalTransactions?.successfulTransactions ?? "—",
+            "Failed Transactions":
+              tx.totalTransactions?.failedTransactions ?? "—",
+            "Total Transaction Value (KES)":
+              tx.totalTransactionsValue?.toFixed(2) ?? "—",
+          });
+        } catch (err) {
+          console.error(
+            "Failed to fetch user profile for export",
+            u.accountId,
+            err
+          );
+        }
       }
+
+      let fileName = "User Accounts";
+
+      if (searchQuery.trim()) {
+        const safeQuery = searchQuery.trim().replace(/\s+/g, "_");
+        fileName += `_search_${safeQuery}`;
+      }
+
+      if (dateRange.startDate && dateRange.endDate) {
+        const start = dateRange.startDate.toISOString().split("T")[0];
+        const end = dateRange.endDate.toISOString().split("T")[0];
+        fileName += `_from_${start}_to_${end}`;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(extendedData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+      XLSX.writeFile(workbook, `${fileName}.xlsx`, { compression: true });
+
+      toast.success("Export completed!", { id: toastId });
+    } catch (error) {
+      toast.error("Export failed", { id: toastId });
+      console.error("Export error:", error);
     }
-
-    let fileName = "User Accounts";
-
-    if (searchQuery.trim()) {
-      const safeQuery = searchQuery.trim().replace(/\s+/g, "_");
-      fileName += `_search_${safeQuery}`;
-    }
-
-    if (dateRange.startDate && dateRange.endDate) {
-      const start = dateRange.startDate.toISOString().split("T")[0];
-      const end = dateRange.endDate.toISOString().split("T")[0];
-      fileName += `_from_${start}_to_${end}`;
-    }
-
-    const worksheet = XLSX.utils.json_to_sheet(extendedData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-    XLSX.writeFile(workbook, `${fileName}.xlsx`, { compression: true });
   };
 
   const getCountryDisplay = (code: string | null) => {
@@ -286,31 +296,38 @@ export default function UserAccounts() {
 
   return (
     <div className="flex h-screen relative">
-  
       <Sidebar />
-      
+
       {/* Main content with overlay for mobile */}
-      <div className={`flex-1 p-4 md:p-6 md:ml-80 bg-white overflow-x-auto ${isMobile && sidebarOpen ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div
+        className={`flex-1 p-4 md:p-6 md:ml-80 bg-white overflow-x-auto ${isMobile && sidebarOpen ? "opacity-50 pointer-events-none" : ""}`}
+      >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h2 className="text-xl md:text-2xl font-semibold text-black">User & Accounts</h2>
-          
+          <h2 className="text-xl md:text-2xl font-semibold text-black">
+            User & Accounts
+          </h2>
+
           <div className="flex flex-col md:flex-row w-full md:w-auto gap-3">
             <div className="relative w-full md:w-[300px] lg:w-[400px] xl:w-[500px]">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder={isMobile ? "Search..." : "Search by any field: name, email, phone, country, status..."}
+                placeholder={
+                  isMobile
+                    ? "Search..."
+                    : "Search by any field: name, email, phone, country, status..."
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-2 pl-10 border rounded-md shadow-sm text-sm md:text-base"
               />
             </div>
-            
+
             <div className="flex gap-2 md:gap-4">
               <div className="relative" ref={dateFilterRef}>
                 <button
                   onClick={() => setShowDateFilter(!showDateFilter)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border rounded-md shadow-sm text-sm"
+                  className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm text-md"
                 >
                   <FaCalendarAlt className="text-sm" />
                   {isMobile ? (
@@ -325,7 +342,9 @@ export default function UserAccounts() {
                   )}
                 </button>
                 {showDateFilter && (
-                  <div className={`absolute z-50 ${isMobile ? 'left-0' : 'right-0'} top-12`}>
+                  <div
+                    className={`absolute z-50 ${isMobile ? "left-0" : "right-0"} top-12`}
+                  >
                     <DateFilter
                       onChange={(start, end) => {
                         setDateRange({ startDate: start, endDate: end });
@@ -342,7 +361,7 @@ export default function UserAccounts() {
                   </div>
                 )}
               </div>
-              
+
               <button
                 onClick={handleExport}
                 className="flex items-center gap-2 px-3 py-2 bg-white border rounded-md shadow-sm text-sm"
@@ -352,14 +371,17 @@ export default function UserAccounts() {
             </div>
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           {isMobile ? (
             // Mobile card view
             <div className="space-y-3">
               {loading ? (
                 [...Array(usersPerPage)].map((_, idx) => (
-                  <div key={idx} className="animate-pulse p-4 border rounded-lg">
+                  <div
+                    key={idx}
+                    className="animate-pulse p-4 border rounded-lg"
+                  >
                     <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                     <div className="h-3 bg-gray-200 rounded w-1/2 mb-1"></div>
                     <div className="h-3 bg-gray-200 rounded w-2/3"></div>
@@ -388,31 +410,37 @@ export default function UserAccounts() {
                           {user.firstName} {user.lastName}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-500">ID:{user.accountId}</span>
+                      <span className="text-xs text-gray-500">
+                        ID:{user.accountId}
+                      </span>
                     </div>
-                    
+
                     <div className="text-sm text-gray-600 mb-1">
                       <span className="font-medium">Email:</span> {user.email}
                     </div>
-                    
+
                     <div className="text-sm text-gray-600 mb-1">
                       <span className="font-medium">Phone:</span> {user.phone}
                     </div>
-                    
+
                     <div className="flex justify-between items-center mt-2">
                       <div className="text-xs text-gray-500">
-                        {new Date(user.registrationDate).toLocaleDateString("en-GB")}
+                        {new Date(user.registrationDate).toLocaleDateString(
+                          "en-GB"
+                        )}
                       </div>
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                           statusStyles[user.accountStatus]?.bg || "bg-gray-100"
                         } ${
-                          statusStyles[user.accountStatus]?.text || "text-gray-600"
+                          statusStyles[user.accountStatus]?.text ||
+                          "text-gray-600"
                         }`}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
-                            statusStyles[user.accountStatus]?.dot || "bg-gray-400"
+                            statusStyles[user.accountStatus]?.dot ||
+                            "bg-gray-400"
                           }`}
                         />
                         {user.accountStatus}
@@ -485,7 +513,7 @@ export default function UserAccounts() {
                       className="cursor-pointer hover:bg-gray-50"
                     >
                       <td className="px-4 py-3 text-gray-500">
-                       TUMA{user.accountId ?? "N/A"}
+                        TUMA{user.accountId ?? "N/A"}
                       </td>
                       <td className="px-4 py-3 flex items-center gap-2">
                         <div
@@ -512,7 +540,8 @@ export default function UserAccounts() {
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                            statusStyles[user.accountStatus]?.bg || "bg-gray-100"
+                            statusStyles[user.accountStatus]?.bg ||
+                            "bg-gray-100"
                           } ${
                             statusStyles[user.accountStatus]?.text ||
                             "text-gray-600"
@@ -541,7 +570,7 @@ export default function UserAccounts() {
             </table>
           )}
         </div>
-        
+
         <div className="flex flex-col md:flex-row justify-center items-center mt-6 gap-3 md:gap-4">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -574,7 +603,6 @@ export default function UserAccounts() {
               open={showModal}
               onClose={() => setShowModal(false)}
               onUserUpdated={updateUserStatus}
-              
             />
           )}
         </AnimatePresence>
