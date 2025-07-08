@@ -18,7 +18,7 @@ interface ApiResponse {
 const PlaceholderPopup: React.FC<{ isOpen: boolean; onClose: () => void; response: ApiResponse | null }> = ({ isOpen, onClose, response }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+    <div className="fixed inset-0 bg-black/20  flex justify-center items-center">
       <div className="bg-white p-8 rounded-lg shadow-lg text-center">
         <h2 className="text-2xl font-bold mb-4">Success!</h2>
         <p className="mb-2">{response?.message}</p>

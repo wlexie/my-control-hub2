@@ -106,7 +106,7 @@ export default function SideNav() {
                 }`}
               >
                 {item.icon}
-                <span className="font-[400] text-[17px]">{item.label}</span>
+                <span className="font-[400] text-[18px]">{item.label}</span>
               </Link>
             </li>
           ))}

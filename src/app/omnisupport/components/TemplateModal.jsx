@@ -10,7 +10,7 @@ const TEMPLATES = [
   'welcome_basics',
   'welcome_active',
   'potential_user',
-  'welcome_declined',
+  'welcome_decline',
   'welcome_leads'
 ];
 

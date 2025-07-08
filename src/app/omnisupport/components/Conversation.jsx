@@ -24,6 +24,22 @@ import TemplateModal from './TemplateModal'; // New Modal for sending specific t
 const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
 const POLLING_INTERVAL = 5000; 
 
+// --- NEW: TEMPLATE IMAGE URLS ---
+// ================================================================================
+// ACTION REQUIRED: You must replace these placeholder URLs with the real, public
+// URLs of your template header images. The image for 'welcome_decline' is null 
+// because you said it does not have one.
+// ================================================================================
+const TEMPLATE_MEDIA_URLS = {
+  'welcome_dormant': 'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642484.jpg',
+  'welcome_basics':  'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642483.jpg',
+  'welcome_active':  'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642480.jpg',
+  'potential_user':  'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642477.jpg',
+  'welcome_leads':   'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642477.jpg',
+  'welcome_decline': null, 
+};
+
+
 // =================================================================================
 // ---  HELPER UTILITY FUNCTIONS  ---
 // =================================================================================
@@ -51,7 +67,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEscalateModalOpen, setIsEscalateModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false); // <--- NEW STATE
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
 
   // Message Notes State
@@ -67,7 +83,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const dragCounter = useRef(0);
   
   // --- DERIVED STATE & MEMOIZED VALUES ---
-  const userName = selectedChat?.contactName || selectedChat?.messages?.[0]?.from?.name || 'Valued Customer';
+  const userName = selectedChat?.contactName || selectedChat?.messages?.[0]?.from?.name || '';
   const userPhoneNumber = selectedChat?.msisdn || selectedChat?.messages?.[0]?.from?.phoneNumber || '';
   const userInitials = getInitials(userName);
   const userAvatarColor = useMemo(() => getColorForId(selectedChat?.id), [selectedChat?.id]);
@@ -142,7 +158,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
     const intervalId = setInterval(() => fetchFullConversation(true), POLLING_INTERVAL);
     return () => clearInterval(intervalId);
   }, [selectedChat?.id, selectedChat?.isClosed, fetchFullConversation]);
-  useEffect(() => { document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen || isTemplateModalOpen); }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen, isTemplateModalOpen]); // <--- UPDATED
+  useEffect(() => { document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen || isTemplateModalOpen); }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen, isTemplateModalOpen]);
 
   // --- EVENT HANDLERS ---
   const sendMessage = async () => {
@@ -184,30 +200,32 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
     }
   };
 
-   // --- NEW HANDLER for sending specific templates ---
+  // --- UPDATED HANDLER for sending specific templates ---
   const handleSendTemplate = async (templateName) => {
-    // --- ADD THIS LINE FOR DEBUGGING ---
-    console.log("DEBUG: Preparing to send template. User name is:", userName, "Phone number is:", userPhoneNumber);
-
     if (!userPhoneNumber || !templateName) {
       alert("Error: Cannot determine recipient's phone number or template name.");
       return;
     }
 
-    // This is where the variable is prepared
+    // Prepare text variables
     const templateParams = [{ "default": userName }]; 
 
+    // Look up the media URL for the selected template from our configuration object
+    const mediaUrl = TEMPLATE_MEDIA_URLS[templateName];
+
     try {
+        // Send all necessary data to our flexible API
         await axios.post('/api/sendTemplate', {
             recipient: userPhoneNumber,
             templateName: templateName,
             params: templateParams,
+            mediaUrl: mediaUrl, // This will be undefined/null for text-only templates, which is correct
         });
         alert(`Template "${templateName.replace(/_/g, ' ')}" sent successfully!`);
         setIsTemplateModalOpen(false); // Close modal on success
         setTimeout(() => fetchFullConversation(true), 2000); // Poll for new message
     } catch (error) {
-        const errorDetail = error.response?.data?.details?.[0]?.description || error.response?.data?.error || error.message;
+        const errorDetail = error.response?.data?.details || error.response?.data?.error || error.message;
         console.error('Error sending template:', error.response?.data || error);
         alert(`Failed to send template. Reason: ${errorDetail}`);
     }
@@ -216,7 +234,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const addEmoji = (emoji) => { setNewMessage(prev => prev + emoji.native); };
   const handleCloseChat = async () => { if (!selectedChat || !selectedChat.id) return; try { await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`); setSelectedChat(null); } catch (error) { console.error("Error closing conversation:", error.response?.data || error.message); alert("Failed to close the conversation."); } finally { setIsModalOpen(false); } };
   const handleFileChange = (e) => { const file = e.target.files[0]; if (file) { handleFileUpload(file); } };
-  const handleSelectTemplate = (text) => { setNewMessage(text); setIsTemplatesModalOpen(false); };
+  const handleSelectTemplate = (text) => { setNewMessage(text); setIsTemplatesModalОpen(false); };
   const handleNoteIconClick = (id) => { setActiveNoteEditorId(id); setCurrentNoteText(messageNotes[id] || ""); };
   const handleSaveNote = () => { if (!activeNoteEditorId) return; setMessageNotes(prev => ({ ...prev, [activeNoteEditorId]: currentNoteText })); setActiveNoteEditorId(null); setCurrentNoteText(""); };
   const handleCancelNote = () => { setActiveNoteEditorId(null); setCurrentNoteText(""); };
