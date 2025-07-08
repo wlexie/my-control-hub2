@@ -22,6 +22,14 @@ interface Comment {
   date: string;
   content: string;
 }
+const tabs = [
+  { key: "overview", label: "Overview" },
+  { key: "kyc", label: "KYC & Verification" },
+  { key: "transactions", label: "Transactions" },
+  { key: "notes", label: "Notes" },
+] as const;
+
+type TabKey = (typeof tabs)[number]["key"];
 
 export default function UserDetailsModal({
   userId,
@@ -31,8 +39,8 @@ export default function UserDetailsModal({
 }: Props) {
   const [user, setUser] = useState<User | null>(null);
   const [, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
-   const [comment, setComment] = useState("");
+  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [comment, setComment] = useState("");
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -60,7 +68,8 @@ export default function UserDetailsModal({
         return Math.abs(curr.offset) < Math.abs(prev.offset) ? curr : prev;
       });
 
-      if (closest.key !== activeTab) setActiveTab(closest.key as keyof typeof sectionRefs);
+      if (closest.key !== activeTab)
+        setActiveTab(closest.key as keyof typeof sectionRefs);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -153,13 +162,11 @@ export default function UserDetailsModal({
 
       if (response.ok) {
         toast.success(result.message || "User successfully reinstated");
-        setUser((prev) =>
-          prev ? { ...prev, accountStatus: "Basic" } : prev
-        );
+        setUser((prev) => (prev ? { ...prev, accountStatus: "Basic" } : prev));
         onUserUpdated(userId, {
           accountStatus: "Basic",
         });
-        
+
         // Add system comment about reinstatement
         const newComment = {
           id: Date.now().toString(),
@@ -173,7 +180,7 @@ export default function UserDetailsModal({
           }),
           content: "User account reinstated to Basic status",
         };
-        setComments(prev => [newComment, ...prev]);
+        setComments((prev) => [newComment, ...prev]);
       } else {
         toast.error(result.message || "Reinstatement failed");
       }
@@ -186,8 +193,7 @@ export default function UserDetailsModal({
     }
   };
 
-
- const handleDeclineUser = async () => {
+  const handleDeclineUser = async () => {
     if (!user?.userId) {
       toast.error("No user ID found.");
       return;
@@ -222,7 +228,7 @@ export default function UserDetailsModal({
         onUserUpdated(userId, {
           accountStatus: "Declined",
         });
-        
+
         // Add the decline comment
         const newComment = {
           id: Date.now().toString(),
@@ -236,7 +242,7 @@ export default function UserDetailsModal({
           }),
           content: `Account declined: ${comment}`,
         };
-        setComments(prev => [newComment, ...prev]);
+        setComments((prev) => [newComment, ...prev]);
         setComment("");
         setIsAddingComment(false);
       } else {
@@ -251,7 +257,7 @@ export default function UserDetailsModal({
     }
   };
 
- const handleSuspendUser = async () => {
+  const handleSuspendUser = async () => {
     try {
       setIsProcessing(true);
       toast.loading("Suspending user...");
@@ -276,7 +282,7 @@ export default function UserDetailsModal({
         onUserUpdated(userId, {
           accountStatus: "Temporary Blocked",
         });
-        
+
         // Add system comment about suspension
         const newComment = {
           id: Date.now().toString(),
@@ -290,7 +296,7 @@ export default function UserDetailsModal({
           }),
           content: "User account suspended",
         };
-        setComments(prev => [newComment, ...prev]);
+        setComments((prev) => [newComment, ...prev]);
       } else {
         toast.error(result.message || "Suspension failed");
       }
@@ -311,7 +317,7 @@ export default function UserDetailsModal({
 
     try {
       setIsProcessing(true);
-    
+
       const newComment = {
         id: Date.now().toString(),
         author: "Admin",
@@ -324,8 +330,8 @@ export default function UserDetailsModal({
         }),
         content: comment,
       };
-      
-      setComments(prev => [newComment, ...prev]);
+
+      setComments((prev) => [newComment, ...prev]);
       setComment("");
       setIsAddingComment(false);
       toast.success("Comment added");
@@ -367,66 +373,71 @@ export default function UserDetailsModal({
               {/* Header Actions */}
               <div className="flex justify-between items-center">
                 <h2 className="text-lg font-semibold">User Details</h2>
-                <button onClick={onClose} className="hover:bg-gray-100 p-1 rounded-full">
+                <button
+                  onClick={onClose}
+                  className="hover:bg-gray-100 p-1 rounded-full"
+                >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
 
-             <div className="flex gap-2">
-  {/* Only show buttons if user is not Declined */}
-  {user.accountStatus !== "Declined" && (
-    <>
-      {user.step === "KYC_IN_PROGRESS" && (
-        <button
-          onClick={handleApproveUser}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
-        >
-          Approve User
-        </button>
-      )}
-      
-      {(user.accountStatus === "Temporary Blocked" || user.accountStatus === "Temporary_Blocked") && (
-        <button
-          onClick={handleReinstateUser}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
-        >
-          Reinstate User
-        </button>
-      )}
-      
-      {user.accountStatus === "Basic Pending" && (
-        <button
-          onClick={() => {
-            setActiveTab("notes");
-            setIsAddingComment(true);
-            scrollToSection("notes");
-          }}
-          className="border text-sm border-gray-300 text-white bg-red-600 px-4 py-2 rounded-md hover:bg-red-700"
-          disabled={isProcessing}
-        >
-          Decline
-        </button>
-      )}
-      
-      {(user.accountStatus === "Basic" || user.accountStatus === "Active") && (
-        <button
-          onClick={handleSuspendUser}
-          className="border text-sm border-gray-300 text-white bg-amber-500 px-4 py-2 rounded-md hover:bg-amber-600"
-          disabled={isProcessing}
-        >
-          Suspend
-        </button>
-      )}
-    </>
-  )}
-  
-  {/* Show a status message if user is Declined */}
-  {user.accountStatus === "Declined" && (
-    <div className="text-sm text-gray-600 italic">
-      This account has been declined
-    </div>
-  )}
-</div>
+              <div className="flex gap-2">
+                {/* Only show buttons if user is not Declined */}
+                {user.accountStatus !== "Declined" && (
+                  <>
+                    {user.step === "KYC_IN_PROGRESS" && (
+                      <button
+                        onClick={handleApproveUser}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+                      >
+                        Approve User
+                      </button>
+                    )}
+
+                    {(user.accountStatus === "Temporary Blocked" ||
+                      user.accountStatus === "Temporary_Blocked") && (
+                      <button
+                        onClick={handleReinstateUser}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
+                      >
+                        Reinstate User
+                      </button>
+                    )}
+
+                    {user.accountStatus === "Basic Pending" && (
+                      <button
+                        onClick={() => {
+                          setActiveTab("notes");
+                          setIsAddingComment(true);
+                          scrollToSection("notes");
+                        }}
+                        className="border text-sm border-gray-300 text-white bg-red-600 px-4 py-2 rounded-md hover:bg-red-700"
+                        disabled={isProcessing}
+                      >
+                        Decline
+                      </button>
+                    )}
+
+                    {(user.accountStatus === "Basic" ||
+                      user.accountStatus === "Active") && (
+                      <button
+                        onClick={handleSuspendUser}
+                        className="border text-sm border-gray-300 text-white bg-amber-500 px-4 py-2 rounded-md hover:bg-amber-600"
+                        disabled={isProcessing}
+                      >
+                        Suspend
+                      </button>
+                    )}
+                  </>
+                )}
+
+                {/* Show a status message if user is Declined */}
+                {user.accountStatus === "Declined" && (
+                  <div className="text-sm text-gray-600 italic">
+                    This account has been declined
+                  </div>
+                )}
+              </div>
 
               {/* Avatar & Info */}
               <div className="bg-gray-50 p-4 rounded-xl flex flex-col items-center text-center">
@@ -442,31 +453,36 @@ export default function UserDetailsModal({
                 {/* Status Tags */}
                 <div className="mt-2 flex gap-2 flex-wrap justify-center">
                   <div className="flex items-center gap-1">
-                    <span className={`w-2 h-2 rounded-full ${statusStyles[user.kycStatus]?.dot || "bg-gray-300"}`} />
+                    <span
+                      className={`w-2 h-2 rounded-full ${statusStyles[user.kycStatus]?.dot || "bg-gray-300"}`}
+                    />
                     <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
                       KYC: {user.kycStatus}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className={`w-2 h-2 rounded-full ${statusStyles[user.accountStatus]?.dot || "bg-gray-300"}`} />
+                    <span
+                      className={`w-2 h-2 rounded-full ${statusStyles[user.accountStatus]?.dot || "bg-gray-300"}`}
+                    />
                     <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
                       Account: {user.accountStatus}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className={`w-2 h-2 rounded-full ${"bg-gray-300"}`} />
+                    <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
+                      Risk Score: Low
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Tabs */}
-              <div className="border-b flex space-x-6 text-sm font-medium text-gray-600 sticky top-0 bg-white z-30">
-                {[
-                  { key: "overview", label: "Overview" },
-                  { key: "kyc", label: "KYC & Verification" },
-                  { key: "transactions", label: "Transactions" },
-                  { key: "notes", label: "Notes" },
-                ].map((tab) => (
+              <div className="border-b flex space-x-6 text-sm font-medium text-gray-600">
+                {tabs.map((tab) => (
                   <button
                     key={tab.key}
-                    onClick={() => scrollToSection(tab.key as keyof typeof sectionRefs)}
+                    onClick={() => setActiveTab(tab.key)}
                     className={`pb-2 ${
                       activeTab === tab.key
                         ? "border-b-2 border-blue-600 text-blue-600"
@@ -479,223 +495,271 @@ export default function UserDetailsModal({
               </div>
 
               {/* Basic Info */}
-              <div ref={sectionRefs.overview} className="pt-6">
-                <h3 className="font-semibold text-gray-800 mb-2">Basic Information</h3>
-                <div className="grid grid-cols-2 gap-y-6 text-sm text-gray-700">
-                  <div>
-                    <p className="text-gray-500">User ID</p>
-                    <p className="font-semibold">TUMA{user.userId || "—"}</p>
+              {activeTab === "overview" && (
+                <div className="pt-5">
+                  <h3 className="font-semibold text-gray-800 mb-2">
+                    Basic Information
+                  </h3>
+                  <div className="grid grid-cols-2 gap-y-6 text-sm text-gray-700">
+                    <div>
+                      <p className="text-gray-500">User ID</p>
+                      <p className="font-semibold">TUMA{user.userId || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Gender</p>
+                      <p className="font-semibold">{document?.gender || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Registration Date</p>
+                      <p className="font-semibold">
+                        {new Date(user.createdAt).toLocaleDateString("en-GB", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Date of Birth</p>
+                      <p className="font-semibold">
+                        {document?.dateOfBirth || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Issuing Country</p>
+                      <p className="font-semibold">
+                        {document?.issuingCountry || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">ID Document number</p>
+                      <p className="font-semibold">
+                        {document?.documentNumber || "—"}
+                      </p>
+                    </div>
                   </div>
                   <div>
-                    <p className="text-gray-500">Gender</p>
-                    <p className="font-semibold">{document?.gender || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Registration Date</p>
-                    <p className="font-semibold">
-                      {new Date(user.createdAt).toLocaleDateString("en-GB", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Date of Birth</p>
-                    <p className="font-semibold">
-                      {document?.dateOfBirth || "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Issuing Country</p>
-                    <p className="font-semibold">{document?.issuingCountry || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">ID Document number</p>
-                    <p className="font-semibold">{document?.documentNumber || "—"}</p>
-                  </div>
-                </div>
-                <div>
                     <p className="text-gray-500 mt-6">Onfido ID</p>
-                    <p className="font-semibold">{user.onfidoApplicantId || "—"}</p>
+                    <p className="font-semibold">
+                      {user.onfidoApplicantId || "—"}
+                    </p>
                   </div>
-              </div>
-
+                </div>
+              )}
               {/* KYC Verification */}
-              <div ref={sectionRefs.kyc} className="pt-8">
-                <h3 className="font-semibold text-gray-800 mb-2">KYC Verification</h3>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <div className="bg-gray-50 p-3 rounded-xl border">
-                    <div className="flex justify-between items-center">
-                      <span>ID Verification</span>
-                      <span className={`${statusStyles[user.kycStatus]?.text || "text-gray-600"} text-xs px-2 py-0.5 rounded ${statusStyles[user.kycStatus]?.dot ? statusStyles[user.kycStatus].dot.replace("w-2 h-2", "bg-opacity-20") : "bg-gray-100"}`}>
-                        {user.kycStatus}
-                      </span>
+              {activeTab === "kyc" && (
+                <div className="pt-5">
+                  <h3 className="font-semibold text-gray-800 mb-2">
+                    Onfido Verification
+                  </h3>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <div className="bg-gray-50 p-3 rounded-xl border">
+                      <div className="flex justify-between items-center">
+                        <span>ID Verification</span>
+                        <span
+                          className={`${statusStyles[user.kycStatus]?.text || "text-gray-600"} text-xs px-2 py-0.5 rounded ${statusStyles[user.kycStatus]?.dot ? statusStyles[user.kycStatus].dot.replace("w-2 h-2", "bg-opacity-20") : "bg-gray-100"}`}
+                        >
+                          {user.kycStatus}
+                        </span>
+                      </div>
+                      <div className="text-xs text-blue-600 underline mt-1 space-x-4">
+                        <button>View Document</button>
+                        <button>View Onfido Report</button>
+                      </div>
                     </div>
-                    <div className="text-xs text-blue-600 underline mt-1 space-x-4">
-                      <button>View Document</button>
-                      <button>View Onfido Report</button>
+                    <div className="bg-gray-50 p-3 rounded-xl border">
+                      <div className="flex justify-between items-center">
+                        <span>Selfie Verification</span>
+                        <span
+                          className={`${statusStyles[user.kycStatus]?.text || "text-gray-600"} text-xs px-2 py-0.5 rounded ${statusStyles[user.kycStatus]?.dot ? statusStyles[user.kycStatus].dot.replace("w-2 h-2", "bg-opacity-20") : "bg-gray-100"}`}
+                        >
+                          {user.kycStatus}
+                        </span>
+                      </div>
+                      <div className="text-xs text-blue-600 underline mt-1">
+                        <button>View Photo</button>
+                      </div>
                     </div>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded-xl border">
-                    <div className="flex justify-between items-center">
-                      <span>Selfie Verification</span>
-                      <span className={`${statusStyles[user.kycStatus]?.text || "text-gray-600"} text-xs px-2 py-0.5 rounded ${statusStyles[user.kycStatus]?.dot ? statusStyles[user.kycStatus].dot.replace("w-2 h-2", "bg-opacity-20") : "bg-gray-100"}`}>
-                        {user.kycStatus}
-                      </span>
-                    </div>
-                    <div className="text-xs text-blue-600 underline mt-1">
-                      <button>View Photo</button>
+                  {/* SEON Risk Analysis */}
+                  <div>
+                    <h3 className="font-semibold text-gray-800 mb-2 mt-4">
+                      SEON Risk Analysis
+                    </h3>
+                    <div className="bg-gray-50 p-4 rounded-xl border text-sm text-gray-700 space-y-2">
+                      <div className="flex justify-between">
+                        <span>Fraud Score</span>
+                        <span className="text-yellow-600 text-xs bg-yellow-100 px-2 py-0.5 rounded">
+                          (65)
+                        </span>
+                      </div>
+                      <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                        <li>Email domain registered less than 3 months ago</li>
+                        <li>IP address associated with VPN usage</li>
+                        <li>Phone number registered to multiple accounts</li>
+                      </ul>
+                      <div className="text-xs text-blue-600 underline">
+                        <button>View Full SEON Report</button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* SEON Risk Analysis */}
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-2">SEON Risk Analysis</h3>
-                <div className="bg-gray-50 p-4 rounded-xl border text-sm text-gray-700 space-y-2">
-                  <div className="flex justify-between">
-                    <span>Risk Score</span>
-                    <span className="text-yellow-600 text-xs bg-yellow-100 px-2 py-0.5 rounded">
-                      Medium (65)
-                    </span>
-                  </div>
-                  <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
-                    <li>Email domain registered less than 3 months ago</li>
-                    <li>IP address associated with VPN usage</li>
-                    <li>Phone number registered to multiple accounts</li>
-                  </ul>
-                  <div className="text-xs text-blue-600 underline">
-                    <button>View Full SEON Report</button>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Transaction Summary */}
-              <div ref={sectionRefs.transactions} className="pt-8">
-                <h3 className="font-semibold text-gray-800 mb-2">Transaction Summary</h3>
-                <div className="text-sm text-gray-700 space-y-2">
-                  <div className="flex justify-between">
-                    <span>Total Transactions</span>
-                    <span>
-                      {totalTransactions ? (
-                        <Link
-                          href={`/backoffice/transactions?userId=${userId}`}
-                          className="text-blue-600 underline"
-                        >
-                          {totalTransactions}
-                        </Link>
-                      ) : (
-                        "—"
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Successful Transactions</span>
-                    <span>{user.transaction?.totalTransactions?.successfulTransactions || "—"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Failed Transactions</span>
-                    <span>{user.transaction?.totalTransactions?.failedTransactions || "—"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Total Volume</span>
-                    <span>{user.transaction?.totalTransactionsValue ? `${user.transaction.totalTransactionsValue.toFixed(2)}` : "—"}</span>
-                  </div>
+              {activeTab === "transactions" && (
+                <div className="pt-5">
+                  <h3 className="font-semibold text-gray-800 mb-2">
+                    Transaction Summary
+                  </h3>
+                  <div className="text-sm text-gray-700 space-y-2">
+                    <div className="flex justify-between">
+                      <span>Total Transactions</span>
+                      <span>
+                        {totalTransactions ? (
+                          <Link
+                            href={`/backoffice/transactions?userId=${userId}`}
+                            className="text-blue-600 underline"
+                          >
+                            {totalTransactions}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Successful Transactions</span>
+                      <span>
+                        {user.transaction?.totalTransactions
+                          ?.successfulTransactions || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Failed Transactions</span>
+                      <span>
+                        {user.transaction?.totalTransactions
+                          ?.failedTransactions || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Total Volume</span>
+                      <span>
+                        {user.transaction?.totalTransactionsValue
+                          ? `${user.transaction.totalTransactionsValue.toFixed(2)}`
+                          : "—"}
+                      </span>
+                    </div>
 
-                  <div className="space-y-2 mt-2">
-                    {user.transaction?.lastTransactionDate && (
-                      <div className="flex justify-between items-center bg-gray-50 p-2 rounded-xl">
-                        <div>
-                          <p className="font-medium">Last Transaction</p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(user.transaction.lastTransactionDate).toLocaleString("en-GB", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: false,
-                            })}
-                          </p>
+                    <div className="space-y-2 mt-2">
+                      {user.transaction?.lastTransactionDate && (
+                        <div className="flex justify-between items-center bg-gray-50 p-2 rounded-xl">
+                          <div>
+                            <p className="font-medium">Last Transaction</p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(
+                                user.transaction.lastTransactionDate
+                              ).toLocaleString("en-GB", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: false,
+                              })}
+                            </p>
+                          </div>
+                          <span className="text-green-700 text-xs bg-green-100 px-2 py-0.5 rounded">
+                            Completed
+                          </span>
                         </div>
-                        <span className="text-green-700 text-xs bg-green-100 px-2 py-0.5 rounded">Completed</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-xs text-blue-600 underline text-right">
-                    <Link href={`/backoffice/transactions?userId=${userId}`}>
-                      View All Transactions
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Internal Comments */}
-              <div ref={sectionRefs.notes} className="pt-8">
-                <h3 className="font-semibold text-gray-800 mb-2 flex justify-between items-center">
-                  Internal Comments 
-                  <button 
-                    onClick={() => {
-                      setIsAddingComment(true);
-                      scrollToSection("notes");}}
-                    className="text-blue-600 text-xs underline cursor-pointer"
-                  >
-                    Add Comment
-                  </button>
-                </h3>
-                
-                {isAddingComment && (
-                  <div className="mb-4">
-                    <textarea
-                      rows={3}
-                      placeholder={
-                        user.accountStatus === "Basic Pending" 
-                          ? "Enter reason for declining..." 
-                          : "Type your comment here..."
-                      }
-                      className="w-full border rounded p-2 text-sm"
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                    />
-                    <div className="flex gap-2 mt-2">
-                      <button 
-                        onClick={user.accountStatus === "Basic Pending" ? handleDeclineUser : handleAddComment}
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded"
-                        disabled={isProcessing}
-                      >
-                        {user.accountStatus === "Basic Pending" ? "Submit Decline" : "Add Comment"}
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setIsAddingComment(false);
-                          setComment("");
-                        }}
-                        className="border text-sm border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-100"
-                      >
-                        Cancel
-                      </button>
+                      )}
+                    </div>
+                    <div className="text-xs text-blue-600 underline text-right">
+                      <Link href={`/backoffice/transactions?userId=${userId}`}>
+                        View All Transactions
+                      </Link>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
+              {/* Internal Comments */}
+              {activeTab === "notes" && (
+                <div className="pt-5">
+                  <h3 className="font-semibold text-gray-800 mb-2 flex justify-between items-center">
+                    Internal Comments
+                    <button
+                      onClick={() => {
+                        setIsAddingComment(true);
+                        scrollToSection("notes");
+                      }}
+                      className="text-blue-600 text-xs underline cursor-pointer"
+                    >
+                      Add Comment
+                    </button>
+                  </h3>
 
-                {comments.length > 0 ? (
-                  <div className="space-y-3 text-sm">
-                    {comments.map((comment) => (
-                      <div key={comment.id} className="bg-gray-50 p-3 rounded-xl">
-                        <p className="text-xs text-gray-500 font-semibold">
-                          {comment.author} · {comment.date}
-                        </p>
-                        <p className="mt-1">{comment.content}</p>
+                  {isAddingComment && (
+                    <div className="mb-4">
+                      <textarea
+                        rows={3}
+                        placeholder={
+                          user.accountStatus === "Basic Pending"
+                            ? "Enter reason for declining..."
+                            : "Type your comment here..."
+                        }
+                        className="w-full border rounded p-2 text-sm"
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={
+                            user.accountStatus === "Basic Pending"
+                              ? handleDeclineUser
+                              : handleAddComment
+                          }
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded"
+                          disabled={isProcessing}
+                        >
+                          {user.accountStatus === "Basic Pending"
+                            ? "Submit Decline"
+                            : "Add Comment"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsAddingComment(false);
+                            setComment("");
+                          }}
+                          className="border text-sm border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-100"
+                        >
+                          Cancel
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500 italic">No comments yet</p>
-                )}
+                    </div>
+                  )}
 
-                {/* <div className="space-y-3 text-sm">
+                  {comments.length > 0 ? (
+                    <div className="space-y-3 text-sm">
+                      {comments.map((comment) => (
+                        <div
+                          key={comment.id}
+                          className="bg-gray-50 p-3 rounded-xl"
+                        >
+                          <p className="text-xs text-gray-500 font-semibold">
+                            {comment.author} · {comment.date}
+                          </p>
+                          <p className="mt-1">{comment.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">
+                      No comments yet
+                    </p>
+                  )}
+
+                  {/* <div className="space-y-3 text-sm">
                   <div className="bg-gray-50 p-3 rounded-xl">
                     <p className="text-xs text-gray-500 font-semibold">Sarah Johnson · June 24, 2025 - 15:10</p>
                     <p className="mt-1">Customer called to ask about verification status. I explained that we're still processing their documents and it should be completed within 24 hours.</p>
@@ -705,7 +769,8 @@ export default function UserDetailsModal({
                     <p className="mt-1">Reviewing SEON report. The medium risk score is mainly due to VPN usage and new email domain. Customer has provided valid ID and proof of address, so this may be acceptable.</p>
                   </div>
                 </div> */}
-              </div>
+                </div>
+              )}
             </div>
           </motion.div>
         </>

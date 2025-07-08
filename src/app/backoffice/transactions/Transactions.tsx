@@ -12,6 +12,8 @@ import { Transaction } from "../types/transactions";
 import * as XLSX from "xlsx";
 import api from "../../../hooks/useApi";
 import { useSearchParams } from "next/navigation";
+import { useMediaQuery } from "react-responsive";
+import toast from "react-hot-toast";
 
 type RawTransaction = Partial<{
   transactionId: string;
@@ -42,6 +44,7 @@ const rowsPerPage = 10;
 
 const TransactionsPage = () => {
   const { get } = api();
+  const isMobile = useMediaQuery({ maxWidth: 768 });
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
   const userIdFromQuery = userIdParam ? Number(userIdParam) : null;
@@ -321,28 +324,27 @@ const TransactionsPage = () => {
     }
   };
 
-  const handleDateChange = (startDate: Date, endDate: Date) => {
-    setDateRange({ startDate, endDate });
-    setShowDateFilter(false);
-  };
-
-  const clearDateFilter = () => {
-    setDateRange({ startDate: null, endDate: null });
-  };
-
   const handleOpenModal = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setIsModalOpen(true);
   };
 
   const handleExport = () => {
-    const fileName = generateExportFileName();
-    const data = prepareExportData();
+    const toastId = toast.loading("Export in progress...");
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
-    XLSX.writeFile(workbook, `${fileName}.xlsx`, { compression: true });
+    try {
+      const fileName = generateExportFileName();
+      const data = prepareExportData();
+
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+      XLSX.writeFile(workbook, `${fileName}.xlsx`, { compression: true });
+      toast.success("Export completed!", { id: toastId });
+    } catch (error) {
+      toast.error("Export failed", { id: toastId });
+      console.error("Export error:", error);
+    }
   };
 
   const generateExportFileName = () => {
@@ -420,47 +422,38 @@ const TransactionsPage = () => {
               <div className="relative" ref={dateFilterRef}>
                 <button
                   onClick={() => setShowDateFilter(!showDateFilter)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100 w-full md:w-auto"
+                  className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm text-md"
                 >
-                  <FaCalendarAlt />
-                  {dateRange.startDate && dateRange.endDate ? (
-                    <span className="text-sm">
-                      {dateRange.startDate.toLocaleDateString()} -{" "}
-                      {dateRange.endDate.toLocaleDateString()}
+                  <FaCalendarAlt className="text-md" />
+                  {isMobile ? (
+                    <span>Date</span>
+                  ) : dateRange.startDate && dateRange.endDate ? (
+                    <span className="text-md">
+                      {dateRange.startDate.toLocaleDateString("en-GB")} -{" "}
+                      {dateRange.endDate.toLocaleDateString("en-GB")}
                     </span>
                   ) : (
                     "Filter by date"
                   )}
                 </button>
-
-                {dateRange.startDate && dateRange.endDate && (
-                  <button
-                    onClick={clearDateFilter}
-                    className="absolute -right-2 -top-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                    title="Clear date filter"
-                  >
-                    ×
-                  </button>
-                )}
-
                 {showDateFilter && (
-                  <>
-                    <div
-                      className="fixed inset-0 backdrop-blur-sm bg-transparent z-40"
-                      onClick={() => setShowDateFilter(false)}
+                  <div
+                    className={`absolute z-50 ${isMobile ? "left-0" : "right-0"} top-12`}
+                  >
+                    <DateFilter
+                      onChange={(start, end) => {
+                        setDateRange({ startDate: start, endDate: end });
+                        setShowDateFilter(false);
+                      }}
+                      onClear={() =>
+                        setDateRange({ startDate: null, endDate: null })
+                      }
+                      initialStartDate={dateRange.startDate}
+                      initialEndDate={dateRange.endDate}
+                      isOpen={showDateFilter}
+                      onClose={() => setShowDateFilter(false)}
                     />
-
-                    <div className="fixed z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                      <DateFilter
-                        onChange={handleDateChange}
-                        onClear={clearDateFilter}
-                        initialStartDate={dateRange.startDate}
-                        initialEndDate={dateRange.endDate}
-                        isOpen={showDateFilter}
-                        onClose={() => setShowDateFilter(false)}
-                      />
-                    </div>
-                  </>
+                  </div>
                 )}
               </div>
               <div className="relative" ref={countryDropdownRef}>
@@ -670,18 +663,21 @@ const TransactionsPage = () => {
                                     transaction.status === "Success"
                                       ? "text-green-700 bg-green-100"
                                       : transaction.status === "Pending"
-                                      ? "text-yellow-700 bg-yellow-100"
-                                      : transaction.status === "Failed"
-                                      ? "text-red-700 bg-red-100"
-                                      : transaction.status === "Refunded"
-                                      ? "text-purple-700 bg-purple-100"
-                                      : transaction.status === "Under Review"
-                                      ? "text-blue-700 bg-blue-100"
-                                      : transaction.status === "Rejected"
-                                      ? "text-orange-700 bg-orange-100"
-                                      : transaction.status === "Escalated"
-                                      ? "text-amber-700 bg-amber-100"
-                                      : "text-black bg-gray-100"
+                                        ? "text-yellow-700 bg-yellow-100"
+                                        : transaction.status === "Failed"
+                                          ? "text-red-700 bg-red-100"
+                                          : transaction.status === "Refunded"
+                                            ? "text-purple-700 bg-purple-100"
+                                            : transaction.status ===
+                                                "Under Review"
+                                              ? "text-blue-700 bg-blue-100"
+                                              : transaction.status ===
+                                                  "Rejected"
+                                                ? "text-orange-700 bg-orange-100"
+                                                : transaction.status ===
+                                                    "Escalated"
+                                                  ? "text-amber-700 bg-amber-100"
+                                                  : "text-black bg-gray-100"
                                   }`}
                                 >
                                   {transaction.status}

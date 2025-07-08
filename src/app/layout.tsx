@@ -5,6 +5,7 @@ import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "../providers/ReduxProvider";
 import LayoutGatekeeper from "./LayoutGatekeeper"; // <-- Import the gatekeeper
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,7 +46,14 @@ export default function RootLayout({
             The Gatekeeper wraps the children. It will decide whether
             to apply the ProtectedLayout based on the current URL.
           */}
-          <LayoutGatekeeper>{children}</LayoutGatekeeper>
+          <LayoutGatekeeper>
+            {children}
+            <Toaster
+              position="top-right"
+              reverseOrder={false}
+              toastOptions={{ duration: 4000 }}
+            />
+          </LayoutGatekeeper>
         </ReduxProvider>
       </body>
     </html>
