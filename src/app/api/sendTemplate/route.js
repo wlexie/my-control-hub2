@@ -28,8 +28,8 @@ export async function POST(request) {
     // Check if params exist and the first param's value is purely numeric
     if (params && params.length > 0 && params[0].default && /^\d+$/.test(params[0].default)) {
       // We create a new array to avoid modifying the original.
-      console.log(`Original param "${params[0].default}" is numeric. Replacing with "".`);
-      processedParams = [{ default: 'customer' }, ...params.slice(1)]; 
+      console.log(`Original param "${params[0].default}" is numeric. Replacing with "there".`);
+      processedParams = [{ default: 'there' }, ...params.slice(1)]; 
     }
 
 
