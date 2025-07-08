@@ -31,9 +31,9 @@ export default function AuditTrail() {
           const createdTimeString = formatTime24h(createdAtObj);
   
           return [
-            { id: item.id + '_mpesa', currencyPair: `${item.baseCurrency}/${item.targetCurrency}`, channel: 'M-Pesa', finalRate: item.mpesaRate?.toFixed(2) || 'N/A', markup: item.mpesaMarkUp || 'N/A', weightedAvg: item.mpesaWeightedAvg?.toFixed(2) || 'N/A', createdDate: createdDateString, createdTime: createdTimeString, updatedBy: item.changedBy, timestamp: dateOfEffectObj.getTime() },
-            { id: item.id + '_paybill', currencyPair: `${item.baseCurrency}/${item.targetCurrency}`, channel: 'Paybill', finalRate: item.paybillRate?.toFixed(2) || 'N/A', markup: item.paybillMarkUp || 'N/A', weightedAvg: item.paybillWeightedAvg?.toFixed(2) || 'N/A', createdDate: createdDateString, createdTime: createdTimeString, updatedBy: item.changedBy, timestamp: dateOfEffectObj.getTime() },
-            { id: item.id + '_bank', currencyPair: `${item.baseCurrency}/${item.targetCurrency}`, channel: 'Bank', finalRate: item.bankRate?.toFixed(2) || 'N/A', markup: item.bankMarkUp || 'N/A', weightedAvg: item.bankWeightedAvg?.toFixed(2) || 'N/A', createdDate: createdDateString, createdTime: createdTimeString, updatedBy: item.changedBy, timestamp: dateOfEffectObj.getTime() }
+            { id: item.id + '_mpesa', currencyPair: `${item.baseCurrency}/${item.targetCurrency}`, channel: 'M-Pesa', finalRate: item.mpesaRate?.toFixed(2) || 'N/A', markup: item.mpesaMarkUp?.toFixed(2) || 0.00, weightedAvg: item.mpesaWeightedAvg?.toFixed(2) || 'N/A', createdDate: createdDateString, createdTime: createdTimeString, updatedBy: item.changedBy, timestamp: dateOfEffectObj.getTime() },
+            { id: item.id + '_paybill', currencyPair: `${item.baseCurrency}/${item.targetCurrency}`, channel: 'Paybill', finalRate: item.paybillRate?.toFixed(2) || 'N/A', markup: item.paybillMarkUp?.toFixed(2) || 0.00, weightedAvg: item.paybillWeightedAvg?.toFixed(2) || 'N/A', createdDate: createdDateString, createdTime: createdTimeString, updatedBy: item.changedBy, timestamp: dateOfEffectObj.getTime() },
+            { id: item.id + '_bank', currencyPair: `${item.baseCurrency}/${item.targetCurrency}`, channel: 'Bank', finalRate: item.bankRate?.toFixed(2) || 'N/A', markup: item.bankMarkUp?.toFixed(2) || 0.00, weightedAvg: item.bankWeightedAvg?.toFixed(2) || 'N/A', createdDate: createdDateString, createdTime: createdTimeString, updatedBy: item.changedBy, timestamp: dateOfEffectObj.getTime() }
           ];
         }).flat();
   

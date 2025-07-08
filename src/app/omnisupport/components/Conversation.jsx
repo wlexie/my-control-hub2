@@ -1,19 +1,22 @@
+"use client"; // This directive is ESSENTIAL for App Router client components
+
 import React, { useState, useEffect, useRef, useMemo, useCallback, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 
-// --- Icon Imports ---
+// --- Icon Imports --- (Added BotMessageSquare)
 import { 
   NotebookPen, MessageSquare, MoreVertical, Paperclip, Smile, Pin, Send, 
-  Loader2, CheckCheck, X, UploadCloud, ArrowLeft 
+  Loader2, CheckCheck, X, UploadCloud, ArrowLeft, BotMessageSquare
 } from 'lucide-react';
 
-// --- Component Imports ---
+// --- Component Imports --- (Added the new TemplateModal)
 import Modal from './Modal1';
 import EscalateIssueModal from './EscalateIssueModal';
 import TemplatesModal from './TemplatesModal';
+import TemplateModal from './TemplateModal'; // New Modal for sending specific templates
 
 // =================================================================================
 // ---  CONFIGURATION CONSTANTS  ---
@@ -48,6 +51,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEscalateModalOpen, setIsEscalateModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false); // <--- NEW STATE
   const [lightboxImage, setLightboxImage] = useState(null);
 
   // Message Notes State
@@ -63,7 +67,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const dragCounter = useRef(0);
   
   // --- DERIVED STATE & MEMOIZED VALUES ---
-  const userName = selectedChat?.contactName || selectedChat?.messages?.[0]?.from?.name || 'Unknown Contact';
+  const userName = selectedChat?.contactName || selectedChat?.messages?.[0]?.from?.name || 'Valued Customer';
   const userPhoneNumber = selectedChat?.msisdn || selectedChat?.messages?.[0]?.from?.phoneNumber || '';
   const userInitials = getInitials(userName);
   const userAvatarColor = useMemo(() => getColorForId(selectedChat?.id), [selectedChat?.id]);
@@ -93,20 +97,12 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
         } catch { return null; }
       }).filter(Boolean);
       
-      // This logic prevents message duplication from optimistic updates + polling
       setMessages(currentMessages => {
-        // Create a map of the real messages from the server for quick lookups.
         const serverMessagesMap = new Map(processedMessages.map(m => [m.id, m]));
-        
-        // Find any temporary (optimistic) messages in our current state
-        // that have NOT been confirmed by the server yet.
         const pendingOptimisticMessages = currentMessages.filter(localMsg => {
           if (!localMsg.id.toString().startsWith('temp-')) {
-            return false; // Not an optimistic message
+            return false; 
           }
-          // Check if a sent message with the same content has arrived from the server.
-          // This is a simple way to confirm the message. A more robust method would
-          // involve a unique client-side ID that gets echoed back by the server.
           let isConfirmed = false;
           for (const serverMsg of processedMessages) {
               if (serverMsg.direction === 'sent' && serverMsg.payload === localMsg.payload) {
@@ -116,11 +112,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
           }
           return !isConfirmed;
         });
-
-        // The new state is all the server messages, plus any unconfirmed optimistic ones.
         const newMessages = [...processedMessages, ...pendingOptimisticMessages];
-        
-        // De-duplicate one last time to be safe and sort by date.
         return Array.from(new Map(newMessages.map(m => [m.id, m])).values())
                     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       });
@@ -130,7 +122,6 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
         console.error("Error fetching conversation:", err);
         if (!isBackgroundPoll) setErrorMessages("Failed to load conversation history.");
       } else {
-        // It's a new conversation, so clear any old messages
         if (!isBackgroundPoll) setMessages([]);
       }
     } finally {
@@ -142,48 +133,26 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   useEffect(() => { if (textareaRef.current) { textareaRef.current.style.height = 'auto'; textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; } }, [newMessage]);
   useEffect(() => { if (noteTextareaRef.current) { noteTextareaRef.current.style.height = 'auto'; noteTextareaRef.current.style.height = `${noteTextareaRef.current.scrollHeight}px`; } }, [currentNoteText]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-
   useEffect(() => {
-    setMessages([]); // Always clear messages on chat change
-    setNewMessage(''); 
-    setShowEmojiPicker(false); 
-    setActiveNoteEditorId(null);
-    
-    // When a new chat is selected, fetch its history.
-    if (selectedChat?.id) {
-        fetchFullConversation(false);
-    }
+    setMessages([]); setNewMessage(''); setShowEmojiPicker(false); setActiveNoteEditorId(null);
+    if (selectedChat?.id) { fetchFullConversation(false); }
   }, [selectedChat?.id, fetchFullConversation]);
-  
   useEffect(() => {
     if (!selectedChat?.id || selectedChat.isClosed) return;
     const intervalId = setInterval(() => fetchFullConversation(true), POLLING_INTERVAL);
     return () => clearInterval(intervalId);
   }, [selectedChat?.id, selectedChat?.isClosed, fetchFullConversation]);
-
-  useEffect(() => { document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen); }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen]);
+  useEffect(() => { document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen || isTemplateModalOpen); }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen, isTemplateModalOpen]); // <--- UPDATED
 
   // --- EVENT HANDLERS ---
   const sendMessage = async () => {
     if (newMessage.trim() === '' || !selectedChat) return;
-
     const recipientPhoneNumber = selectedChat.msisdn || userPhoneNumber;
-    if (!recipientPhoneNumber) {
-        console.error('Recipient phone number (msisdn) could not be determined.');
-        return;
-    }
-
-    const userMsg = {
-        id: `temp-${Date.now()}`,
-        payload: newMessage,
-        createdAt: new Date().toISOString(),
-        direction: 'sent',
-        type: 'text',
-    };
+    if (!recipientPhoneNumber) { console.error('Recipient phone number (msisdn) could not be determined.'); return; }
+    const userMsg = { id: `temp-${Date.now()}`, payload: newMessage, createdAt: new Date().toISOString(), direction: 'sent', type: 'text' };
     setMessages(prevMessages => [...prevMessages, userMsg]);
     setNewMessage('');
     setShowEmojiPicker(false);
-
     try {
         await axios.post('/api/sendMessage', { recipientPhone: recipientPhoneNumber, message: newMessage });
         setTimeout(() => fetchFullConversation(true), 1500);
@@ -197,110 +166,64 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const handleFileUpload = async (file) => {
     if (!file || !selectedChat) return;
     const recipientPhoneNumber = selectedChat.msisdn || userPhoneNumber;
-    if (!recipientPhoneNumber) {
-        alert("Could not determine the recipient's phone number.");
-        return;
-    }
-
+    if (!recipientPhoneNumber) { alert("Could not determine the recipient's phone number."); return; }
     const formData = new FormData();
     formData.append('file', file);
     formData.append('recipientPhone', recipientPhoneNumber);
-
     setIsUploading(true);
     try {
-        const response = await axios.post('/api/sendMessage', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-
-        if (response.data.success) {
-            setTimeout(() => fetchFullConversation(true), 1500);
-        } else {
-            throw new Error(response.data.error || "File upload failed on the server.");
-        }
+        const response = await axios.post('/api/sendMessage', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        if (response.data.success) { setTimeout(() => fetchFullConversation(true), 1500); } 
+        else { throw new Error(response.data.error || "File upload failed on the server."); }
     } catch (error) {
         console.error("Error uploading file:", error);
         alert("File upload failed. Please try again.");
     } finally {
         setIsUploading(false);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
+        if (fileInputRef.current) { fileInputRef.current.value = ""; }
+    }
+  };
+
+   // --- NEW HANDLER for sending specific templates ---
+  const handleSendTemplate = async (templateName) => {
+    // --- ADD THIS LINE FOR DEBUGGING ---
+    console.log("DEBUG: Preparing to send template. User name is:", userName, "Phone number is:", userPhoneNumber);
+
+    if (!userPhoneNumber || !templateName) {
+      alert("Error: Cannot determine recipient's phone number or template name.");
+      return;
+    }
+
+    // This is where the variable is prepared
+    const templateParams = [{ "default": userName }]; 
+
+    try {
+        await axios.post('/api/sendTemplate', {
+            recipient: userPhoneNumber,
+            templateName: templateName,
+            params: templateParams,
+        });
+        alert(`Template "${templateName.replace(/_/g, ' ')}" sent successfully!`);
+        setIsTemplateModalOpen(false); // Close modal on success
+        setTimeout(() => fetchFullConversation(true), 2000); // Poll for new message
+    } catch (error) {
+        const errorDetail = error.response?.data?.details?.[0]?.description || error.response?.data?.error || error.message;
+        console.error('Error sending template:', error.response?.data || error);
+        alert(`Failed to send template. Reason: ${errorDetail}`);
     }
   };
 
   const addEmoji = (emoji) => { setNewMessage(prev => prev + emoji.native); };
-  
-  const handleCloseChat = async () => {
-    if (!selectedChat || !selectedChat.id) return;
-    try {
-        await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`);
-        setSelectedChat(null); // Deselect the chat, which should hide the conversation view
-    } catch (error) {
-        console.error("Error closing conversation:", error.response?.data || error.message);
-        alert("Failed to close the conversation. Please try again.");
-    } finally {
-        setIsModalOpen(false);
-    }
-  };
-
-  const handleFileChange = (e) => { 
-    const file = e.target.files[0]; 
-    if (file) { 
-      handleFileUpload(file); 
-    } 
-  };
-  
-  const handleSelectTemplate = (text) => { 
-    setNewMessage(text); 
-    setIsTemplatesModalOpen(false); 
-  };
-
-  const handleNoteIconClick = (id) => { 
-    setActiveNoteEditorId(id); 
-    setCurrentNoteText(messageNotes[id] || ""); 
-  };
-
-  const handleSaveNote = () => { 
-    if (!activeNoteEditorId) return; 
-    setMessageNotes(prev => ({ ...prev, [activeNoteEditorId]: currentNoteText })); 
-    setActiveNoteEditorId(null); 
-    setCurrentNoteText(""); 
-  };
-
-  const handleCancelNote = () => { 
-    setActiveNoteEditorId(null); 
-    setCurrentNoteText(""); 
-  };
-
-  const handleDragEnter = (e) => { 
-    e.preventDefault(); 
-    e.stopPropagation(); 
-    dragCounter.current++; 
-    if (e.dataTransfer.items?.length > 0) setIsDraggingOver(true); 
-  };
-
-  const handleDragLeave = (e) => { 
-    e.preventDefault(); 
-    e.stopPropagation(); 
-    dragCounter.current--; 
-    if (dragCounter.current === 0) setIsDraggingOver(false); 
-  };
-
-  const handleDragOver = (e) => { 
-    e.preventDefault(); 
-    e.stopPropagation(); 
-  };
-
-  const handleDrop = (e) => { 
-    e.preventDefault(); 
-    e.stopPropagation(); 
-    setIsDraggingOver(false); 
-    dragCounter.current = 0; 
-    if (e.dataTransfer.files?.length > 0) { 
-      handleFileUpload(e.dataTransfer.files[0]); 
-      e.dataTransfer.clearData(); 
-    } 
-  };
+  const handleCloseChat = async () => { if (!selectedChat || !selectedChat.id) return; try { await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`); setSelectedChat(null); } catch (error) { console.error("Error closing conversation:", error.response?.data || error.message); alert("Failed to close the conversation."); } finally { setIsModalOpen(false); } };
+  const handleFileChange = (e) => { const file = e.target.files[0]; if (file) { handleFileUpload(file); } };
+  const handleSelectTemplate = (text) => { setNewMessage(text); setIsTemplatesModalOpen(false); };
+  const handleNoteIconClick = (id) => { setActiveNoteEditorId(id); setCurrentNoteText(messageNotes[id] || ""); };
+  const handleSaveNote = () => { if (!activeNoteEditorId) return; setMessageNotes(prev => ({ ...prev, [activeNoteEditorId]: currentNoteText })); setActiveNoteEditorId(null); setCurrentNoteText(""); };
+  const handleCancelNote = () => { setActiveNoteEditorId(null); setCurrentNoteText(""); };
+  const handleDragEnter = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current++; if (e.dataTransfer.items?.length > 0) setIsDraggingOver(true); };
+  const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current === 0) setIsDraggingOver(false); };
+  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
+  const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(false); dragCounter.current = 0; if (e.dataTransfer.files?.length > 0) { handleFileUpload(e.dataTransfer.files[0]); e.dataTransfer.clearData(); } };
 
   // --- JSX RENDER ---
   return (
@@ -309,25 +232,17 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
       {isDraggingOver && ( <div className="absolute inset-0 z-50 bg-blue-500/30 border-4 border-dashed border-blue-600 rounded-2xl flex flex-col items-center justify-center pointer-events-none"><UploadCloud className="w-24 h-24 text-blue-600" /><p className="mt-4 text-2xl font-bold text-blue-800">Drop file to upload</p></div> )}
       {lightboxImage && ( <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 cursor-pointer" onClick={() => setLightboxImage(null)}> <button onClick={() => setLightboxImage(null)} className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/75 rounded-full p-2" > <X size={24} /> </button> <img src={lightboxImage} alt="Lightbox view" className="max-w-full max-h-full rounded-lg shadow-2xl cursor-default" onClick={(e) => e.stopPropagation()} /> </div> )}
       {isTemplatesModalOpen && ( <TemplatesModal closeModal={() => setIsTemplatesModalOpen(false)} onSelectTemplate={handleSelectTemplate} userName={userName} /> )}
+      {isTemplateModalOpen && ( <TemplateModal closeModal={() => setIsTemplateModalOpen(false)} onSelectTemplate={handleSendTemplate} userName={userName}/> )}
 
       {/* Main Content */}
-      {!selectedChat ? (
-        <div className="text-gray-500 flex justify-center items-center h-full"> Select a chat to start a conversation </div>
-      ) : (
+      {!selectedChat ? ( <div className="text-gray-500 flex justify-center items-center h-full"> Select a chat to start a conversation </div> ) 
+      : (
         <>
-          {/* Conversation Header */}
           <header className="pb-2 mb-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              {onCloseMobile && (
-                <button onClick={onCloseMobile} className="md:hidden mr-2 p-2 hover:bg-gray-100 rounded-full" aria-label="Back to messages">
-                  <ArrowLeft className="w-5 h-5 text-gray-600" />
-                </button>
-              )}
+              {onCloseMobile && ( <button onClick={onCloseMobile} className="md:hidden mr-2 p-2 hover:bg-gray-100 rounded-full" aria-label="Back to messages"><ArrowLeft className="w-5 h-5 text-gray-600" /></button> )}
               <div className={`flex items-center justify-center w-10 h-10 ${userAvatarColor} rounded-full font-semibold text-white`}>{userInitials}</div>
-              <div>
-                <h2 className="text-sm font-semibold text-gray-800">{userName}</h2>
-                <p className="text-xs text-gray-500">{userPhoneNumber}</p>
-              </div>
+              <div><h2 className="text-sm font-semibold text-gray-800">{userName}</h2><p className="text-xs text-gray-500">{userPhoneNumber}</p></div>
             </div>
             {!selectedChat.isClosed && (
               <div className="relative">
@@ -338,7 +253,6 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
             )}
           </header>
 
-          {/* Message History */}
           <main className="relative flex-1 flex flex-col min-h-0">
             <div className="overflow-y-auto bg-white border border-gray-200 rounded-2xl p-4 flex-1">
               {loadingMessages ? ( <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div> ) 
@@ -347,14 +261,12 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                   if (!msg || !msg.payload) return null;
                   const showDateSeparator = index === 0 || new Date(msg.createdAt).toDateString() !== new Date(messages[index - 1].createdAt).toDateString();
                   const isSent = msg.direction === 'sent';
-                  
                   return (
                     <Fragment key={msg.id}>
                       {showDateSeparator && <div className="flex justify-center my-4"><span className="bg-gray-200 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">{formatDateSeparator(msg.createdAt)}</span></div>}
                       <div className={`flex flex-col ${isSent ? 'items-end' : 'items-start'}`}>
                         <div className={`flex w-full mt-2 items-end gap-2 ${isSent ? 'justify-end' : 'justify-start'}`}>
                           {!isSent && <div className={`flex-shrink-0 w-6 h-6 ${userAvatarColor} rounded-full text-xs font-semibold text-white flex items-center justify-center self-end`}>{userInitials}</div>}
-                          
                           <div className={`flex items-end max-w-[85%] sm:max-w-[75%] md:max-w-xl ${isSent ? 'flex-row-reverse' : ''}`}>
                             <div className={`px-3 py-2 rounded-2xl ${isSent ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
                               {msg.type === 'text' && <p className="break-words whitespace-pre-wrap">{msg.payload}</p>}
@@ -367,7 +279,6 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                               {!isSent && <button className="p-1 hover:text-gray-600"><MoreVertical size={16}/></button>}
                             </div>
                           </div>
-                          
                           {isSent && <div className="flex-shrink-0 w-6 h-6 bg-blue-200 rounded-full text-xs font-semibold text-blue-800 flex items-center justify-center self-end">TM</div>}
                         </div>
                         {isSent && <div className="flex items-center gap-2 mt-1 mr-10 text-xs text-gray-500"><span>You</span><span>{formatMessageTimestamp(msg.createdAt)}</span><CheckCheck className="w-4 h-4 text-blue-500" /></div>}
@@ -383,11 +294,20 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
             {showEmojiPicker && <div className="absolute z-10 bottom-4 right-4"><Picker data={data} onEmojiSelect={addEmoji} /></div>}
           </main>
           
-          {/* Message Input Footer */}
+          {/* --- NEW FLOATING ACTION BUTTON --- */}
+          {!selectedChat.isClosed && (
+            <button
+              onClick={() => setIsTemplateModalOpen(true)}
+              className="absolute bottom-28 right-6 z-20 bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              title="Send a Template Message"
+            >
+              <BotMessageSquare size={24} />
+            </button>
+          )}
+
           <footer className="pt-4">
-            {selectedChat.isClosed ? (
-              <div className="p-3 text-center bg-gray-100 rounded-lg"><p className="text-sm text-gray-500">This conversation is closed.</p></div>
-            ) : (
+            {selectedChat.isClosed ? ( <div className="p-3 text-center bg-gray-100 rounded-lg"><p className="text-sm text-gray-500">This conversation is closed.</p></div> ) 
+            : (
               <div className="flex items-center p-2 bg-white border border-gray-200 rounded-xl">
                 <textarea ref={textareaRef} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())} rows={1} className="flex-1 px-2 text-sm bg-transparent resize-none max-h-40 focus:outline-none" placeholder="Type your message here" />
                 <div className="flex items-center space-x-1">

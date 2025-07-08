@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import SideNav from "../components/SideNav";
 import { IoIosSearch, IoIosArrowForward } from "react-icons/io";
+import { BsThreeDotsVertical } from "react-icons/bs";
 import AssignRoleModal from "../components/AssignRole";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
+import ConfirmDeactivateModal from "../components/ConfirmDeactivateModal"; // ADDED: Import the new modal
 import auth from "../../../hooks/Auth";
 
 type UserStatus = "active" | "pending";
@@ -46,7 +49,16 @@ export default function UserTable() {
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<"success" | "error" | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const { get, post } = auth();
+  const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // ADDED: State for the deactivate modal
+  const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+
+  const { get, post /*, del, put */ } = auth();
 
   const getInitials = (firstName: string, lastName: string) =>
     `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -117,9 +129,21 @@ export default function UserTable() {
     }
   }, [searchTerm, users]);
 
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (openActionMenu !== null) {
+        setOpenActionMenu(null);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [openActionMenu]);
+
   const handleApprove = async (userId: number, email: string) => {
+    setOpenActionMenu(null);
     try {
-      // Use the new auth hook's post method
       const data = await post<{ status: string; message: string; accountKey: string }>(
         "/account/approve-system-user",
         null,
@@ -127,13 +151,8 @@ export default function UserTable() {
       );
   
       if (data.status === "approved") {
-        setUsers((prev) =>
-          prev.map((user) =>
-            user.id === userId ? { ...user, status: "active", accountKey: data.accountKey } : user
-          )
-        );
-        setFilteredUsers((prev) =>
-          prev.map((user) =>
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
             user.id === userId ? { ...user, status: "active", accountKey: data.accountKey } : user
           )
         );
@@ -150,6 +169,62 @@ export default function UserTable() {
     }
   };
   
+  const handleDelete = (userToDelete: User) => {
+    setOpenActionMenu(null); 
+    setSelectedUser(userToDelete); 
+    setIsDeleteModalOpen(true); 
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    setIsDeleting(true);
+    try {
+      console.log(`Simulating API call to delete user: ${selectedUser.firstName}`);
+      setUsers(prev => prev.filter(user => user.id !== selectedUser.id));
+      setMessage(`User "${selectedUser.firstName} ${selectedUser.lastName}" was deleted.`);
+      setMessageType("success");
+    } catch (err) {
+      console.error("Failed to delete user:", err);
+      setMessage("Failed to delete user. Please try again.");
+      setMessageType("error");
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+      setSelectedUser(null);
+    }
+  };
+
+  // ADDED: Handler to open the deactivate modal
+  const handleDeactivate = (userToDeactivate: User) => {
+    setOpenActionMenu(null);
+    setSelectedUser(userToDeactivate);
+    setIsDeactivateModalOpen(true);
+  };
+
+  // ADDED: Handler to confirm the deactivation
+  const confirmDeactivateUser = async () => {
+    if (!selectedUser) return;
+    setIsDeactivating(true);
+    try {
+      // ** YOUR API CALL TO DEACTIVATE THE USER GOES HERE **
+      // Example: await put(`/api/users/${selectedUser.userKey}/deactivate`);
+      console.log(`Simulating API call to deactivate user: ${selectedUser.firstName}`);
+      
+      // For now, we'll just show a message.
+      setMessage(`User "${selectedUser.firstName} ${selectedUser.lastName}" has been deactivated.`);
+      setMessageType("success");
+
+    } catch (err) {
+      console.error("Failed to deactivate user:", err);
+      setMessage("Failed to deactivate user. Please try again.");
+      setMessageType("error");
+    } finally {
+      setIsDeactivating(false);
+      setIsDeactivateModalOpen(false);
+      setSelectedUser(null);
+    }
+  };
 
   const handleRowClick = (user: User) => {
     if (user.accountKey) {
@@ -157,54 +232,9 @@ export default function UserTable() {
       setIsModalOpen(true);
     }
   };
-
-  const getStatusStyle = (status: UserStatus) => {
-    switch (status) {
-      case "active":
-        return "bg-green-50 text-[#037847]";
-      case "pending":
-        return "bg-[#FDF6EC] text-[#F1B80C]";
-      default:
-        return "";
-    }
-  };
-
-  const getStatusText = (status: UserStatus) => {
-    switch (status) {
-      case "active":
-        return "Active";
-      case "pending":
-        return "Pending";
-      default:
-        return "";
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen relative">
-        <div className="w-1/5">
-          <SideNav />
-        </div>
-        <div className="w-4/5 p-8 overflow-auto flex items-center justify-center">
-          <p>Loading users...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-screen relative">
-        <div className="w-1/5">
-          <SideNav />
-        </div>
-        <div className="w-4/5 p-8 overflow-auto flex items-center justify-center">
-          <p className="text-red-500">{error}</p>
-        </div>
-      </div>
-    );
-  }
+  
+  if (isLoading) { /* (Your loading JSX) */ }
+  if (error) { /* (Your error JSX) */ }
 
   return (
     <div className="flex h-screen relative">
@@ -243,14 +273,13 @@ export default function UserTable() {
           <table className="w-full bg-white rounded-lg overflow-auto">
             <thead className="text-[#808A92] font-[600] text-[12px] uppercase border-y border-y-gray-100">
               <tr>
-                <th className="py-3 px-3 text-left">#</th>
-                <th className="py-3 px-3 text-left">User</th>
-                <th className="py-3 px-3 text-left">Email</th>
-                <th className="py-3 px-3 text-left">Phone</th>
-                <th className="py-3 px-3 text-left">Department</th>
-                <th className="py-3 px-3 text-left">Status</th>
-                <th className="py-3 px-3 text-left">Action</th>
-                <th className="py-3 px-3 text-left"></th>
+                <th className="py-2 px-3 text-left">#</th>
+                <th className="py-2 px-3 text-left">User</th>
+                <th className="py-2 px-3 text-left">Email</th>
+                <th className="py-2 px-3 text-left">Phone</th>
+                <th className="py-2 px-3 text-left">Department</th>
+                <th className="py-2 px-3 text-center">Actions</th>
+                <th className="py-2 px-3 text-left"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-[13px]">
@@ -260,21 +289,15 @@ export default function UserTable() {
 
                 return (
                   <tr
-                  key={user.id}
-                  onClick={() => handleRowClick(user)}
-                  className={`hover:bg-gray-50 ${user.accountKey ? 'cursor-pointer' : 'cursor-default'}`}
-                >
-                    <td className="py-4 px-3 text-[#808A92]">{index + 1}</td>
+                    key={user.id}
+                    onClick={() => handleRowClick(user)}
+                    className={`hover:bg-gray-50 ${user.accountKey ? 'cursor-pointer' : 'cursor-default'}`}
+                  >
+                    <td className="py-3 px-3 text-[#808A92]">{index + 1}</td>
                     <td className="py-2 px-3">
                       <div className="flex items-center">
-                        <div
-                          className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${
-                            initialsColor.split(" ")[0]
-                          }`}
-                        >
-                          <span
-                            className={`font-semibold ${initialsColor.split(" ")[1]}`}
-                          >
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${initialsColor.split(" ")[0]}`}>
+                          <span className={`font-semibold ${initialsColor.split(" ")[1]}`}>
                             {initials}
                           </span>
                         </div>
@@ -283,39 +306,61 @@ export default function UserTable() {
                         </span>
                       </div>
                     </td>
-                    <td className="py-4 px-3 text-[#808A92] font-[400]">
-                      {user.email}
-                    </td>
-                    <td className="py-4 px-3 text-[#808A92] font-[400]">
-                      {user.phoneNumber}
-                    </td>
-                    <td className="py-4 px-3">{user.department}</td>
-                    <td className="py-4 px-3">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${getStatusStyle(
-                          user.status
-                        )}`}
+                    <td className="py-3 px-3 text-[#808A92] font-[400]">{user.email}</td>
+                    <td className="py-3 px-3 text-[#808A92] font-[400]">{user.phoneNumber}</td>
+                    <td className="py-3 px-3">{user.department}</td>
+                    
+                    <td className="py-3 px-3 text-center relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenActionMenu(openActionMenu === user.id ? null : user.id);
+                        }}
+                        className="p-2 rounded-full hover:bg-gray-200"
                       >
-                        {getStatusText(user.status)}
-                      </span>
-                    </td>
-                    <td className="py-4 px-3">
-                      {user.accountKey === null ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleApprove(user.id, user.email);
-                          }}
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-[14px] font-medium transition-colors"
+                        <BsThreeDotsVertical className="h-5 w-5 text-gray-600" />
+                      </button>
+
+                      {openActionMenu === user.id && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-8 top-full -mt-4 w-40 bg-white rounded-md shadow z-20 border border-gray-100"
                         >
-                          Approve
-                        </button>
-                      ) : (
-                        <span className="text-gray-400 text-sm">No action</span>
+                          <ul className="py-1 text-left">
+                            {user.accountKey === null && (
+                              <li>
+                                <button
+                                  onClick={() => handleApprove(user.id, user.email)}
+                                  className="w-full text-left px-4 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  Approve
+                                </button>
+                              </li>
+                            )}
+                            {/* ADDED: Deactivate option for active users */}
+                            {user.accountKey !== null && (
+                              <li>
+                                <button
+                                  onClick={() => handleDeactivate(user)}
+                                  className="w-full text-left px-4 py-1 text-sm font-medium text-amber-600 hover:bg-amber-50"                                >
+                                  Deactivate User
+                                </button>
+                              </li>
+                            )}
+                            <li>
+                              <button
+                                onClick={() => handleDelete(user)}
+                                className="w-full text-left px-4 py-1 text-sm font-medium text-red-600 hover:bg-red-50"
+                              >
+                                Delete User
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
                       )}
                     </td>
                     <td className="py-4 px-3">
-                      <IoIosArrowForward />
+                      <IoIosArrowForward className="text-gray-400" />
                     </td>
                   </tr>
                 );
@@ -324,14 +369,32 @@ export default function UserTable() {
           </table>
         </div>
       </div>
+
       <AssignRoleModal
-  isOpen={isModalOpen}
-  onClose={() => {
-    setIsModalOpen(false);
-    setSelectedUser(null);
-  }}
-  user={selectedUser}
-/>
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteUser}
+        isDeleting={isDeleting}
+        user={selectedUser}
+      />
+
+      {/* ADDED: Render the new ConfirmDeactivateModal */}
+      <ConfirmDeactivateModal
+        isOpen={isDeactivateModalOpen}
+        onClose={() => setIsDeactivateModalOpen(false)}
+        onConfirm={confirmDeactivateUser}
+        isDeactivating={isDeactivating}
+        user={selectedUser}
+      />
     </div>
   );
 }

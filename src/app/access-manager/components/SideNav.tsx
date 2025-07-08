@@ -89,12 +89,12 @@ export default function SideNav() {
             
           />
         </span>
-        <h1 className="text-[20px] font-semibold">Admin</h1>
+        <h1 className="text-[22px] font-semibold">Admin</h1>
       </div>
 
       {/* Navigation Items */}
       <nav className="flex-1 p-4">
-        <ul className="space-y-3">
+        <ul className="space-y-2">
           {navItems.map((item) => (
             <li key={item.href}>
               <Link
@@ -106,7 +106,7 @@ export default function SideNav() {
                 }`}
               >
                 {item.icon}
-                <span className="font-[400] text-[13px]">{item.label}</span>
+                <span className="font-[400] text-[17px]">{item.label}</span>
               </Link>
             </li>
           ))}
