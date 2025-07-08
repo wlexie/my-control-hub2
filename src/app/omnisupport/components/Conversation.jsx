@@ -9,8 +9,10 @@ import data from '@emoji-mart/data';
 // --- Icon Imports --- (Added BotMessageSquare)
 import { 
   NotebookPen, MessageSquare, MoreVertical, Paperclip, Smile, Pin, Send, 
-  Loader2, CheckCheck, X, UploadCloud, ArrowLeft, BotMessageSquare
+  Loader2, CheckCheck, X, UploadCloud, ArrowLeft
 } from 'lucide-react';
+import { FaPlus } from "react-icons/fa6";
+
 
 // --- Component Imports --- (Added the new TemplateModal)
 import Modal from './Modal1';
@@ -316,10 +318,10 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
           {!selectedChat.isClosed && (
             <button
               onClick={() => setIsTemplateModalOpen(true)}
-              className="absolute bottom-28 right-6 z-20 bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              className="absolute bottom-24 right-7 z-20 bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
               title="Send a Template Message"
             >
-              <BotMessageSquare size={24} />
+              <FaPlus size={24} />
             </button>
           )}
 
