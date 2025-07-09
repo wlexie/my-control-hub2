@@ -257,17 +257,43 @@ export default function UserAccounts() {
     }
   };
 
-  const getCountryDisplay = (_code: string) => {
-    return (
-      <>
-        <img
-          src="/backoffice/uk-flag.png"
-          className="w-5 h-5 inline-block mr-1"
-          alt="UK flag"
-        />
-        {!isMobile && "United Kingdom"}
-      </>
-    );
+  const getCountryDisplay = (code: string | null) => {
+    if (code === "Kenya") {
+      return (
+        <>
+          <img
+            src="/backoffice/kenya-flag.png"
+            className="w-5 h-5 inline-block mr-1"
+            alt="Kenya flag"
+          />
+          {!isMobile && "Kenya"}
+        </>
+      );
+    } else if (code === "United Kingdom" || code === "GBR") {
+      return (
+        <>
+          <img
+            src="/backoffice/uk-flag.png"
+            className="w-5 h-5 inline-block mr-1"
+            alt="UK flag"
+          />
+          {!isMobile && "United Kingdom"}
+        </>
+      );
+    } else if (code === "Tanzania") {
+      return (
+        <>
+          <img
+            src="/backoffice/tz-flag.png"
+            className="w-5 h-5 inline-block mr-1"
+            alt="Tanzania flag"
+          />
+          {!isMobile && "Tanzania"}
+        </>
+      );
+    } else {
+      return <span className="text-gray-400">{isMobile ? "" : "N/A"}</span>;
+    }
   };
 
   return (
