@@ -4,11 +4,13 @@ import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Transaction } from "../types/transactions";
 import { generateReceiptPDF } from "./generateReceipt";
+import toast from "react-hot-toast";
 
 type TransactionModalProps = {
   isOpen: boolean;
   onClose: () => void;
   transaction: Transaction | null;
+  onRetrySuccess?: (transaction: Transaction) => void;
 };
 
 const getStatusDetails = (status: string, errorMessage?: string) => {
@@ -72,9 +74,14 @@ const getStatusDetails = (status: string, errorMessage?: string) => {
 const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
-  transaction,
+  transaction: initialTransaction,
+  onRetrySuccess,
 }) => {
   const [isClient, setIsClient] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [transaction, setTransaction] = useState<Transaction | null>(
+    initialTransaction
+  );
 
   useEffect(() => {
     setIsClient(true);
@@ -123,7 +130,60 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     }
   };
 
+  const retryPendingPayment = async (transactionReference: string) => {
+    const response = await fetch(
+      `https://api.tuma-app.com/api/transfer/settle-pending-payment?transactionReference=${transactionReference}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
 
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Payment retry failed");
+    }
+
+    return data;
+  };
+
+  const handleRetryPayment = async () => {
+    if (!transaction) return;
+
+    setIsRetrying(true);
+    try {
+      const response = await retryPendingPayment(transaction.transactionKey);
+      console.log("Retry Payment API Response:", response);
+
+      if (response.status === "ok") {
+        toast.success(
+          response.message || "Payment retry initiated successfully"
+        );
+
+        const updatedTransaction = { ...transaction, status: "Success" };
+        setTransaction(updatedTransaction);
+        onRetrySuccess?.(updatedTransaction);
+
+        setTimeout(() => onClose(), 2000);
+      } else {
+        toast.error(response.message || "Unexpected response from server");
+      }
+    } catch (error: any) {
+      console.error("Retry Payment Error:", error);
+
+      if (error.message?.includes("TRANSACTION.NOT.FOUND")) {
+        toast.error("Transaction not found");
+        setTransaction((prev: Transaction | null) =>
+          prev ? { ...prev, status: "Failed" } : null
+        );
+      } else {
+        toast.error(error.message || "Failed to retry payment");
+      }
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50">
@@ -138,19 +198,27 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="md:hidden absolute bottom-0 left-0 right-0 h-[90vh] bg-white rounded-t-3xl shadow-xl flex flex-col"
             >
-             
               <div className="flex justify-between items-center p-4 border-b">
                 <h2 className="text-lg font-bold text-gray-900">
                   {transaction.transactionId}
                 </h2>
-               
-
-                <button
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 text-xl"
-                >
-                  &times;
-                </button>
+                <div className="flex items-center gap-2">
+                  {transaction.status === "Pending" && (
+                    <button
+                      onClick={handleRetryPayment}
+                      disabled={isRetrying}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isRetrying ? "Processing..." : "Retry Payment"}
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="text-gray-500 hover:text-gray-700 text-xl"
+                  >
+                    &times;
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4">
@@ -166,10 +234,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   <p className="text-gray-400 mt-1 text-sm">
                     {statusDetails.reason}
                   </p>
-                  
-
                 </div>
-
 
                 {/* Transaction Details */}
                 <div className="space-y-3">
@@ -300,12 +365,23 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                 <h2 className="text-lg font-bold text-gray-900">
                   {transaction.transactionId}
                 </h2>
-                <button
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 text-xl"
-                >
-                  &times;
-                </button>
+                <div className="flex items-center gap-4">
+                  {transaction.status === "Pending" && (
+                    <button
+                      onClick={handleRetryPayment}
+                      disabled={isRetrying}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isRetrying ? "Processing..." : "Retry Payment"}
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="text-gray-500 hover:text-gray-700 text-xl"
+                  >
+                    &times;
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6">

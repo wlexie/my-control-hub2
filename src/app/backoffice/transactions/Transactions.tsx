@@ -396,6 +396,24 @@ const TransactionsPage = () => {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
+  const handleRetrySuccess = (updatedTransaction: Transaction) => {
+    // Update both transaction lists
+    setAllTransactions((prev: Transaction[]) =>
+      prev.map((tx: Transaction) =>
+        tx.transactionId === updatedTransaction.transactionId
+          ? updatedTransaction
+          : tx
+      )
+    );
+    setFilteredTransactions((prev: Transaction[]) =>
+      prev.map((tx: Transaction) =>
+        tx.transactionId === updatedTransaction.transactionId
+          ? updatedTransaction
+          : tx
+      )
+    );
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
@@ -743,6 +761,7 @@ const TransactionsPage = () => {
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             transaction={selectedTransaction}
+            onRetrySuccess={handleRetrySuccess}
           />
         </div>
       )}
