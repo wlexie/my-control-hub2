@@ -257,7 +257,7 @@ export default function UserAccounts() {
     }
   };
 
-  const getCountryDisplay = (code: string) => {
+  const getCountryDisplay = (_code: string) => {
     return (
       <>
         <img

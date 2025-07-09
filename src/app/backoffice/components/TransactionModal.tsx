@@ -169,19 +169,22 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       } else {
         toast.error(response.message || "Unexpected response from server");
       }
-    } catch (error: any) {
-      console.error("Retry Payment Error:", error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Retry Payment Error:", error);
 
-      if (error.message?.includes("TRANSACTION.NOT.FOUND")) {
-        toast.error("Transaction not found");
-        setTransaction((prev: Transaction | null) =>
-          prev ? { ...prev, status: "Failed" } : null
-        );
+        if (error.message?.includes("TRANSACTION.NOT.FOUND")) {
+          toast.error("Transaction not found");
+          setTransaction((prev: Transaction | null) =>
+            prev ? { ...prev, status: "Failed" } : null
+          );
+        } else {
+          toast.error(error.message || "Failed to retry payment");
+        }
       } else {
-        toast.error(error.message || "Failed to retry payment");
+        console.error("Unknown error:", error);
+        toast.error("An unknown error occurred while retrying payment.");
       }
-    } finally {
-      setIsRetrying(false);
     }
   };
 
