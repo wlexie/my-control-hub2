@@ -40,10 +40,10 @@ export default function Page() {
         
         {/* --- DESKTOP LAYOUT (Multi-column) --- */}
         <div className="hidden md:flex flex-1 overflow-hidden">
-          <div className="w-[40%] lg:w-[35%] border-r border-r-gray-200 h-full flex flex-col">
+          <div className="w-[40%] lg:w-[37%] border-r border-r-gray-200 h-full flex flex-col">
             <Messages onSelectChat={setSelectedChat} activeChat={selectedChat} />
           </div>
-          <div className="w-[60%] lg:w-[65%] h-full flex-col">
+          <div className="w-[60%] lg:w-[63%] h-full flex-col">
             <Conversation
               selectedChat={selectedChat}
               setSelectedChat={setSelectedChat}
