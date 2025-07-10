@@ -499,7 +499,7 @@ const TransactionsPage = () => {
                       </span>
                     </>
                   ) : (
-                    <span className="text-md">Filter by Country</span>
+                    <span className="text-md">Filter by Receiving Country</span>
                   )}
                 </button>
 
