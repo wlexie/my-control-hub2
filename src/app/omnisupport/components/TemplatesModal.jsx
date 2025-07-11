@@ -70,7 +70,7 @@ export default function TemplatesModal({ closeModal, onSelectTemplate, userName 
           </button>
           <button 
             onClick={closeModal}
-            className="ml-2 p-2 text-gray-500 hover:bg-gray-100 rounded-full"
+            className="ml-2 px-2 py-2 text-gray-500 hover:bg-gray-100 rounded-full"
           >
             <X size={24} />
           </button>
