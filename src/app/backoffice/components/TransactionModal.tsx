@@ -212,7 +212,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       disabled={isRetrying}
                       className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isRetrying ? "Processing..." : "Retry Payment"}
+                      {isRetrying ? "Processing..." : "Settle Payment"}
                     </button>
                   )}
                   <button

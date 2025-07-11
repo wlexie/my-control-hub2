@@ -646,7 +646,7 @@ export default function UserDetailsModal({
                       <span>Total Volume</span>
                       <span>
                         {user.transaction?.totalTransactionsValue
-                          ? `${user.transaction.totalTransactionsValue.toFixed(2)}`
+                          ? `KES ${user.transaction.totalTransactionsValue.toFixed(2)}`
                           : "—"}
                       </span>
                     </div>
