@@ -3,9 +3,12 @@
 
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { getInitials, getPastelColor, statusStyles } from "./constants";
 import type { User } from "../types";
+import { loadComments, saveComment } from "@/utils/storage";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
@@ -37,6 +40,12 @@ export default function UserDetailsModal({
   open: isOpen,
   onUserUpdated,
 }: Props) {
+  const userRole = useSelector((state: RootState) => state.auth.user?.roles);
+  const hasAnyRole = (
+    userRoles: string[] | undefined,
+    rolesToCheck: string[]
+  ) => userRoles?.some((role) => rolesToCheck.includes(role));
+
   const [user, setUser] = useState<User | null>(null);
   const [, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
@@ -93,7 +102,7 @@ export default function UserDetailsModal({
           setLoading(false);
         }
       };
-
+      setComments(loadComments(userId));
       fetchUserDetails();
     }
   }, [isOpen, userId]);
@@ -318,8 +327,7 @@ export default function UserDetailsModal({
     try {
       setIsProcessing(true);
 
-      const newComment = {
-        id: Date.now().toString(),
+      const newComment = await saveComment(userId, {
         author: "Admin",
         date: new Date().toLocaleString("en-GB", {
           day: "2-digit",
@@ -329,7 +337,7 @@ export default function UserDetailsModal({
           minute: "2-digit",
         }),
         content: comment,
-      };
+      });
 
       setComments((prev) => [newComment, ...prev]);
       setComment("");
@@ -383,53 +391,54 @@ export default function UserDetailsModal({
 
               <div className="flex gap-2">
                 {/* Only show buttons if user is not Declined */}
-                {user.accountStatus !== "Declined" && (
-                  <>
-                    {user.step === "KYC_IN_PROGRESS" && (
-                      <button
-                        onClick={handleApproveUser}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
-                      >
-                        Approve User
-                      </button>
-                    )}
+                {user.accountStatus !== "Declined" &&
+                  hasAnyRole(userRole, ["COMPLIANCE"]) && (
+                    <>
+                      {user.step === "KYC_IN_PROGRESS" && (
+                        <button
+                          onClick={handleApproveUser}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+                        >
+                          Approve User
+                        </button>
+                      )}
 
-                    {(user.accountStatus === "Temporary Blocked" ||
-                      user.accountStatus === "Temporary_Blocked") && (
-                      <button
-                        onClick={handleReinstateUser}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
-                      >
-                        Reinstate User
-                      </button>
-                    )}
+                      {(user.accountStatus === "Temporary Blocked" ||
+                        user.accountStatus === "Temporary_Blocked") && (
+                        <button
+                          onClick={handleReinstateUser}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
+                        >
+                          Reinstate User
+                        </button>
+                      )}
 
-                    {user.accountStatus === "Basic Pending" && (
-                      <button
-                        onClick={() => {
-                          setActiveTab("notes");
-                          setIsAddingComment(true);
-                          scrollToSection("notes");
-                        }}
-                        className="border text-sm border-gray-300 text-white bg-red-600 px-4 py-2 rounded-md hover:bg-red-700"
-                        disabled={isProcessing}
-                      >
-                        Decline
-                      </button>
-                    )}
+                      {user.accountStatus === "Basic Pending" && (
+                        <button
+                          onClick={() => {
+                            setActiveTab("notes");
+                            setIsAddingComment(true);
+                            scrollToSection("notes");
+                          }}
+                          className="border text-sm border-gray-300 text-white bg-red-600 px-4 py-2 rounded-md hover:bg-red-700"
+                          disabled={isProcessing}
+                        >
+                          Decline
+                        </button>
+                      )}
 
-                    {(user.accountStatus === "Basic" ||
-                      user.accountStatus === "Active") && (
-                      <button
-                        onClick={handleSuspendUser}
-                        className="border text-sm border-gray-300 text-white bg-amber-500 px-4 py-2 rounded-md hover:bg-amber-600"
-                        disabled={isProcessing}
-                      >
-                        Suspend
-                      </button>
-                    )}
-                  </>
-                )}
+                      {(user.accountStatus === "Basic" ||
+                        user.accountStatus === "Active") && (
+                        <button
+                          onClick={handleSuspendUser}
+                          className="border text-sm border-gray-300 text-white bg-amber-500 px-4 py-2 rounded-md hover:bg-amber-600"
+                          disabled={isProcessing}
+                        >
+                          Suspend
+                        </button>
+                      )}
+                    </>
+                  )}
 
                 {/* Show a status message if user is Declined */}
                 {user.accountStatus === "Declined" && (
@@ -758,17 +767,6 @@ export default function UserDetailsModal({
                       No comments yet
                     </p>
                   )}
-
-                  {/* <div className="space-y-3 text-sm">
-                  <div className="bg-gray-50 p-3 rounded-xl">
-                    <p className="text-xs text-gray-500 font-semibold">Sarah Johnson · June 24, 2025 - 15:10</p>
-                    <p className="mt-1">Customer called to ask about verification status. I explained that we're still processing their documents and it should be completed within 24 hours.</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-xl">
-                    <p className="text-xs text-gray-500 font-semibold">John Doe · June 23, 2025 - 11:25</p>
-                    <p className="mt-1">Reviewing SEON report. The medium risk score is mainly due to VPN usage and new email domain. Customer has provided valid ID and proof of address, so this may be acceptable.</p>
-                  </div>
-                </div> */}
                 </div>
               )}
             </div>

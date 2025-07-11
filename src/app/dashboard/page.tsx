@@ -14,14 +14,14 @@ import { HiOutlineUsers } from "react-icons/hi2";
 
 // Data for modules (assuming it's correc
 const allModulesData = [
-    {
+  {
     name: "Back Office Suite",
     iconSrc: "/user-access/images/frame2.svg",
     title: "Your command center for transactions.",
     description:
       "Get complete visibility into every transaction across the Tuma ecosystem. Track, monitor, and audit with confidence in a secure and intuitive interface.",
     path: "/backoffice/dashboard/",
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "TREASURY", "COMPLIANCE"],
   },
   {
     name: "OmniSupport",
@@ -30,7 +30,7 @@ const allModulesData = [
     description:
       "Empower your support team to resolve customer issues faster and smarter — all in one unified dashboard designed for real-time conversations and seamless service.",
     path: "/omnisupport",
-    roles: ["ADMIN", "OMNISUPPORT"],
+    roles: ["ADMIN", "TREASURY", "OMNISUPPORT"],
   },
   {
     name: "FX Navigator",
@@ -48,7 +48,7 @@ const allModulesData = [
     description:
       "Create, launch, and manage in-app campaigns that connect with your customers. From promos to referral boosts — Campaign Manager helps you market like a pro.",
     path: "/campaign-manager",
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "TREASURY"],
   },
 
   {
@@ -58,7 +58,7 @@ const allModulesData = [
     description:
       "Track merchant performance, payouts, and customer activity in real time. Give your partners the data they need to thrive with Tuma.",
     path: "/promitto/dashboard",
-    roles: ["ADMIN", "MERCHANT"],
+    roles: ["ADMIN", "MERCHANT", "TREASURY"],
   },
   {
     name: "Access Manager",
@@ -67,7 +67,7 @@ const allModulesData = [
     description:
       "Easily manage roles and permissions for your internal teams. From compliance to customer care, control who sees what — securely and efficiently.",
     path: "/access-manager",
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "TREASURY"],
   },
 ];
 
@@ -186,7 +186,7 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
-   // console.log("Current user from store:", user);
+    // console.log("Current user from store:", user);
   }, [user]);
 
   const filteredModules = allModulesData.filter((module) => {
@@ -236,9 +236,9 @@ const DashboardPage = () => {
       activeBg: "bg-red-100",
     },
   ];
-  
+
   // ADDED: A new handler function to manage clicks
-  const handleSidebarItemClick = (item: typeof sidebarNavItems[0]) => {
+  const handleSidebarItemClick = (item: (typeof sidebarNavItems)[0]) => {
     // If the item has its own onClick function (like logout), execute it.
     if (item.onClick) {
       item.onClick();
@@ -259,7 +259,7 @@ const DashboardPage = () => {
           notificationCount={item.count}
           isActive={activeItem === item.id}
           // CHANGED: Use the new handler function
-          onClick={() => handleSidebarItemClick(item)} 
+          onClick={() => handleSidebarItemClick(item)}
           hoverTextColorClass={item.hoverColor}
           activeTextColorClass={item.activeColor}
           activeBgColorClass={item.activeBg}

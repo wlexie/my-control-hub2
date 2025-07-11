@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 import { Transaction } from "../types/transactions";
 import { generateReceiptPDF } from "./generateReceipt";
 import toast from "react-hot-toast";
@@ -77,6 +79,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   transaction: initialTransaction,
   onRetrySuccess,
 }) => {
+  const userRole = useSelector((state: RootState) => state.auth.user?.roles);
+
   const [isClient, setIsClient] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [transaction, setTransaction] = useState<Transaction | null>(
@@ -206,20 +210,21 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   {transaction.transactionId}
                 </h2>
                 <div className="flex items-center gap-2">
-                  {transaction.status === "Pending" && (
-                    <button
-                      onClick={handleRetryPayment}
-                      disabled={isRetrying}
-                      className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isRetrying ? "Processing..." : "Settle Payment"}
-                    </button>
-                  )}
+                  {transaction.status === "Pending" &&
+                    userRole?.includes("TREASURY") && (
+                      <button
+                        onClick={handleRetryPayment}
+                        disabled={isRetrying}
+                        className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isRetrying ? "Processing..." : "Retry Payment"}
+                      </button>
+                    )}
                   <button
                     onClick={onClose}
                     className="text-gray-500 hover:text-gray-700 text-xl"
                   >
-                    &times;
+                    ×
                   </button>
                 </div>
               </div>
@@ -369,20 +374,22 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   {transaction.transactionId}
                 </h2>
                 <div className="flex items-center gap-4">
-                  {transaction.status === "Pending" && (
-                    <button
-                      onClick={handleRetryPayment}
-                      disabled={isRetrying}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isRetrying ? "Processing..." : "Retry Payment"}
-                    </button>
-                  )}
+                  {/* 3. Update conditional rendering for the button */}
+                  {transaction.status === "Pending" &&
+                    userRole?.includes("TREASURY") && (
+                      <button
+                        onClick={handleRetryPayment}
+                        disabled={isRetrying}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isRetrying ? "Processing..." : "Retry Payment"}
+                      </button>
+                    )}
                   <button
                     onClick={onClose}
                     className="text-gray-500 hover:text-gray-700 text-xl"
                   >
-                    &times;
+                    ×
                   </button>
                 </div>
               </div>

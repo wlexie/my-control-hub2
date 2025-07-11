@@ -41,6 +41,7 @@ export interface Document {
 }
 
 export interface Transaction {
+  
   lastTransactionDate: string | null;
   totalTransactions: {
     successfulTransactions: number;
