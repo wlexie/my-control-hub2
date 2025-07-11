@@ -315,7 +315,7 @@ export default function UserAccounts() {
                 placeholder={
                   isMobile
                     ? "Search..."
-                    : "Search by any field: name, email, phone, country, status..."
+                    : "Search by any field: name, email, ID, phone, country, status..."
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
