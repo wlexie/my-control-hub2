@@ -119,7 +119,7 @@ export default function UserAccounts() {
         user.phone?.toLowerCase() ?? "",
         user.country?.toLowerCase() ?? "",
         user.accountStatus?.toLowerCase() ?? "",
-        user.userId?.toString() ?? "",
+        user.accountId?.toString() ?? "",
       ];
 
       const date = new Date(user.registrationDate).getTime();
