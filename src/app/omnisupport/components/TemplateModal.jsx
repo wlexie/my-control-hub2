@@ -24,6 +24,7 @@ const TEMPLATE_CONTENT = {
 Thank you for your interest in Tuma! 💙
 Tuma is a fast, secure, and simple way to send money back home to Africa from the UK– best exchange rates in the market, no hidden fees, no stress. 💸
 Thanks for choosing Tuma🌍📲
+
  #TumaNaTuma
 Cheers!🥂
 Tuma Team.`
