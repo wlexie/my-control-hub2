@@ -21,7 +21,7 @@ interface User {
   lastName: string;
   phone: string;
   email: string;
-  country: string | null;
+  country: string;
   registrationDate: string;
   accountStatus: string;
   step: string;
@@ -75,7 +75,10 @@ export default function UserAccounts() {
           ? data
           : [];
 
-      return users;
+      return users.filter(
+        (user: User) =>
+          user.country === "United Kingdom" || user.country === "GBR" // Including possible country code
+      );
     };
 
     const fetchInBatches = async () => {
@@ -117,9 +120,8 @@ export default function UserAccounts() {
         `${user.firstName} ${user.lastName}`.toLowerCase(),
         user.email?.toLowerCase() ?? "",
         user.phone?.toLowerCase() ?? "",
-        user.country?.toLowerCase() ?? "",
         user.accountStatus?.toLowerCase() ?? "",
-        user.userId?.toString() ?? "",
+        user.accountId?.toString() ?? "",
       ];
 
       const date = new Date(user.registrationDate).getTime();
@@ -170,7 +172,7 @@ export default function UserAccounts() {
               tx.totalTransactions?.failedTransactions || 0;
 
           extendedData.push({
-            "User ID": user.accountId,
+            "User ID": u.accountId,
             "Full Name": fullName,
             Email: user.email,
             Phone: user.phone,
@@ -315,7 +317,7 @@ export default function UserAccounts() {
                 placeholder={
                   isMobile
                     ? "Search..."
-                    : "Search by any field: name, email, phone, country, status..."
+                    : "Search by any field: name, email, phone, status..."
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
