@@ -205,9 +205,9 @@ export default function UserTable() {
   if (error) { /* Error... */ }
 
   return (
-    <div className="flex h-screen relative">
-      <div className="w-1/5"><SideNav /></div>
-      <div className="w-4/5 p-8 overflow-auto">
+    <div className="md:flex h-screen relative">
+      <div className="md:w-1/5 w-full"><SideNav /></div>
+      <div className="md:w-4/5 w-full p-8 overflow-auto">
         <div className="overflow-x-auto font-poppins">
           {/* Header & Search */}
           <div className="flex justify-between sticky items-center mb-6">
@@ -216,7 +216,7 @@ export default function UserTable() {
               <IoIosSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text" placeholder="Search by name or email..."
-                className="pl-10 pr-4 py-2 border-2 border-gray-400 rounded-lg text-sm w-64 focus:outline-none"
+                className="pl-10 pr-4 py-2 border-2 border-gray-400 rounded-lg text-sm md:w-64  w-48 focus:outline-none"
                 value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
@@ -248,7 +248,7 @@ export default function UserTable() {
                   <td className="py-3 px-3 text-[#808A92]">{index + 1}</td>
                   <td className="py-2 px-3">
                     <div className="flex items-center">
-                      <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${getInitialsColor(getInitials(user.firstName, user.lastName)).split(" ")[0]}`}>
+                      <div className={`h-10 w-10  rounded-full flex items-center justify-center mr-3 ${getInitialsColor(getInitials(user.firstName, user.lastName)).split(" ")[0]}`}>
                         <span className={`font-semibold ${getInitialsColor(getInitials(user.firstName, user.lastName)).split(" ")[1]}`}>{getInitials(user.firstName, user.lastName)}</span>
                       </div>
                       <span>{user.firstName} {user.lastName}</span>

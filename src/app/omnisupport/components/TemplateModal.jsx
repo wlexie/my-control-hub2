@@ -12,7 +12,8 @@ const TEMPLATES = [
   'welcome_active',
   'potential_user',
   'welcome_decline',
-  'welcome_leads'
+  'welcome_leads',
+  'country_updates'
 ];
 
 // Storing the content for each template (no changes here)
@@ -88,6 +89,18 @@ If there’s anything we can do to help or improve your experience, just let us 
 Karibu tena to Tuma — we’d love to serve you again. 🙌🏾
 With love,
 Team Tuma.`
+  },
+  country_updates:{
+    header: "Tuma just got better!",
+    body: `
+    Hi,👋🏽 
+
+ 🌍 Send money to 12 more African countries
+ 🔔 Get instant in-app updates
+ 🔒 Enjoy stronger security
+
+Update Tuma app now to enjoy the improved experience:
+    `
   }
 };
 

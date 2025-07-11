@@ -5,8 +5,8 @@ import PropTypes from "prop-types";
 
 // Helper function to format timestamps for display
 const formatTimestamp = (timestampStr) => {
-    // ... (this function remains unchanged)
-    if (!timestampStr) return "";
+
+   if (!timestampStr) return "";
     const date = new Date(timestampStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);

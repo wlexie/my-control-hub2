@@ -6,12 +6,12 @@ export default function OTPPage() {
   return (
     <div className="flex h-screen">
       {/* Sidebar - 1/5 width (20%) */}
-      <div className="w-1/5">
+      <div className="md:w-1/5 w-full">
         <SideNav />
       </div>
 
       {/* Main Content - 4/5 width (80%) */}
-      <div className="w-4/5 p-8 overflow-auto">
+      <div className="md:w-4/5 w-full p-8 overflow-auto">
       
       </div>
     </div>

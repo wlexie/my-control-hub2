@@ -6,7 +6,7 @@ import axios from 'axios';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 
-// --- Icon Imports --- (Added BotMessageSquare)
+// --- Icon Imports --- (No longer need BotMessageSquare for this approach)
 import { 
   NotebookPen, MessageSquare, MoreVertical, Paperclip, Smile, Pin, Send, 
   Loader2, CheckCheck, X, UploadCloud, ArrowLeft
@@ -14,11 +14,11 @@ import {
 import { FaPlus } from "react-icons/fa6";
 
 
-// --- Component Imports --- (Added the new TemplateModal)
+// --- Component Imports ---
 import Modal from './Modal1';
 import EscalateIssueModal from './EscalateIssueModal';
 import TemplatesModal from './TemplatesModal';
-import TemplateModal from './TemplateModal'; // New Modal for sending specific templates
+import TemplateModal from './TemplateModal';
 
 // =================================================================================
 // ---  CONFIGURATION CONSTANTS  ---
@@ -26,12 +26,7 @@ import TemplateModal from './TemplateModal'; // New Modal for sending specific t
 const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
 const POLLING_INTERVAL = 5000; 
 
-// --- NEW: TEMPLATE IMAGE URLS ---
-// ================================================================================
-// ACTION REQUIRED: You must replace these placeholder URLs with the real, public
-// URLs of your template header images. The image for 'welcome_decline' is null 
-// because you said it does not have one.
-// ================================================================================
+// --- TEMPLATE MEDIA URLS ---
 const TEMPLATE_MEDIA_URLS = {
   'welcome_dormant': 'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642484.jpg',
   'welcome_basics':  'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642483.jpg',
@@ -39,6 +34,23 @@ const TEMPLATE_MEDIA_URLS = {
   'potential_user':  'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642477.jpg',
   'welcome_leads':   'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642477.jpg',
   'welcome_decline': null, 
+    'country_updates': null, 
+
+};
+
+// ADDED: Configuration for template body text
+// ================================================================================
+// ACTION REQUIRED: You must replace these placeholder text bodies with the *exact* 
+// text from your WhatsApp templates, including the {{1}} placeholder. This is so 
+// the UI can accurately display what was sent.
+// ================================================================================
+const TEMPLATE_BODIES = {
+  'welcome_dormant': "Hi {{1}}, we noticed you haven't been active lately. Is there anything we can help you with to get you started?",
+  'welcome_basics':  "Hello {{1}}! Welcome to Tuma. We're excited to have you on board. Here are some basics to get you started.",
+  'welcome_active':  "Hi {{1}}, great to see you're active! Let us know if you need any assistance or have any questions.",
+  'potential_user':  "Hello {{1}}, thank you for your interest in Tuma. We'd love to help you get started. What can we help you with today?",
+  'welcome_leads':   "Hi {{1}}, thanks for reaching out! We've received your inquiry and a member of our team will be in touch shortly.",
+  'welcome_decline': "Hello {{1}}, we understand you've chosen not to proceed at this time. We appreciate your interest and hope you'll consider us in the future. If you have any feedback, we'd love to hear it.", 
 };
 
 
@@ -127,6 +139,11 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                   isConfirmed = true;
                   break;
               }
+              // Add a check for images too
+              if (serverMsg.direction === 'sent' && serverMsg.type === 'image' && serverMsg.payload.url === localMsg.payload.url) {
+                  isConfirmed = true;
+                  break;
+              }
           }
           return !isConfirmed;
         });
@@ -202,41 +219,74 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
     }
   };
 
-  // --- UPDATED HANDLER for sending specific templates ---
+  // --- CHANGED: `handleSendTemplate` now creates optimistic messages ---
   const handleSendTemplate = async (templateName) => {
     if (!userPhoneNumber || !templateName) {
       alert("Error: Cannot determine recipient's phone number or template name.");
       return;
     }
 
-    // Prepare text variables
     const templateParams = [{ "default": userName }]; 
-
-    // Look up the media URL for the selected template from our configuration object
     const mediaUrl = TEMPLATE_MEDIA_URLS[templateName];
+    const templateBody = TEMPLATE_BODIES[templateName];
 
+    // --- Create Optimistic UI Messages ---
+    const optimisticMessages = [];
+    const timestamp = new Date().toISOString();
+
+    // 1. Create the image message if a media URL exists
+    if (mediaUrl) {
+      optimisticMessages.push({
+        id: `temp-img-${Date.now()}`,
+        type: 'image',
+        direction: 'sent',
+        createdAt: timestamp,
+        payload: { url: mediaUrl },
+      });
+    }
+
+    // 2. Create the text message, replacing the placeholder
+    if (templateBody) {
+      const populatedBody = templateBody.replace('{{1}}', userName || 'there');
+      optimisticMessages.push({
+        id: `temp-text-${Date.now()}`,
+        type: 'text',
+        direction: 'sent',
+        createdAt: timestamp,
+        payload: populatedBody,
+      });
+    }
+    
+    // 3. Add them to the state so they appear instantly
+    if (optimisticMessages.length > 0) {
+      setMessages(prev => [...prev, ...optimisticMessages]);
+    }
+    
+    // --- Send the actual API request in the background ---
     try {
-        // Send all necessary data to our flexible API
         await axios.post('/api/sendTemplate', {
             recipient: userPhoneNumber,
             templateName: templateName,
             params: templateParams,
-            mediaUrl: mediaUrl, // This will be undefined/null for text-only templates, which is correct
+            mediaUrl: mediaUrl,
         });
-        alert(`Template "${templateName.replace(/_/g, ' ')}" sent successfully!`);
-        setIsTemplateModalOpen(false); // Close modal on success
-        setTimeout(() => fetchFullConversation(true), 2000); // Poll for new message
+        
+        setIsTemplateModalOpen(false); 
+        setTimeout(() => fetchFullConversation(true), 2000);
     } catch (error) {
         const errorDetail = error.response?.data?.details || error.response?.data?.error || error.message;
         console.error('Error sending template:', error.response?.data || error);
         alert(`Failed to send template. Reason: ${errorDetail}`);
+        
+        // If the API call fails, remove the optimistic messages
+        setMessages(prev => prev.filter(m => !optimisticMessages.some(opt => opt.id === m.id)));
     }
   };
 
   const addEmoji = (emoji) => { setNewMessage(prev => prev + emoji.native); };
   const handleCloseChat = async () => { if (!selectedChat || !selectedChat.id) return; try { await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`); setSelectedChat(null); } catch (error) { console.error("Error closing conversation:", error.response?.data || error.message); alert("Failed to close the conversation."); } finally { setIsModalOpen(false); } };
   const handleFileChange = (e) => { const file = e.target.files[0]; if (file) { handleFileUpload(file); } };
-  const handleSelectTemplate = (text) => { setNewMessage(text); setIsTemplatesModalОpen(false); };
+  const handleSelectTemplate = (text) => { setNewMessage(text); setIsTemplatesModalOpen(false); };
   const handleNoteIconClick = (id) => { setActiveNoteEditorId(id); setCurrentNoteText(messageNotes[id] || ""); };
   const handleSaveNote = () => { if (!activeNoteEditorId) return; setMessageNotes(prev => ({ ...prev, [activeNoteEditorId]: currentNoteText })); setActiveNoteEditorId(null); setCurrentNoteText(""); };
   const handleCancelNote = () => { setActiveNoteEditorId(null); setCurrentNoteText(""); };
@@ -281,6 +331,9 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                   if (!msg || !msg.payload) return null;
                   const showDateSeparator = index === 0 || new Date(msg.createdAt).toDateString() !== new Date(messages[index - 1].createdAt).toDateString();
                   const isSent = msg.direction === 'sent';
+                  
+                  // CHANGED: The special rendering for template notifications has been removed.
+                  // The new optimistic messages are rendered by the existing logic below.
                   return (
                     <Fragment key={msg.id}>
                       {showDateSeparator && <div className="flex justify-center my-4"><span className="bg-gray-200 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">{formatDateSeparator(msg.createdAt)}</span></div>}
