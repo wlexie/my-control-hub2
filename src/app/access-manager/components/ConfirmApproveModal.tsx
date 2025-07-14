@@ -46,10 +46,10 @@ export default function ConfirmApproveModal({
           bg-gray-100 shadow-lg relative transform transition-transform duration-300 ease-in-out
           
           // Mobile: Bottom Sheet
-          w-full mx-2 max-h-[90vh] rounded-t-xl
+          w-full mx-2 max-h-[100vh] rounded-t-xl
           
           // Desktop: Side Panel
-          md:w-2/6 md:h-screen md:rounded-t-none
+          md:w-2/7 md:h-screen md:rounded-t-none
           
           // Animation
           ${isOpen 

@@ -21,7 +21,7 @@ const allModulesData = [
     description:
       "Get complete visibility into every transaction across the Tuma ecosystem. Track, monitor, and audit with confidence in a secure and intuitive interface.",
     path: "/backoffice/dashboard/",
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "OMNISUPPORT", "BACKOFFICE", "DASHBOARD"],
   },
   {
     name: "OmniSupport",
@@ -39,7 +39,7 @@ const allModulesData = [
     description:
       "Effortlessly manage and update Tuma's FX rates with precision. FX Navigator gives you full visibility and control to react to market changes — instantly.",
     path: "/fx-navigator/dashboard",
-    roles: ["ADMIN", "TREASURY"],
+    roles: ["ADMIN"],
   },
   {
     name: "Campaign Manager",
@@ -58,7 +58,7 @@ const allModulesData = [
     description:
       "Track merchant performance, payouts, and customer activity in real time. Give your partners the data they need to thrive with Tuma.",
     path: "/promitto/dashboard",
-    roles: ["ADMIN", "MERCHANT"],
+    roles: ["ADMIN"],
   },
   {
     name: "Access Manager",
@@ -97,7 +97,6 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   isMobile = false, // Default to not mobile
 }) => {
   const router = useRouter();
-  // The handleClick in this child component is correct. It correctly
   // prioritizes the passed onClick prop.
   const handleClick = () => {
     if (onClick) onClick();

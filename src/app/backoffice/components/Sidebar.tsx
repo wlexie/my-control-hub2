@@ -1,15 +1,16 @@
- "use client";
+"use client";
 
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-// --- FIX 1: 'FC' has been removed from this import ---
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-// --- FIX 3: Import the 'close' icon ---
 import { HiMenu, HiX } from "react-icons/hi";
 import User from "../../access-manager/components/User";
 
-const nav = [
+import { useSelector } from "react-redux";
+import { RootState } from "../../../store/store"; 
+
+const allNavLinks = [ 
   {
     href: "/backoffice/dashboard",
     label: "Dashboard",
@@ -77,6 +78,28 @@ const Sidebar = () => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  // <-- MODIFIED: Updated link filtering logic -->
+  const getVisibleNavLinks = () => {
+    // 1. If user is not logged in, show no links
+    if (!user) {
+      return [];
+    }
+
+    // 2. If user has 'BACKOFFICE' role, show only specific links
+    if (user.roles.includes('BACKOFFICE')) {
+      return allNavLinks.filter(
+        (link) => link.label === "Dashboard" || link.label === "Transactions"
+      );
+    }
+    
+    // 3. For any other logged-in user, show all links
+    return allNavLinks;
+  };
+
+  const visibleNav = getVisibleNavLinks();
+
   const isActive = (matchPath: string) => pathname.startsWith(matchPath);
 
   const goHome = () => router.push("/backoffice/dashboard");
@@ -100,7 +123,7 @@ const Sidebar = () => {
 
       {/* ─── Nav Links ────────────────────────────── */}
       <nav className="flex-grow flex flex-col gap-4 px-4 overflow-y-auto">
-        {nav.map(({ href, label, icon, match }) => (
+        {visibleNav.map(({ href, label, icon, match }) => (
           <Link
             key={href}
             href={href}
@@ -125,7 +148,8 @@ const Sidebar = () => {
 
       {/* ─── User Section ─────────────────────────── */}
       <div className="mt-auto mb-2 shrink-0">
-        <User />
+        {/* <-- MODIFIED: Only show User component if logged in --> */}
+        {user && <User />}
       </div>
     </div>
   );

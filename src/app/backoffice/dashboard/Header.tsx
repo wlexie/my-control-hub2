@@ -4,11 +4,11 @@ import { ChevronDown } from "lucide-react";
 import HeroSection from "./HeroSection";
 import TopNav from "./TopNav";
 import { usePathname } from "next/navigation";
-import { sidebarMenuItems } from "../constants/sidebarMenuItems";
+import { sidebarMenuItems } from "../constants/sidebarMenuItems"; // Assuming this is the correct path
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "../../../store/store";
+import { RootState } from "../../../store/store"; // Assuming this is the correct path
 
 interface SidebarMenuItem {
   href: string;
@@ -51,6 +51,26 @@ export default function Header({
   const user = useSelector((state: RootState) => state.auth.user);
   const userName = user ? `${user.firstName} ${user.lastName}` : null;
 
+  // <-- 1. ADD LOGIC TO FILTER MENU ITEMS -->
+  const getVisibleMenuItems = () => {
+    // If the user is not logged in, show no menu items.
+    if (!user) {
+      return [];
+    }
+
+    // If user's role is 'BACKOFFICE', only show the 'Transactions' link.
+    if (user.roles.includes("BACKOFFICE")) {
+      return sidebarMenuItems.filter(
+        (item) => item.label === "Transactions"
+      );
+    }
+
+    // For all other logged-in users, show all menu items.
+    return sidebarMenuItems;
+  };
+
+  const visibleMenuItems = getVisibleMenuItems();
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -69,7 +89,7 @@ export default function Header({
       <TopNav user={user} />
       <HeroSection currency={currency} onCurrencyChange={onCurrencyChange} />
 
-      <div className="absolute -bottom-4 left-4 z-50" ref={dropdownRef}>
+      <div className="absolute -bottom-4 left-6 z-50" ref={dropdownRef}>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="bg-white text-blue-600 p-2 rounded-full shadow-md focus:outline-none"
@@ -83,7 +103,8 @@ export default function Header({
 
         {menuOpen && (
           <div className="absolute left-6 mt-2 w-64 bg-white shadow-xl rounded-lg py-2 z-50">
-            {sidebarMenuItems.map((item: SidebarMenuItem) => (
+            {/* <-- 2. RENDER THE FILTERED LIST --> */}
+            {visibleMenuItems.map((item: SidebarMenuItem) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -93,6 +114,12 @@ export default function Header({
                 {item.label}
               </Link>
             ))}
+            {/* <-- ADDED: Show a message if there are no items to display --> */}
+            {visibleMenuItems.length === 0 && (
+                <div className="px-4 py-2 text-md text-gray-400">
+                    No items available
+                </div>
+            )}
           </div>
         )}
       </div>

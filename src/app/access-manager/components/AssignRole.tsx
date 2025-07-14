@@ -10,6 +10,12 @@ interface Role {
   name: string;
 }
 
+// Assuming the post function returns the response body
+interface ApiResponse {
+    status: string;
+    message: string;
+}
+
 interface AssignRoleModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -30,15 +36,17 @@ export default function AssignRoleModal({ isOpen, onClose, user }: AssignRoleMod
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [successMessage, setSuccessMessage] = useState<string | null>(null); 
+
   const { get, post } = auth();
 
-  // Reset state on close
+  // Reset state on close or open
   useEffect(() => {
     if (!isOpen) {
       setSelectedRole(null);
       setIsSubmitting(false);
       setError(null);
+      setSuccessMessage(null); 
       setIsDropdownOpen(false);
     }
   }, [isOpen]);
@@ -64,15 +72,25 @@ export default function AssignRoleModal({ isOpen, onClose, user }: AssignRoleMod
       setError("Please select a role");
       return;
     }
-  
+
     setIsSubmitting(true);
     setError(null);
-  
+    setSuccessMessage(null);
+
     try {
-      await post(`/account/assign/role`, null, {
+      // <-- 3. MODIFIED HANDLER
+      const response = await post<ApiResponse>(`/account/assign/role`, null, {
         params: { accountKey: user.accountKey, roleKey: selectedRole.roleKey }
       });
-      onClose();
+      
+      // Set the success message from the API response
+      setSuccessMessage(response.message || "Role assigned successfully!");
+
+      // Close the modal after a delay to show the message
+      setTimeout(() => {
+        onClose();
+      }, 2000); // 2-second delay
+
     } catch (error: unknown) {
       console.error("Error assigning role:", error);
       let errorMessage = "Failed to assign role. Please try again.";
@@ -82,9 +100,11 @@ export default function AssignRoleModal({ isOpen, onClose, user }: AssignRoleMod
       }
       setError(errorMessage);
     } finally {
+      // We still want to stop the "Saving..." spinner, even during the success delay
       setIsSubmitting(false);
     }
   };
+
 
   if (!isOpen || !user) return null;
 
@@ -111,23 +131,15 @@ export default function AssignRoleModal({ isOpen, onClose, user }: AssignRoleMod
   };
 
   return (
-    // Backdrop & Positioning Container
     <div
       className="fixed inset-0 bg-black/40 z-50 flex items-end md:items-start md:justify-end"
       onClick={onClose}
     >
-      {/* Modal Panel - Responsive */}
       <div
         className={`
           bg-gray-100 shadow-lg relative transform transition-transform duration-3000 ease-in-out
-          
-          // Mobile: Bottom Sheet
           w-full mx-2 max-h-[100vh] rounded-t-xl
-          
-          // Desktop: Side Panel
-          md:w-2/6 md:h-screen md:rounded-t-none
-          
-          // Animation
+          md:w-2/7 md:h-screen md:rounded-t-none
           ${isOpen 
             ? 'translate-y-0 md:translate-x-0' 
             : 'translate-y-full md:translate-y-0 md:translate-x-full'
@@ -135,11 +147,9 @@ export default function AssignRoleModal({ isOpen, onClose, user }: AssignRoleMod
         `}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Mobile-only "grabber" handle for UX */}
         <div className="md:hidden absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gray-300 rounded-full"></div>
 
         <div className="p-4 sm:p-6 h-full flex flex-col">
-          {/* Header */}
           <div className="flex justify-between items-center mb-6 pt-2 md:pt-0">
             <h2 className="text-xl font-semibold">Assign Role</h2>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -147,12 +157,17 @@ export default function AssignRoleModal({ isOpen, onClose, user }: AssignRoleMod
             </button>
           </div>
 
+          {/* --- Message Area --- */}
           {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md text-sm">{error}</div>
           )}
+          {/* <-- 4. RENDER SUCCESS MESSAGE --> */}
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md text-sm">{successMessage}</div>
+          )}
 
-          {/* Scrollable Content Area */}
           <div className="space-y-5 flex-1 overflow-y-auto pb-24">
+            {/* ... (user details, department, etc. - no changes here) ... */}
             <div className="flex flex-col bg-white rounded-xl py-10 items-center">
               <div className={`p-4 py-5 rounded-full ${initialsColor} flex items-center justify-center mb-4`}>
                 <span className="font-semibold text-4xl">{initials}</span>
@@ -175,8 +190,9 @@ export default function AssignRoleModal({ isOpen, onClose, user }: AssignRoleMod
               <h4 className="font-semibold text-base">Assign Role</h4>
               <div className="relative mt-3">
                 <button 
-                  className="text-sm w-full border bg-white text-gray-900 border-gray-400 rounded-md px-4 py-3 flex justify-between items-center cursor-pointer"
+                  className="text-sm w-full border bg-white text-gray-900 border-gray-400 rounded-md px-4 py-3 flex justify-between items-center cursor-pointer disabled:bg-gray-200"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  disabled={!!successMessage} // <-- 5. UPDATE BUTTON STATE
                 >
                   <span>{selectedRole ? selectedRole.name : "Select a role"}</span>
                   <IoIosArrowDown className={`text-gray-500 text-xl transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
@@ -196,18 +212,17 @@ export default function AssignRoleModal({ isOpen, onClose, user }: AssignRoleMod
             </div>
           </div>
 
-          {/* Sticky Footer with Buttons */}
           <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-white border-t border-gray-200">
             <div className="flex gap-4">
               <button
-                className="w-full text-blue-500 hover:bg-blue-50 border border-blue-500 py-2.5 rounded-md font-semibold transition-colors"
+                className="w-full text-blue-500 hover:bg-blue-50 border border-blue-500 py-2.5 rounded-md font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={onClose}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !!successMessage} // <-- 5. UPDATE BUTTON STATE
               >Cancel</button>
               <button 
                 className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 rounded-md font-semibold transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
                 onClick={handleSave}
-                disabled={isSubmitting || !selectedRole}
+                disabled={isSubmitting || !selectedRole || !!successMessage} // <-- 5. UPDATE BUTTON STATE
               >{isSubmitting ? "Saving..." : "Save"}</button>
             </div>
           </div>
