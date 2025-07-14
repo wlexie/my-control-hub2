@@ -105,11 +105,11 @@ export default function SideNav() {
           className="p-6 pt-0 md:pt-6 flex items-center gap-3 cursor-pointer hover:bg-blue-600 transition-colors"
           onClick={handleLogoClick}
         >
-          <span className="p-1 py-2 bg-white rounded">
+          <span className="p-1 bg-white rounded">
             <Image
               src={logoSrc}
               alt="Logo"
-              width={25}
+              width={30}
               height={28}
             />
           </span>

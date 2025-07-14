@@ -30,7 +30,7 @@ const allModulesData = [
     description:
       "Empower your support team to resolve customer issues faster and smarter — all in one unified dashboard designed for real-time conversations and seamless service.",
     path: "/omnisupport",
-    roles: ["ADMIN", "TREASURY", "OMNISUPPORT"],
+    roles: ["ADMIN", "OMNISUPPORT"],
   },
   {
     name: "FX Navigator",
@@ -48,7 +48,7 @@ const allModulesData = [
     description:
       "Create, launch, and manage in-app campaigns that connect with your customers. From promos to referral boosts — Campaign Manager helps you market like a pro.",
     path: "/campaign-manager",
-    roles: ["ADMIN", "TREASURY"],
+    roles: ["ADMIN"],
   },
 
   {
@@ -67,7 +67,7 @@ const allModulesData = [
     description:
       "Easily manage roles and permissions for your internal teams. From compliance to customer care, control who sees what — securely and efficiently.",
     path: "/access-manager",
-    roles: ["ADMIN", "TREASURY"],
+    roles: ["ADMIN"],
   },
 ];
 

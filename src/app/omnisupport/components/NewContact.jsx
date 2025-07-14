@@ -1,15 +1,59 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { X, Search } from 'lucide-react';
+import { X, Search, ChevronDown, Loader2 } from 'lucide-react';
 import { LuSendHorizontal } from "react-icons/lu";
+
+// List of country codes you want to fetch
+const countryCodesToFetch = 'KE,TZ,UG,BI,RW,ZM,ZA';
+const REST_COUNTRIES_ENDPOINT = `https://restcountries.com/v3.1/alpha?codes=${countryCodesToFetch}&fields=name,cca2,idd,flags`;
 
 export default function NewContact({ isOpen, onClose, onSelectContact }) {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
   const [newPhoneNumber, setNewPhoneNumber] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  const [countries, setCountries] = useState([]);
+  const [countryLoading, setCountryLoading] = useState(false);
+  const [countryError, setCountryError] = useState(null);
 
+  // useEffect to fetch country data from the endpoint
+  useEffect(() => {
+    if (isOpen && countries.length === 0) {
+      const fetchCountries = async () => {
+        setCountryLoading(true);
+        setCountryError(null);
+        try {
+          const response = await axios.get(REST_COUNTRIES_ENDPOINT);
+          
+          const processedData = response.data.map(country => ({
+            name: country.name.common,
+            code: country.cca2,
+            // --- MODIFIED: Remove the '+' from the dial code ---
+            dial_code: `${country.idd.root.slice(1)}${country.idd.suffixes[0]}`,
+            flag: country.flags.svg
+          })).sort((a, b) => a.name.localeCompare(b.name));
+
+          setCountries(processedData);
+          const kenya = processedData.find(c => c.code === 'KE');
+          setSelectedCountry(kenya || processedData[0]);
+
+        } catch (err) {
+          setCountryError('Failed to load country codes.');
+          console.error(err);
+        } finally {
+          setCountryLoading(false);
+        }
+      };
+      fetchCountries();
+    }
+  }, [isOpen, countries.length]);
+
+  // useEffect for fetching existing contacts (unchanged)
   useEffect(() => {
     if (isOpen && contacts.length === 0) {
       const fetchContacts = async () => {
@@ -40,15 +84,20 @@ export default function NewContact({ isOpen, onClose, onSelectContact }) {
     onClose();
   };
 
-  // Starts a chat with the newly entered number
+  const handleCountrySelect = (country) => {
+    setSelectedCountry(country);
+    setIsDropdownOpen(false);
+    setNewPhoneNumber('');
+  };
+
   const handleNewMessage = () => {
-    const phoneNumber = newPhoneNumber.trim();
-    if (phoneNumber) {
-      // Create a contact-like object for the new number
+    const localPhoneNumber = newPhoneNumber.trim();
+    if (localPhoneNumber && selectedCountry) {
+      const fullPhoneNumber = `${selectedCountry.dial_code}${localPhoneNumber}`;
       const newContact = {
-        id: phoneNumber, // Use phone number as the temporary ID
-        msisdn: phoneNumber,
-        contactName: phoneNumber, // Display number as name initially
+        id: fullPhoneNumber,
+        msisdn: fullPhoneNumber,
+        contactName: fullPhoneNumber,
       };
       onSelectContact(newContact);
       onClose();
@@ -60,9 +109,7 @@ export default function NewContact({ isOpen, onClose, onSelectContact }) {
     contact.msisdn.includes(searchTerm)
   );
   
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
 
   return (
     <div className="fixed top-24 w-full ml-5 h-[700px] z-20 flex">
@@ -78,22 +125,59 @@ export default function NewContact({ isOpen, onClose, onSelectContact }) {
           <div>
             <label htmlFor="new-contact" className="text-sm font-medium text-gray-700">New Conversation</label>
             <div className="flex items-center gap-2 mt-1">
+              <div className="relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  disabled={countryLoading || countryError}
+                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
+                >
+                  {countryLoading ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : selectedCountry ? (
+                    <>
+                      <img src={selectedCountry.flag} alt={selectedCountry.name} className="w-6 rounded h-auto" />
+                      {/* UI now displays the code without '+' */}
+                      <span className="text-sm font-medium">{selectedCountry.dial_code}</span>
+                      <ChevronDown size={16} className="text-gray-500" />
+                    </>
+                  ) : (
+                    <span>Error</span>
+                  )}
+                </button>
+                {isDropdownOpen && !countryLoading && (
+                  <div className="absolute top-full mt-1 w-max bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                    {countries.map((country) => (
+                      <div
+                        key={country.code}
+                        onClick={() => handleCountrySelect(country)}
+                        className="flex items-center gap-3 p-2 hover:bg-gray-100 cursor-pointer"
+                      >
+                        <img src={country.flag} alt={country.name} className="w-6 rounded h-auto" />
+                        <span className="text-sm">{country.name}</span>
+                        <span className="text-sm text-gray-500">{country.dial_code}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <input
                 id="new-contact"
-                type="text"
-                placeholder="Enter phone number, e.g., 2547..."
+                type="tel"
+                placeholder="712 345 678"
                 value={newPhoneNumber}
-                onChange={(e) => setNewPhoneNumber(e.target.value)}
-                className="flex-grow w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setNewPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                disabled={countryLoading || !selectedCountry}
+                className="flex-grow w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200"
               />
               <button 
                 onClick={handleNewMessage} 
-                disabled={!newPhoneNumber.trim()}
+                disabled={!newPhoneNumber.trim() || !selectedCountry}
                 className="p-2 text-blue-600 rounded-full hover:bg-blue-100 disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed"
               >
                 <LuSendHorizontal className='text-3xl' />
               </button>
             </div>
+            {countryError && <p className="text-xs text-red-600 mt-1">{countryError}</p>}
           </div>
 
           <div className="relative">
@@ -125,14 +209,14 @@ export default function NewContact({ isOpen, onClose, onSelectContact }) {
                 <div
                   key={contact.id}
                   onClick={() => handleSelect(contact)}
-                  className="flex items-center gap-3 p-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-2 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
                 >
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
                     {(contact.contactName || '?')[0].toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-medium">{contact.contactName || 'Unknown'}</p>
-                    <p className="text-sm text-gray-500">{contact.msisdn}</p>
+                    <p className="font-medium text-sm">{contact.contactName || 'Unknown'}</p>
+                    <p className="text-xs text-gray-500">{contact.msisdn}</p>
                   </div>
                 </div>
               ))}

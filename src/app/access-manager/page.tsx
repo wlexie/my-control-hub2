@@ -4,7 +4,7 @@ import SideNav from "./components/SideNav";
 
 export default function OTPPage() {
   return (
-    <div className="flex h-screen">
+    <div className="md:flex h-screen">
       {/* Sidebar - 1/5 width (20%) */}
       <div className="md:w-1/5 w-full">
         <SideNav />

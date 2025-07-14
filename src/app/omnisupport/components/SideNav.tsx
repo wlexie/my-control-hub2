@@ -4,7 +4,7 @@
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import logo from '../../../../public/omnisupport/images/logo.png';
+import logo from '../../../../public/fx/images/logo.png';
 //import set from '../../../../public/omnisupport/images/settings.png';
 import User from '../../access-manager/components/User';
 import { AiOutlineMessage } from "react-icons/ai";
@@ -29,7 +29,7 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
             <Image 
                 src={logo} 
                 alt="Logo" 
-                width={40} 
+                width={30} 
                 height={24}
                 onClick={handleLogoClick}
                 className="cursor-pointer"

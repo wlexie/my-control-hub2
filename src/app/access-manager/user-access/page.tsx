@@ -207,7 +207,7 @@ export default function UserTable() {
   return (
     <div className="md:flex h-screen relative">
       <div className="md:w-1/5 w-full"><SideNav /></div>
-      <div className="md:w-4/5 w-full p-8 overflow-auto">
+      <div className="md:w-4/5 w-full md:p-8 p-3 overflow-auto">
         <div className="overflow-x-auto font-poppins">
           {/* Header & Search */}
           <div className="flex justify-between sticky items-center mb-6">
@@ -230,23 +230,23 @@ export default function UserTable() {
           {/* Table */}
           <table className="w-full bg-white rounded-lg overflow-auto">
             {/* Table Head */}
-            <thead className="text-[#808A92] font-[600] text-[12px] uppercase border-y border-y-gray-100">
+            <thead className="text-[#808A92] font-[600] md:text-[12px] text-[10px] uppercase border-y border-y-gray-100">
               <tr>
-                <th className="py-2 px-3 text-left">#</th>
-                <th className="py-2 px-3 text-left">User</th>
-                <th className="py-2 px-3 text-left">Email</th>
-                <th className="py-2 px-3 text-left">Phone</th>
-                <th className="py-2 px-3 text-left">Department</th>
-                <th className="py-2 px-3 text-center">Actions</th>
-                <th className="py-2 px-3 text-left"></th>
+                <th className="py-2 md:px-3 hidden md:block px-1 text-left">#</th>
+                <th className="py-2 md:px-3 px-1 text-left">User</th>
+                <th className="py-2md:px-3 px-1 text-left">Email</th>
+                <th className="py-2 md:px-3 px-1text-left">Phone</th>
+                <th className="py-2 hidden md:block px-3 text-left">Department</th>
+                <th className="py-2 md:px-3 px-1 text-center">Actions</th>
+                <th className="py-2 md:px-3 px-1 text-left"></th>
               </tr>
             </thead>
             {/* Table Body */}
-            <tbody className="divide-y divide-gray-100 text-[13px]">
+            <tbody className="divide-y divide-gray-100 md:text-[13px] text-[11px]">
               {filteredUsers.map((user, index) => (
                 <tr key={user.id} onClick={() => handleRowClick(user)} className={`hover:bg-gray-50 ${user.accountKey ? 'cursor-pointer' : 'cursor-default'}`}>
-                  <td className="py-3 px-3 text-[#808A92]">{index + 1}</td>
-                  <td className="py-2 px-3">
+                  <td className="pb-3 px-3 hidden md:block  text-[#808A92]">{index + 1}</td>
+                  <td className="py-2 md:px-3 px-1">
                     <div className="flex items-center">
                       <div className={`h-10 w-10  rounded-full flex items-center justify-center mr-3 ${getInitialsColor(getInitials(user.firstName, user.lastName)).split(" ")[0]}`}>
                         <span className={`font-semibold ${getInitialsColor(getInitials(user.firstName, user.lastName)).split(" ")[1]}`}>{getInitials(user.firstName, user.lastName)}</span>
@@ -254,10 +254,10 @@ export default function UserTable() {
                       <span>{user.firstName} {user.lastName}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-3 text-[#808A92] font-[400]">{user.email}</td>
-                  <td className="py-3 px-3 text-[#808A92] font-[400]">{user.phoneNumber}</td>
-                  <td className="py-3 px-3">{user.department}</td>
-                  <td className="py-3 px-3 text-center relative">
+                  <td className="py-3 md:px-3 px-1 text-[#808A92] font-[400]">{user.email}</td>
+                  <td className="py-3 md:px-3 px-1 text-[#808A92] font-[400]">{user.phoneNumber}</td>
+                  <td className="py-3 hidden md:block px-3">{user.department}</td>
+                  <td className="py-3 md:px-3 px-1 text-center relative">
                     <button onClick={(e) => { e.stopPropagation(); setOpenActionMenu(openActionMenu === user.id ? null : user.id); }} className="p-2 rounded-full hover:bg-gray-200">
                       <BsThreeDotsVertical className="h-5 w-5 text-gray-600" />
                     </button>
@@ -291,7 +291,7 @@ export default function UserTable() {
                       </div>
                     )}
                   </td>
-                  <td className="py-4 px-3"><IoIosArrowForward className="text-gray-400" /></td>
+                  <td className="py-4 md:px-3 px-1 hidden md:block"><IoIosArrowForward className="text-gray-400" /></td>
                 </tr>
               ))}
             </tbody>
