@@ -229,9 +229,9 @@ const DashboardPage = () => {
       id: "logout",
       label: "Logout",
       icon: MdOutlineLogout,
-      onClick: handleLogout, // This specific handler was being ignored
+      onClick: handleLogout, 
       hoverColor: "hover:text-red-600",
-      activeColor: "text-red-700",
+      activeColor: "text-red-600",
       activeBg: "bg-red-100",
     },
   ];
@@ -306,7 +306,7 @@ const DashboardPage = () => {
               </div>
             ) : (
               <div className="flex items-center justify-center h-full bg-white rounded-lg shadow p-10">
-                <p className="text-xl text-gray-500">
+                <p className="text-2xl text-gray-500">
                   No modules available for your current role.
                 </p>
               </div>
