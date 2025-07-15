@@ -1,44 +1,47 @@
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx'; // 1. Import xlsx
 import api from '../../../../utils/apiService';
-import { ChevronDown } from 'lucide-react'; // For the expand/collapse icon
+import { ChevronDown, Download } from 'lucide-react'; // 2. Import Download icon
 
 export default function AuditTrail() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [expandedRowId, setExpandedRowId] = useState(null); // State for mobile accordion
+  const [expandedRowId, setExpandedRowId] = useState(null);
   const recordsPerPage = 15;
 
+  // The useEffect hook is now correct and will only run once on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await api.get('/treasury/currency-exchange-history?page=0&size=20');
+        // Fetching all records at once. If you have many thousands, consider server-side export.
+        const response = await api.get('/treasury/currency-exchange-history?page=0&size=1000'); // Fetch more records for a complete export
         const responseData = response.data || response;
 
         const transformedData = responseData.map(item => {
           const dateOfEffectObj = new Date(item.dateOfEffect);
           const createdAtObj = new Date(item.createdAt);
-  
+
           // Adjust for EAT timezone if needed
           dateOfEffectObj.setHours(dateOfEffectObj.getHours() + 3);
           createdAtObj.setHours(createdAtObj.getHours() + 3);
-  
+
           const formatTime24h = (date) => date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-          
+
           const dateOfEffectString = dateOfEffectObj.toISOString().split('T')[0];
           const createdDateString = createdAtObj.toISOString().split('T')[0];
           const createdTimeString = formatTime24h(createdAtObj);
-  
+
           return [
             { id: item.id + '_mpesa', currencyPair: `${item.baseCurrency}/${item.targetCurrency}`, channel: 'M-Pesa', finalRate: item.mpesaRate?.toFixed(2) || 'N/A', markup: item.mpesaMarkUp?.toFixed(2) || 0.00, weightedAvg: item.mpesaWeightedAvg?.toFixed(2) || 'N/A', createdDate: createdDateString, createdTime: createdTimeString, updatedBy: item.changedBy, timestamp: dateOfEffectObj.getTime() },
             { id: item.id + '_paybill', currencyPair: `${item.baseCurrency}/${item.targetCurrency}`, channel: 'Paybill', finalRate: item.paybillRate?.toFixed(2) || 'N/A', markup: item.paybillMarkUp?.toFixed(2) || 0.00, weightedAvg: item.paybillWeightedAvg?.toFixed(2) || 'N/A', createdDate: createdDateString, createdTime: createdTimeString, updatedBy: item.changedBy, timestamp: dateOfEffectObj.getTime() },
             { id: item.id + '_bank', currencyPair: `${item.baseCurrency}/${item.targetCurrency}`, channel: 'Bank', finalRate: item.bankRate?.toFixed(2) || 'N/A', markup: item.bankMarkUp?.toFixed(2) || 0.00, weightedAvg: item.bankWeightedAvg?.toFixed(2) || 'N/A', createdDate: createdDateString, createdTime: createdTimeString, updatedBy: item.changedBy, timestamp: dateOfEffectObj.getTime() }
           ];
         }).flat();
-  
+
         transformedData.sort((a, b) => b.timestamp - a.timestamp);
-  
+
         setRecords(transformedData);
         setLoading(false);
       } catch (err) {
@@ -47,9 +50,54 @@ export default function AuditTrail() {
         setLoading(false);
       }
     };
-  
+
     fetchData();
-  },); // IMPORTANT: Fixed dependency array to prevent infinite API calls
+  }, []); // Corrected dependency array to run only once
+
+  // 3. Add the function to handle the Excel export
+  const handleExport = () => {
+    // Define the headers for the Excel file
+    const headers = [
+      'Currency Pair',
+      'Channel',
+      'Final Rate',
+      'Markup (%)',
+      'Weighted Avg',
+      'Date of Update',
+      'Time of Update',
+      'Updated By'
+    ];
+
+    // Map all records (not just the current page) to an array of arrays
+    const dataToExport = records.map(record => [
+      record.currencyPair,
+      record.channel,
+      record.finalRate,
+      record.markup,
+      record.weightedAvg,
+      record.createdDate,
+      record.createdTime,
+      record.updatedBy
+    ]);
+
+    // Create a new workbook and a worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...dataToExport]);
+
+    // Append the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'AuditTrail');
+    
+    // Auto-size columns for better readability (optional but recommended)
+    const columnWidths = headers.map((_, i) => ({
+      wch: dataToExport.reduce((w, r) => Math.max(w, String(r[i]).length), headers[i].length) + 2
+    }));
+    worksheet['!cols'] = columnWidths;
+
+
+    // Trigger the file download
+    XLSX.writeFile(workbook, 'AuditTrail_Export.xlsx');
+  };
+
 
   const handleRowClick = (id) => {
     setExpandedRowId(expandedRowId === id ? null : id);
@@ -69,10 +117,24 @@ export default function AuditTrail() {
 
   return (
     <div className="p-4 bg-white rounded-lg w-full flex flex-col font-poppins ">
-      <h1 className="text-xl font-bold ml-2 mb-4">Audit Trail</h1>
+      
+      {/* 4. Updated Header Section */}
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-bold ml-2">Audit Trail</h1>
+        <button
+          onClick={handleExport}
+          disabled={records.length === 0}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Download size={16} />
+          Export
+        </button>
+      </div>
+
 
       {/* ===== MOBILE TABLE VIEW (Expandable Rows) ===== */}
       <div className="md:hidden">
+        {/* ... (no changes needed here) ... */}
         <table className="w-full border-collapse text-sm">
           <tbody className="bg-white">
             {currentRecords.map((record) => (
@@ -127,6 +189,7 @@ export default function AuditTrail() {
 
       {/* ===== DESKTOP TABLE VIEW (Full) ===== */}
       <div className="hidden md:block overflow-x-auto">
+        {/* ... (no changes needed here) ... */}
         <table className="w-full border-collapse">
           <thead>
             <tr className="text-left bg-gray-50 text-gray-500 text-[11px] uppercase">
@@ -159,6 +222,7 @@ export default function AuditTrail() {
 
       {/* Pagination Controls */}
       <div className="flex flex-col md:flex-row justify-between items-center mt-6 text-sm">
+        {/* ... (no changes needed here) ... */}
         <span className="text-gray-600 mb-4 md:mb-0">
           Page {currentPage} of {totalPages}
         </span>

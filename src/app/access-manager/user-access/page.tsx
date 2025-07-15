@@ -7,7 +7,7 @@ import { BsThreeDotsVertical } from "react-icons/bs";
 import AssignRoleModal from "../components/AssignRole";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import ConfirmDeactivateModal from "../components/ConfirmDeactivateModal";
-import ConfirmApproveModal from "../components/ConfirmApproveModal"; 
+import ConfirmApproveModal from "../components/ConfirmApproveModal";
 import auth from "../../../hooks/Auth";
 
 type UserStatus = "active" | "pending";
@@ -21,6 +21,7 @@ interface User {
   email: string;
   phoneNumber: string;
   department: string;
+  roleName: string; // Added roleName property
   status: UserStatus;
   createdAt: number;
   modifiedAt: number;
@@ -38,6 +39,10 @@ interface ApiUser {
   status?: boolean;
   createdAt?: string;
   modifiedAt?: string;
+  role?: { // Added role object to handle API response
+    roleKey: string;
+    roleName: string;
+  };
 }
 
 export default function UserTable() {
@@ -54,7 +59,7 @@ export default function UserTable() {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
 
@@ -94,6 +99,7 @@ export default function UserTable() {
           email: user.email,
           phoneNumber: user.phoneNumber || "N/A",
           department: user.department || "N/A",
+          roleName: user.role?.roleName || "Unassigned", // Map roleName from API
           status: user.status === true ? "active" : "pending",
           createdAt: user.createdAt ? new Date(user.createdAt).getTime() : Date.now(),
           modifiedAt: user.modifiedAt ? new Date(user.modifiedAt).getTime() : Date.now(),
@@ -114,9 +120,9 @@ export default function UserTable() {
     const filtered = searchTerm === ""
       ? users
       : users.filter(user =>
-          `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     setFilteredUsers(filtered);
   }, [searchTerm, users]);
 
@@ -125,14 +131,14 @@ export default function UserTable() {
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, [openActionMenu]);
-  
+
   // --- ADDED: Handler to open the approve modal
   const handleOpenApproveModal = (userToApprove: User) => {
     setOpenActionMenu(null);
     setSelectedUser(userToApprove);
     setIsApproveModalOpen(true);
   };
-  
+
   // --- MODIFIED: The original approve function now handles loading states and closing the modal
   const handleApprove = async () => {
     if (!selectedUser) return;
@@ -163,11 +169,11 @@ export default function UserTable() {
       setSelectedUser(null);
     }
   };
-  
+
   const handleDelete = (userToDelete: User) => {
-    setOpenActionMenu(null); 
-    setSelectedUser(userToDelete); 
-    setIsDeleteModalOpen(true); 
+    setOpenActionMenu(null);
+    setSelectedUser(userToDelete);
+    setIsDeleteModalOpen(true);
   };
 
   const confirmDeleteUser = async () => {
@@ -200,7 +206,7 @@ export default function UserTable() {
       setIsModalOpen(true);
     }
   };
-  
+
   if (isLoading) { /* Loading... */ }
   if (error) { /* Error... */ }
 
@@ -235,8 +241,9 @@ export default function UserTable() {
                 <th className="py-2 md:px-3 hidden md:block px-1 text-left">#</th>
                 <th className="py-2 md:px-3 px-1 text-left">User</th>
                 <th className="py-2md:px-3 px-1 text-left">Email</th>
-                <th className="py-2 md:px-3 px-1text-left">Phone</th>
-                <th className="py-2 hidden md:block px-3 text-left">Department</th>
+                <th className="py-2 md:px-3 hidden md:block px-1 text-left">Phone</th>
+                <th className="py-2 hidden  px-3 text-left">Department</th>
+                <th className="py-2 md:px-3 px-1 text-left">Role Name</th> {/* Added Column Header */}
                 <th className="py-2 md:px-3 px-1 text-center">Actions</th>
                 <th className="py-2 md:px-3 px-1 text-left"></th>
               </tr>
@@ -255,8 +262,9 @@ export default function UserTable() {
                     </div>
                   </td>
                   <td className="py-3 md:px-3 px-1 text-[#808A92] font-[400]">{user.email}</td>
-                  <td className="py-3 md:px-3 px-1 text-[#808A92] font-[400]">{user.phoneNumber}</td>
-                  <td className="py-3 hidden md:block px-3">{user.department}</td>
+                  <td className="py-3 md:px-3 px-1 hidden md:block text-[#808A92] font-[400]">{user.phoneNumber}</td>
+                  <td className="py-3 hidden  px-3 text-[#808A92] font-[400]">{user.department}</td>
+                  <td className="py-3  md:px-3 md:px-1 text-[#808A92] text-gray-700 font-[600]">{user.roleName}</td> {/* Added Column Data */}
                   <td className="py-3 md:px-3 px-1 text-center relative">
                     <button onClick={(e) => { e.stopPropagation(); setOpenActionMenu(openActionMenu === user.id ? null : user.id); }} className="p-2 rounded-full hover:bg-gray-200">
                       <BsThreeDotsVertical className="h-5 w-5 text-gray-600" />
@@ -298,7 +306,7 @@ export default function UserTable() {
           </table>
         </div>
       </div>
-      
+
       {/* --- ALL MODALS ARE RENDERED HERE --- */}
       <AssignRoleModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setSelectedUser(null); }} user={selectedUser} />
       <ConfirmDeleteModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={confirmDeleteUser} isDeleting={isDeleting} user={selectedUser} />
