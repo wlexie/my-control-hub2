@@ -173,7 +173,7 @@ export default function UserAccounts() {
               tx.totalTransactions?.failedTransactions || 0;
 
           extendedData.push({
-            "User ID": user.accountId,
+            "User ID": u.accountId,
             "Full Name": fullName,
             Email: user.email,
             Phone: user.phone,
