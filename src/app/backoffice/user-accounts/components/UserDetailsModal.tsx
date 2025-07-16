@@ -4,8 +4,13 @@
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getInitials, getPastelColor, statusStyles } from "./constants";
-import type { User } from "../types";
+import {
+  getInitials,
+  getPastelColor,
+  riskScoreStyles,
+  statusStyles,
+} from "./constants";
+import type { User } from "@/app/backoffice/user-accounts/types";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
@@ -452,28 +457,43 @@ export default function UserDetailsModal({
 
                 {/* Status Tags */}
                 <div className="mt-2 flex gap-2 flex-wrap justify-center">
-                  <div className="flex items-center gap-1">
+                  {/* KYC Status */}
+                  <div
+                    className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
+                      statusStyles[user.kycStatus]?.bg || "bg-gray-200"
+                    } ${statusStyles[user.kycStatus]?.text || "text-gray-700"}`}
+                  >
                     <span
-                      className={`w-2 h-2 rounded-full ${statusStyles[user.kycStatus]?.dot || "bg-gray-300"}`}
+                      className={`w-2 h-2 rounded-full ${
+                        statusStyles[user.kycStatus]?.dot || "bg-gray-300"
+                      }`}
                     />
-                    <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
-                      KYC: {user.kycStatus}
-                    </span>
+                    KYC: {user.kycStatus}
                   </div>
-                  <div className="flex items-center gap-1">
+
+                  {/* Account Status */}
+                  <div
+                    className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
+                      statusStyles[user.accountStatus]?.bg || "bg-gray-100"
+                    } ${statusStyles[user.accountStatus]?.text || "text-gray-700"}`}
+                  >
                     <span
-                      className={`w-2 h-2 rounded-full ${statusStyles[user.accountStatus]?.dot || "bg-gray-300"}`}
+                      className={`w-2 h-2 rounded-full ${
+                        statusStyles[user.accountStatus]?.dot || "bg-gray-300"
+                      }`}
                     />
-                    <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
-                      Account: {user.accountStatus}
-                    </span>
+                    Account: {user.accountStatus}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className={`w-2 h-2 rounded-full ${"bg-gray-300"}`} />
-                    <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
-                      Risk Score: Low
-                    </span>
-                  </div>
+
+                  {/* Risk Score */}
+                  <span
+                    className={`text-xs px-2 py-1 rounded ${
+                      riskScoreStyles[user.riskScore?.riskLevel || ""] ||
+                      "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    Risk Score: {user.riskScore?.riskLevel ?? "N/A"}
+                  </span>
                 </div>
               </div>
 
