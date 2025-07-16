@@ -16,6 +16,7 @@ export interface User {
   country: string ;
   documents?: Document[];
   transaction?: Transaction;
+  riskScore?:RiskScore;
 }
 
 export interface Document {
@@ -48,4 +49,15 @@ export interface Transaction {
     failedTransactions: number;
   };
   totalTransactionsValue: number;
+}
+
+export interface RiskScore {
+  riskLevel: "Low" | "Medium" | "High";
+  totalScore: number;
+  scores: {
+    countryScore: number;
+    transactionsScore: number;
+    transactionsValueScore: number;
+    accountStatusScore: number;
+  };
 }
