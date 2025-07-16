@@ -163,6 +163,9 @@ export default function UserAccounts() {
           const user = await res.json();
 
           const doc = user.documents?.[0] ?? {};
+          const risk = user.riskScore ?? {};
+          const riskScores = risk.scores ?? {};
+
           const tx = user.transaction ?? {};
           const fullName = `${user.firstName} ${user.lastName}`;
           const totalTx =
@@ -220,6 +223,13 @@ export default function UserAccounts() {
               tx.totalTransactions?.failedTransactions ?? "—",
             "Total Transaction Value (KES)":
               tx.totalTransactionsValue?.toFixed(2) ?? "—",
+            "Risk Score Level": risk.riskLevel ?? "—",
+            "Total Score": risk.totalScore ?? "—",
+            "Country Score": riskScores.countryScore ?? "—",
+            "Transaction Score": riskScores.transactionsScore ?? "—",
+            "Transactions Value Score":
+              riskScores.transactionsValueScore ?? "—",
+            "Account Status Score": riskScores.accountStatusScore ?? "—",
           });
         } catch (err) {
           console.error(
