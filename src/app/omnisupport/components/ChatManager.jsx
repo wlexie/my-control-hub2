@@ -81,6 +81,8 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
                 const messagePromises = openList.map(async (conv) => {
                     try {
                         const messagesResponse = await axios.get(`${API_BASE_URL}/messages/${conv.id}?page=0&size=50`);
+                     // console.log(`Fetched messages for conversation ${conv.id}:`, messagesResponse.data);
+
                         return { conversation: conv, messages: messagesResponse.data || [], hasSentMessage: (messagesResponse.data || []).some(msg => msg.direction === 'sent') };
                     } catch (err) {
                         return { conversation: conv, messages: [], hasSentMessage: false };

@@ -6,9 +6,9 @@ import axios from 'axios';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 
-// --- Icon Imports --- (No longer need BotMessageSquare for this approach)
-import { 
-  NotebookPen, MessageSquare, MoreVertical, Paperclip, Smile, Pin, Send, 
+// --- Icon Imports ---
+import {
+  NotebookPen, MessageSquare, MoreVertical, Paperclip, Smile, Pin, Send,
   Loader2, CheckCheck, X, UploadCloud, ArrowLeft
 } from 'lucide-react';
 import { FaPlus } from "react-icons/fa6";
@@ -24,42 +24,35 @@ import TemplateModal from './TemplateModal';
 // ---  CONFIGURATION CONSTANTS  ---
 // =================================================================================
 const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
-const POLLING_INTERVAL = 5000; 
+const POLLING_INTERVAL = 5000;
 
-// --- TEMPLATE MEDIA URLS ---
 const TEMPLATE_MEDIA_URLS = {
   'welcome_dormant': 'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642484.jpg',
-  'welcome_basics':  'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642483.jpg',
-  'welcome_active':  'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642480.jpg',
-  'potential_user':  'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642477.jpg',
-  'welcome_leads':   'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642477.jpg',
-  'welcome_decline': null, 
-    'country_updates': null, 
-
+  'welcome_basics': 'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642483.jpg',
+  'welcome_active': 'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642480.jpg',
+  'potential_user': 'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642477.jpg',
+  'welcome_leads': 'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642477.jpg',
+  'welcome_decline': null,
+  'country_updates': null,
 };
 
-// ADDED: Configuration for template body text
-// ================================================================================
-// ACTION REQUIRED: You must replace these placeholder text bodies with the *exact* 
-// text from your WhatsApp templates, including the {{1}} placeholder. This is so 
-// the UI can accurately display what was sent.
-// ================================================================================
 const TEMPLATE_BODIES = {
   'welcome_dormant': "Hi {{1}}, we noticed you haven't been active lately. Is there anything we can help you with to get you started?",
-  'welcome_basics':  "Hello {{1}}! Welcome to Tuma. We're excited to have you on board. Here are some basics to get you started.",
-  'welcome_active':  "Hi {{1}}, great to see you're active! Let us know if you need any assistance or have any questions.",
-  'potential_user':  "Hello {{1}}, thank you for your interest in Tuma. We'd love to help you get started. What can we help you with today?",
-  'welcome_leads':   "Hi {{1}}, thanks for reaching out! We've received your inquiry and a member of our team will be in touch shortly.",
-  'welcome_decline': "Hello {{1}}, we understand you've chosen not to proceed at this time. We appreciate your interest and hope you'll consider us in the future. If you have any feedback, we'd love to hear it.", 
+  'welcome_basics': "Hello {{1}}! Welcome to Tuma. We're excited to have you on board. Here are some basics to get you started.",
+  'welcome_active': "Hi {{1}}, great to see you're active! Let us know if you need any assistance or have any questions.",
+  'potential_user': "Hello {{1}}, thank you for your interest in Tuma. We'd love to help you get started. What can we help you with today?",
+  'welcome_leads': "Hi {{1}}, thanks for reaching out! We've received your inquiry and a member of our team will be in touch shortly.",
+  'welcome_decline': "Hello {{1}}, we understand you've chosen not to proceed at this time. We appreciate your interest and hope you'll consider us in the future. If you have any feedback, we'd love to hear it.",
+  'country_updates': "Hello {{1}}, we have an update regarding our services in your country. Please check our website for more details.", // Example
 };
 
 
 // =================================================================================
 // ---  HELPER UTILITY FUNCTIONS  ---
 // =================================================================================
-const avatarColorPalette = [ 'bg-red-500', 'bg-green-500', 'bg-purple-500', 'bg-blue-500', 'bg-indigo-500', 'bg-pink-500', 'bg-orange-500' ];
+const avatarColorPalette = ['bg-red-500', 'bg-green-500', 'bg-purple-500', 'bg-blue-500', 'bg-indigo-500', 'bg-pink-500', 'bg-orange-500'];
 const getColorForId = (id) => { if (!id) return 'bg-gray-400'; let hash = 0; for (let i = 0; i < id.length; i++) { hash = id.charCodeAt(i) + ((hash << 5) - hash); } const index = Math.abs(hash % avatarColorPalette.length); return avatarColorPalette[index]; };
-const getInitials = (name = '') => { if (!name || typeof name !== 'string') return '??'; const parts = name.split(' ').filter(Boolean); if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase(); if (parts.length === 1 && parts[0].length > 1) return parts[0].substring(0, 2).toUpperCase(); if (parts.length === 1) return parts[0][0].toUpperCase(); return '??'; };
+const getInitials = (name = '') => { if (!name || typeof name !== 'string' || name.toLowerCase() === 'unknown') return 'UN'; const parts = name.split(' ').filter(Boolean); if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase(); if (parts.length === 1 && parts[0].length > 1) return parts[0].substring(0, 2).toUpperCase(); if (parts.length === 1) return parts[0][0].toUpperCase(); return '??'; };
 const formatDateSeparator = (dateStr) => { const date = new Date(dateStr); const today = new Date(); const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); if (date.toDateString() === today.toDateString()) return 'Today'; if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'; return date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); };
 const formatMessageTimestamp = (timestampStr) => { if (!timestampStr) return ""; const messageDate = new Date(timestampStr); const today = new Date(); const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); if (messageDate.toDateString() === today.toDateString()) { return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }); } if (messageDate.toDateString() === yesterday.toDateString()) { return "Yesterday"; } return messageDate.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
 
@@ -67,24 +60,28 @@ const formatMessageTimestamp = (timestampStr) => { if (!timestampStr) return "";
 // ---  MAIN CONVERSATION COMPONENT  ---
 // =================================================================================
 export default function Conversation({ selectedChat, setSelectedChat, onCloseMobile }) {
-  
+
   // --- STATE MANAGEMENT ---
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [errorMessages, setErrorMessages] = useState(null);
+
+  // ADDED: State to hold chat details that might be missing from the initial prop
+  const [chatDetails, setChatDetails] = useState({
+    name: selectedChat?.contactName || '',
+    phone: selectedChat?.msisdn || '',
+  });
+
+  // UI State
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
-
-  // Modals State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEscalateModalOpen, setIsEscalateModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
-
-  // Message Notes State
   const [messageNotes, setMessageNotes] = useState({});
   const [activeNoteEditorId, setActiveNoteEditorId] = useState(null);
   const [currentNoteText, setCurrentNoteText] = useState("");
@@ -95,27 +92,44 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const textareaRef = useRef(null);
   const noteTextareaRef = useRef(null);
   const dragCounter = useRef(0);
-  
+
   // --- DERIVED STATE & MEMOIZED VALUES ---
-  const userName = selectedChat?.contactName || selectedChat?.messages?.[0]?.from?.name || '';
-  const userPhoneNumber = selectedChat?.msisdn || selectedChat?.messages?.[0]?.from?.phoneNumber || '';
+  // CHANGED: Use the new `chatDetails` state for display, with fallbacks.
+  const userName = chatDetails.name || 'No name';
+  const userPhoneNumber = chatDetails.phone;
   const userInitials = getInitials(userName);
   const userAvatarColor = useMemo(() => getColorForId(selectedChat?.id), [selectedChat?.id]);
 
   // --- DATA FETCHING ---
   const fetchFullConversation = useCallback(async (isBackgroundPoll = false) => {
     const identifier = selectedChat?.id || selectedChat?.msisdn;
-    if (!identifier) { 
-        setMessages([]); 
-        return; 
+    if (!identifier) {
+      setMessages([]);
+      return;
     }
-    
+
     if (!isBackgroundPoll) { setLoadingMessages(true); }
     setErrorMessages(null);
 
     try {
       const response = await axios.get(`${API_BASE_URL}/messages/${identifier}?page=0&size=50`);
       const fetchedMessages = response.data.content || response.data || [];
+      //console.log(`Fetched messages for identifier ${identifier}:`, fetchedMessages);
+
+      // --- ADDED LOGIC TO UPDATE HEADER DETAILS ---
+      // On the initial fetch, if details are missing, grab them from the first message.
+      if (!isBackgroundPoll && fetchedMessages.length > 0) {
+        setChatDetails(prevDetails => {
+          if (prevDetails.phone && prevDetails.name) return prevDetails; // Already have details, do nothing.
+          const firstUserMessage = fetchedMessages.find(msg => msg.direction === 'received');
+          return {
+            name: prevDetails.name || 'Unknown', // Name is not in the message data, so we default to Unknown
+            phone: prevDetails.phone || (firstUserMessage ? firstUserMessage.fromNumber : ''),
+          };
+        });
+      }
+      // --- END OF ADDED LOGIC ---
+
       const processedMessages = fetchedMessages.map(msg => {
         try {
           const parsedContent = JSON.parse(msg.content);
@@ -126,30 +140,25 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
           return { ...msg, type, payload };
         } catch { return null; }
       }).filter(Boolean);
-      
+
       setMessages(currentMessages => {
         const serverMessagesMap = new Map(processedMessages.map(m => [m.id, m]));
         const pendingOptimisticMessages = currentMessages.filter(localMsg => {
-          if (!localMsg.id.toString().startsWith('temp-')) {
-            return false; 
-          }
+          if (!localMsg.id.toString().startsWith('temp-')) return false;
           let isConfirmed = false;
           for (const serverMsg of processedMessages) {
-              if (serverMsg.direction === 'sent' && serverMsg.payload === localMsg.payload) {
-                  isConfirmed = true;
-                  break;
-              }
-              // Add a check for images too
-              if (serverMsg.direction === 'sent' && serverMsg.type === 'image' && serverMsg.payload.url === localMsg.payload.url) {
-                  isConfirmed = true;
-                  break;
-              }
+            if (serverMsg.direction === 'sent' && serverMsg.type === localMsg.type && serverMsg.payload === localMsg.payload) {
+              isConfirmed = true; break;
+            }
+            if (serverMsg.direction === 'sent' && serverMsg.type === 'image' && localMsg.type === 'image' && serverMsg.payload.url === localMsg.payload.url) {
+              isConfirmed = true; break;
+            }
           }
           return !isConfirmed;
         });
         const newMessages = [...processedMessages, ...pendingOptimisticMessages];
         return Array.from(new Map(newMessages.map(m => [m.id, m])).values())
-                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       });
 
     } catch (err) {
@@ -168,121 +177,104 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   useEffect(() => { if (textareaRef.current) { textareaRef.current.style.height = 'auto'; textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; } }, [newMessage]);
   useEffect(() => { if (noteTextareaRef.current) { noteTextareaRef.current.style.height = 'auto'; noteTextareaRef.current.style.height = `${noteTextareaRef.current.scrollHeight}px`; } }, [currentNoteText]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  
+  // CHANGED: This effect now also resets chatDetails.
   useEffect(() => {
-    setMessages([]); setNewMessage(''); setShowEmojiPicker(false); setActiveNoteEditorId(null);
-    if (selectedChat?.id) { fetchFullConversation(false); }
-  }, [selectedChat?.id, fetchFullConversation]);
+    setMessages([]);
+    setNewMessage('');
+    setShowEmojiPicker(false);
+    setActiveNoteEditorId(null);
+    setChatDetails({
+      name: selectedChat?.contactName || '',
+      phone: selectedChat?.msisdn || '',
+    });
+    if (selectedChat?.id) {
+      fetchFullConversation(false);
+    }
+  }, [selectedChat, fetchFullConversation]); // Added selectedChat dependency
+
   useEffect(() => {
     if (!selectedChat?.id || selectedChat.isClosed) return;
     const intervalId = setInterval(() => fetchFullConversation(true), POLLING_INTERVAL);
     return () => clearInterval(intervalId);
   }, [selectedChat?.id, selectedChat?.isClosed, fetchFullConversation]);
+  
   useEffect(() => { document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen || isTemplateModalOpen); }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen, isTemplateModalOpen]);
 
   // --- EVENT HANDLERS ---
   const sendMessage = async () => {
     if (newMessage.trim() === '' || !selectedChat) return;
-    const recipientPhoneNumber = selectedChat.msisdn || userPhoneNumber;
+    const recipientPhoneNumber = userPhoneNumber; // Use the state-managed phone number
     if (!recipientPhoneNumber) { console.error('Recipient phone number (msisdn) could not be determined.'); return; }
     const userMsg = { id: `temp-${Date.now()}`, payload: newMessage, createdAt: new Date().toISOString(), direction: 'sent', type: 'text' };
     setMessages(prevMessages => [...prevMessages, userMsg]);
     setNewMessage('');
     setShowEmojiPicker(false);
     try {
-        await axios.post('/api/sendMessage', { recipientPhone: recipientPhoneNumber, message: newMessage });
-        setTimeout(() => fetchFullConversation(true), 1500);
+      await axios.post('/api/sendMessage', { recipientPhone: recipientPhoneNumber, message: newMessage });
+      setTimeout(() => fetchFullConversation(true), 1500);
     } catch (error) {
-        console.error('Error sending message:', error.response?.data || error);
-        setMessages(prev => prev.filter(m => m.id !== userMsg.id));
-        alert('Failed to send message.');
+      console.error('Error sending message:', error.response?.data || error);
+      setMessages(prev => prev.filter(m => m.id !== userMsg.id));
+      alert('Failed to send message.');
     }
   };
-  
+
   const handleFileUpload = async (file) => {
     if (!file || !selectedChat) return;
-    const recipientPhoneNumber = selectedChat.msisdn || userPhoneNumber;
+    const recipientPhoneNumber = userPhoneNumber; // Use the state-managed phone number
     if (!recipientPhoneNumber) { alert("Could not determine the recipient's phone number."); return; }
     const formData = new FormData();
     formData.append('file', file);
     formData.append('recipientPhone', recipientPhoneNumber);
     setIsUploading(true);
     try {
-        const response = await axios.post('/api/sendMessage', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        if (response.data.success) { setTimeout(() => fetchFullConversation(true), 1500); } 
-        else { throw new Error(response.data.error || "File upload failed on the server."); }
+      const response = await axios.post('/api/sendMessage', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      if (response.data.success) { setTimeout(() => fetchFullConversation(true), 1500); }
+      else { throw new Error(response.data.error || "File upload failed on the server."); }
     } catch (error) {
-        console.error("Error uploading file:", error);
-        alert("File upload failed. Please try again.");
+      console.error("Error uploading file:", error);
+      alert("File upload failed. Please try again.");
     } finally {
-        setIsUploading(false);
-        if (fileInputRef.current) { fileInputRef.current.value = ""; }
+      setIsUploading(false);
+      if (fileInputRef.current) { fileInputRef.current.value = ""; }
     }
   };
 
-  // --- CHANGED: `handleSendTemplate` now creates optimistic messages ---
   const handleSendTemplate = async (templateName) => {
     if (!userPhoneNumber || !templateName) {
       alert("Error: Cannot determine recipient's phone number or template name.");
       return;
     }
-
-    const templateParams = [{ "default": userName }]; 
+    const templateParams = [{ "default": userName === 'Unknown' ? 'there' : userName }];
     const mediaUrl = TEMPLATE_MEDIA_URLS[templateName];
     const templateBody = TEMPLATE_BODIES[templateName];
-
-    // --- Create Optimistic UI Messages ---
     const optimisticMessages = [];
     const timestamp = new Date().toISOString();
 
-    // 1. Create the image message if a media URL exists
     if (mediaUrl) {
-      optimisticMessages.push({
-        id: `temp-img-${Date.now()}`,
-        type: 'image',
-        direction: 'sent',
-        createdAt: timestamp,
-        payload: { url: mediaUrl },
-      });
+      optimisticMessages.push({ id: `temp-img-${Date.now()}`, type: 'image', direction: 'sent', createdAt: timestamp, payload: { url: mediaUrl } });
     }
-
-    // 2. Create the text message, replacing the placeholder
     if (templateBody) {
-      const populatedBody = templateBody.replace('{{1}}', userName || 'there');
-      optimisticMessages.push({
-        id: `temp-text-${Date.now()}`,
-        type: 'text',
-        direction: 'sent',
-        createdAt: timestamp,
-        payload: populatedBody,
-      });
+      const populatedBody = templateBody.replace('{{1}}', userName === 'Unknown' ? 'there' : userName);
+      optimisticMessages.push({ id: `temp-text-${Date.now()}`, type: 'text', direction: 'sent', createdAt: timestamp, payload: populatedBody });
     }
-    
-    // 3. Add them to the state so they appear instantly
     if (optimisticMessages.length > 0) {
       setMessages(prev => [...prev, ...optimisticMessages]);
     }
-    
-    // --- Send the actual API request in the background ---
     try {
-        await axios.post('/api/sendTemplate', {
-            recipient: userPhoneNumber,
-            templateName: templateName,
-            params: templateParams,
-            mediaUrl: mediaUrl,
-        });
-        
-        setIsTemplateModalOpen(false); 
-        setTimeout(() => fetchFullConversation(true), 2000);
+      await axios.post('/api/sendTemplate', { recipient: userPhoneNumber, templateName: templateName, params: templateParams, mediaUrl: mediaUrl });
+      setIsTemplateModalOpen(false);
+      setTimeout(() => fetchFullConversation(true), 2000);
     } catch (error) {
-        const errorDetail = error.response?.data?.details || error.response?.data?.error || error.message;
-        console.error('Error sending template:', error.response?.data || error);
-        alert(`Failed to send template. Reason: ${errorDetail}`);
-        
-        // If the API call fails, remove the optimistic messages
-        setMessages(prev => prev.filter(m => !optimisticMessages.some(opt => opt.id === m.id)));
+      const errorDetail = error.response?.data?.details || error.response?.data?.error || error.message;
+      console.error('Error sending template:', error.response?.data || error);
+      alert(`Failed to send template. Reason: ${errorDetail}`);
+      setMessages(prev => prev.filter(m => !optimisticMessages.some(opt => opt.id === m.id)));
     }
   };
-
+  
+  // Other event handlers (unchanged)
   const addEmoji = (emoji) => { setNewMessage(prev => prev + emoji.native); };
   const handleCloseChat = async () => { if (!selectedChat || !selectedChat.id) return; try { await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`); setSelectedChat(null); } catch (error) { console.error("Error closing conversation:", error.response?.data || error.message); alert("Failed to close the conversation."); } finally { setIsModalOpen(false); } };
   const handleFileChange = (e) => { const file = e.target.files[0]; if (file) { handleFileUpload(file); } };
@@ -294,6 +286,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current === 0) setIsDraggingOver(false); };
   const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
   const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(false); dragCounter.current = 0; if (e.dataTransfer.files?.length > 0) { handleFileUpload(e.dataTransfer.files[0]); e.dataTransfer.clearData(); } };
+
 
   // --- JSX RENDER ---
   return (
@@ -332,8 +325,6 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                   const showDateSeparator = index === 0 || new Date(msg.createdAt).toDateString() !== new Date(messages[index - 1].createdAt).toDateString();
                   const isSent = msg.direction === 'sent';
                   
-                  // CHANGED: The special rendering for template notifications has been removed.
-                  // The new optimistic messages are rendered by the existing logic below.
                   return (
                     <Fragment key={msg.id}>
                       {showDateSeparator && <div className="flex justify-center my-4"><span className="bg-gray-200 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">{formatDateSeparator(msg.createdAt)}</span></div>}
@@ -367,13 +358,8 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
             {showEmojiPicker && <div className="absolute z-10 bottom-4 right-4"><Picker data={data} onEmojiSelect={addEmoji} /></div>}
           </main>
           
-          {/* --- NEW FLOATING ACTION BUTTON --- */}
           {!selectedChat.isClosed && (
-            <button
-              onClick={() => setIsTemplateModalOpen(true)}
-              className="absolute bottom-24 right-7 z-20 bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-              title="Send a Template Message"
-            >
+            <button onClick={() => setIsTemplateModalOpen(true)} className="absolute bottom-24 right-7 z-20 bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" title="Send a Template Message">
               <FaPlus size={24} />
             </button>
           )}
