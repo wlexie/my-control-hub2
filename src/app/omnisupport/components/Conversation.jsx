@@ -95,7 +95,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
 
   // --- DERIVED STATE & MEMOIZED VALUES ---
   // CHANGED: Use the new `chatDetails` state for display, with fallbacks.
-  const userName = chatDetails.name || 'No name';
+  const userName = chatDetails.name || 'Unknown';
   const userPhoneNumber = chatDetails.phone;
   const userInitials = getInitials(userName);
   const userAvatarColor = useMemo(() => getColorForId(selectedChat?.id), [selectedChat?.id]);
@@ -123,7 +123,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
           if (prevDetails.phone && prevDetails.name) return prevDetails; // Already have details, do nothing.
           const firstUserMessage = fetchedMessages.find(msg => msg.direction === 'received');
           return {
-            name: prevDetails.name || 'No Name', // Name is not in the message data, so we default to Unknown
+            name: prevDetails.name || 'Unknown', // Name is not in the message data, so we default to Unknown
             phone: prevDetails.phone || (firstUserMessage ? firstUserMessage.fromNumber : ''),
           };
         });
