@@ -51,7 +51,7 @@ export default function UserAccounts() {
   };
 
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -151,14 +151,7 @@ export default function UserAccounts() {
 
     setFilteredUsers(filtered);
     setDisplayedUsers(filtered.slice(0, initialLoadCount));
-    setCurrentPage(1);
   }, [searchQuery, dateRange, allUsers]);
-
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * usersPerPage,
-    currentPage * usersPerPage
-  );
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   // Infinite scroll handler
   const handleScroll = useCallback(() => {
@@ -431,7 +424,11 @@ export default function UserAccounts() {
         <div
           className="overflow-x-auto"
           ref={tableContainerRef}
-          style={{ maxHeight: "calc(100vh - 200px)", overflowY: "auto" }}
+          style={{
+            maxHeight: "calc(100vh - 150px)",
+            overflowY: "auto",
+            marginBottom: "0.5rem",
+          }}
         >
           {isMobile ? (
             // Mobile card view
@@ -671,30 +668,27 @@ export default function UserAccounts() {
           )}
         </div>
 
-        <div className="flex flex-col md:flex-row justify-center items-center mt-6 gap-3 md:gap-4">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-600 text-white text-sm md:text-base"
-          >
-            Previous
-          </button>
-          {!loading && (
-            <span className="text-xs md:text-sm text-center">
-              Page {currentPage} of {totalPages} — {allUsers.length} customer
-              {allUsers.length !== 1 && "s"}
-            </span>
-          )}
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={currentPage >= totalPages}
-            className="px-4 py-2 border rounded-lg disabled:opacity-50 bg-blue-600 text-white text-sm md:text-base"
-          >
-            Next
-          </button>
-        </div>
+        {!loading && (
+          <div className="text-center text-sm text-gray-500 py-2 mb-2  sticky bottom-0 bg-white border-t">
+            Showing {displayedUsers.length} of {filteredUsers.length} customers
+            {displayedUsers.length < filteredUsers.length && (
+              <button
+                onClick={() => {
+                  setDisplayedUsers((prev) => [
+                    ...prev,
+                    ...filteredUsers.slice(
+                      prev.length,
+                      prev.length + usersPerPage
+                    ),
+                  ]);
+                }}
+                className="ml-3 text-blue-600 hover:text-blue-800"
+              >
+                Load More
+              </button>
+            )}
+          </div>
+        )}
 
         <AnimatePresence>
           {showModal && selectedUser && (
