@@ -98,7 +98,9 @@ export default function UserDetailsModal({
           setLoading(false);
         }
       };
-
+      // Load comments when modal opens
+      const saved = localStorage.getItem(`user_comments_${userId}`);
+      setComments(saved ? JSON.parse(saved) : []);
       fetchUserDetails();
     }
   }, [isOpen, userId]);
@@ -336,7 +338,16 @@ export default function UserDetailsModal({
         content: comment,
       };
 
-      setComments((prev) => [newComment, ...prev]);
+      // Update state AND localStorage together
+      setComments((prev) => {
+        const updatedComments = [newComment, ...prev];
+        localStorage.setItem(
+          `user_comments_${userId}`,
+          JSON.stringify(updatedComments)
+        );
+        return updatedComments;
+      });
+
       setComment("");
       setIsAddingComment(false);
       toast.success("Comment added");

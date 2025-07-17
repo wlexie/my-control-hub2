@@ -1,4 +1,4 @@
-
+// utils/commentsStorage.ts
 type Comment = {
   id: string;
   author: string;
@@ -6,21 +6,25 @@ type Comment = {
   date: string;
 };
 
-const STORAGE_KEY = `user_comments_`;
+const STORAGE_KEY = "user_comments";
 
-export const loadComments = (userId: number): Comment[] => {
-  if (typeof window === "undefined") return [];
-  const data = localStorage.getItem(`${STORAGE_KEY}${userId}`);
-  return data ? JSON.parse(data) : [];
+// Save all comments
+export const saveComments = (userId: number, comments: Comment[]) => {
+  if (typeof window === "undefined") return;
+  
+  const allData = localStorage.getItem(STORAGE_KEY);
+  const parsedData = allData ? JSON.parse(allData) : {};
+  
+  parsedData[userId] = comments;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(parsedData));
 };
 
-export const saveComment = (userId: number, comment: Omit<Comment, "id">) => {
-  const comments = loadComments(userId);
-  const newComment = {
-    ...comment,
-    id: Date.now().toString(),
-  };
-  const updatedComments = [newComment, ...comments];
-  localStorage.setItem(`${STORAGE_KEY}${userId}`, JSON.stringify(updatedComments));
-  return newComment;
+// Load comments for a user
+export const loadComments = (userId: number): Comment[] => {
+  if (typeof window === "undefined") return [];
+  
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (!data) return [];
+  
+  return JSON.parse(data)[userId] || [];
 };

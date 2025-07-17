@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import { Search } from "lucide-react";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
@@ -33,13 +33,23 @@ export default function UserAccounts() {
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const [sidebarOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [displayedUsers, setDisplayedUsers] = useState<User[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
   const updateUserStatus = (userId: number, newStatus: Partial<User>) => {
     setAllUsers((prev) =>
       prev.map((user) =>
         user.accountId === userId ? { ...user, ...newStatus } : user
       )
     );
+    setDisplayedUsers((prev) =>
+      prev.map((user) =>
+        user.accountId === userId ? { ...user, ...newStatus } : user
+      )
+    );
   };
+
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,6 +64,8 @@ export default function UserAccounts() {
   const dateFilterRef = useRef<HTMLDivElement>(null);
 
   const usersPerPage = isMobile ? 7 : 10;
+  const initialLoadCount = usersPerPage * 2; // Load double the page size initially
+  const loadMoreThreshold = 200; // pixels from bottom to trigger load more
 
   const fetchAllUsers = async () => {
     setLoading(true);
@@ -101,6 +113,7 @@ export default function UserAccounts() {
 
     setAllUsers(allResults);
     setFilteredUsers(allResults);
+    setDisplayedUsers(allResults.slice(0, initialLoadCount));
     setLoading(false);
   };
 
@@ -137,6 +150,7 @@ export default function UserAccounts() {
     });
 
     setFilteredUsers(filtered);
+    setDisplayedUsers(filtered.slice(0, initialLoadCount));
     setCurrentPage(1);
   }, [searchQuery, dateRange, allUsers]);
 
@@ -145,6 +159,38 @@ export default function UserAccounts() {
     currentPage * usersPerPage
   );
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  // Infinite scroll handler
+  const handleScroll = useCallback(() => {
+    if (
+      tableContainerRef.current &&
+      !loadingMore &&
+      displayedUsers.length < filteredUsers.length
+    ) {
+      const { scrollTop, scrollHeight, clientHeight } =
+        tableContainerRef.current;
+      const scrollPosition = scrollTop + clientHeight;
+
+      if (scrollHeight - scrollPosition < loadMoreThreshold) {
+        setLoadingMore(true);
+        setTimeout(() => {
+          setDisplayedUsers((prev) => [
+            ...prev,
+            ...filteredUsers.slice(prev.length, prev.length + usersPerPage),
+          ]);
+          setLoadingMore(false);
+        }, 500);
+      }
+    }
+  }, [loadingMore, displayedUsers.length, filteredUsers.length, usersPerPage]);
+
+  useEffect(() => {
+    const container = tableContainerRef.current;
+    if (container) {
+      container.addEventListener("scroll", handleScroll);
+      return () => container.removeEventListener("scroll", handleScroll);
+    }
+  }, [handleScroll]);
 
   type ExportedUserRow = {
     [key: string]: string | number | undefined;
@@ -382,7 +428,11 @@ export default function UserAccounts() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div
+          className="overflow-x-auto"
+          ref={tableContainerRef}
+          style={{ maxHeight: "calc(100vh - 200px)", overflowY: "auto" }}
+        >
           {isMobile ? (
             // Mobile card view
             <div className="space-y-3">
@@ -397,67 +447,81 @@ export default function UserAccounts() {
                     <div className="h-3 bg-gray-200 rounded w-2/3"></div>
                   </div>
                 ))
-              ) : paginatedUsers.length > 0 ? (
-                paginatedUsers.map((user) => (
-                  <div
-                    key={user.accountId}
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setShowModal(true);
-                    }}
-                    className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs ${getPastelColor(
-                            user.firstName + user.lastName
-                          )}`}
-                        >
-                          {getInitials(user.firstName + " " + user.lastName)}
+              ) : displayedUsers.length > 0 ? (
+                <>
+                  {displayedUsers.map((user) => (
+                    <div
+                      key={user.accountId}
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setShowModal(true);
+                      }}
+                      className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs ${getPastelColor(
+                              user.firstName + user.lastName
+                            )}`}
+                          >
+                            {getInitials(user.firstName + " " + user.lastName)}
+                          </div>
+                          <span className="font-medium">
+                            {user.firstName} {user.lastName}
+                          </span>
                         </div>
-                        <span className="font-medium">
-                          {user.firstName} {user.lastName}
+                        <span className="text-xs text-gray-500">
+                          ID:{user.accountId}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-500">
-                        ID:{user.accountId}
-                      </span>
-                    </div>
 
-                    <div className="text-sm text-gray-600 mb-1">
-                      <span className="font-medium">Email:</span> {user.email}
-                    </div>
-
-                    <div className="text-sm text-gray-600 mb-1">
-                      <span className="font-medium">Phone:</span> {user.phone}
-                    </div>
-
-                    <div className="flex justify-between items-center mt-2">
-                      <div className="text-xs text-gray-500">
-                        {new Date(user.registrationDate).toLocaleDateString(
-                          "en-GB"
-                        )}
+                      <div className="text-sm text-gray-600 mb-1">
+                        <span className="font-medium">Email:</span> {user.email}
                       </div>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                          statusStyles[user.accountStatus]?.bg || "bg-gray-100"
-                        } ${
-                          statusStyles[user.accountStatus]?.text ||
-                          "text-gray-600"
-                        }`}
-                      >
+
+                      <div className="text-sm text-gray-600 mb-1">
+                        <span className="font-medium">Phone:</span> {user.phone}
+                      </div>
+
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="text-xs text-gray-500">
+                          {new Date(user.registrationDate).toLocaleDateString(
+                            "en-GB"
+                          )}
+                        </div>
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            statusStyles[user.accountStatus]?.dot ||
-                            "bg-gray-400"
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                            statusStyles[user.accountStatus]?.bg ||
+                            "bg-gray-100"
+                          } ${
+                            statusStyles[user.accountStatus]?.text ||
+                            "text-gray-600"
                           }`}
-                        />
-                        {user.accountStatus}
-                      </span>
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              statusStyles[user.accountStatus]?.dot ||
+                              "bg-gray-400"
+                            }`}
+                          />
+                          {user.accountStatus}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                  {loadingMore && (
+                    <div className="flex justify-center p-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+                    </div>
+                  )}
+                  {displayedUsers.length === filteredUsers.length &&
+                    filteredUsers.length > 0 && (
+                      <div className="text-center py-4 text-gray-500">
+                        All users loaded
+                      </div>
+                    )}
+                </>
               ) : (
                 <div className="text-center py-4 text-gray-400">
                   No users found.
@@ -467,7 +531,7 @@ export default function UserAccounts() {
           ) : (
             // Desktop table view
             <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-left">
+              <thead className="bg-gray-50 text-gray-500 text-left sticky top-0">
                 <tr>
                   <th className="px-4 py-3">USER ID</th>
                   <th className="px-4 py-3">USER</th>
@@ -512,66 +576,92 @@ export default function UserAccounts() {
                       </td>
                     </tr>
                   ))
-                ) : paginatedUsers.length > 0 ? (
-                  paginatedUsers.map((user) => (
-                    <tr
-                      key={user.accountId}
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setShowModal(true);
-                      }}
-                      className="cursor-pointer hover:bg-gray-50"
-                    >
-                      <td className="px-4 py-3 text-gray-500">
-                        TUMA{user.accountId ?? "N/A"}
-                      </td>
-                      <td className="px-4 py-3 flex items-center gap-2">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm ${getPastelColor(
-                            user.firstName + user.lastName
-                          )}`}
-                        >
-                          {getInitials(user.firstName + " " + user.lastName)}
-                        </div>
-                        <span>
-                          {user.firstName} {user.lastName}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">{user.phone}</td>
-                      <td className="px-4 py-3 text-gray-500">{user.email}</td>
-                      <td className="px-4 py-3 flex items-center gap-2 text-gray-500">
-                        {getCountryDisplay(user.country)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {new Date(user.registrationDate).toLocaleDateString(
-                          "en-GB"
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                            statusStyles[user.accountStatus]?.bg ||
-                            "bg-gray-100"
-                          } ${
-                            statusStyles[user.accountStatus]?.text ||
-                            "text-gray-600"
-                          }`}
-                        >
+                ) : displayedUsers.length > 0 ? (
+                  <>
+                    {displayedUsers.map((user) => (
+                      <tr
+                        key={user.accountId}
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setShowModal(true);
+                        }}
+                        className="cursor-pointer hover:bg-gray-50"
+                      >
+                        <td className="px-4 py-3 text-gray-500">
+                          TUMA{user.accountId ?? "N/A"}
+                        </td>
+                        <td className="px-4 py-3 flex items-center gap-2">
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm ${getPastelColor(
+                              user.firstName + user.lastName
+                            )}`}
+                          >
+                            {getInitials(user.firstName + " " + user.lastName)}
+                          </div>
+                          <span>
+                            {user.firstName} {user.lastName}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">
+                          {user.phone}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">
+                          {user.email}
+                        </td>
+                        <td className="px-4 py-3 flex items-center gap-2 text-gray-500">
+                          {getCountryDisplay(user.country)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">
+                          {new Date(user.registrationDate).toLocaleDateString(
+                            "en-GB"
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
                           <span
-                            className={`w-2 h-2 rounded-full ${
-                              statusStyles[user.accountStatus]?.dot ||
-                              "bg-gray-400"
+                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                              statusStyles[user.accountStatus]?.bg ||
+                              "bg-gray-100"
+                            } ${
+                              statusStyles[user.accountStatus]?.text ||
+                              "text-gray-600"
                             }`}
-                          />
-                          {user.accountStatus}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">⋯</td>
-                    </tr>
-                  ))
+                          >
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                statusStyles[user.accountStatus]?.dot ||
+                                "bg-gray-400"
+                              }`}
+                            />
+                            {user.accountStatus}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">⋯</td>
+                      </tr>
+                    ))}
+                    {loadingMore && (
+                      <tr>
+                        <td colSpan={8} className="text-center py-4">
+                          <div className="flex justify-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {displayedUsers.length === filteredUsers.length &&
+                      filteredUsers.length > 0 && (
+                        <tr>
+                          <td
+                            colSpan={8}
+                            className="text-center py-4 text-gray-500"
+                          >
+                            All users loaded
+                          </td>
+                        </tr>
+                      )}
+                  </>
                 ) : (
                   <tr>
-                    <td colSpan={7} className="text-center py-4 text-gray-400">
+                    <td colSpan={8} className="text-center py-4 text-gray-400">
                       No users found.
                     </td>
                   </tr>
