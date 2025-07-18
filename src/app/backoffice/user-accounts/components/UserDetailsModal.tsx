@@ -10,7 +10,7 @@ import {
   riskScoreStyles,
   statusStyles,
 } from "./constants";
-import type { User } from "@/app/backoffice/user-accounts/types";
+import type { CardDetails, User } from "@/app/backoffice/user-accounts/types";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
@@ -91,16 +91,38 @@ export default function UserDetailsModal({
           );
           if (!res.ok) throw new Error("Failed to fetch user details");
           const data = await res.json();
-          setUser(data);
+
+          // Parse card data with first 6 digits and last four digits
+          const parsedCards =
+            data.cards?.map((cardString: string) => {
+              const [issuerAndType, numberPart] = cardString.split(" - ");
+              const [issuer, ...typeParts] = issuerAndType.split(", ");
+              const type = typeParts.join(", ");
+
+              // Extract first 6 and last 4 digits
+              const bin = numberPart?.substring(0, 6) || "";
+              const lastFour = numberPart?.slice(-4) || "";
+
+              return {
+                issuer: issuer.trim(),
+                type: type.trim(),
+                bin,
+                lastFour,
+                fullMaskedNumber: numberPart, // Store the original masked format
+              };
+            }) || [];
+
+          setUser({
+            ...data,
+            cards: parsedCards,
+          });
         } catch (error) {
           console.error("Error fetching user details:", error);
         } finally {
           setLoading(false);
         }
       };
-      // Load comments when modal opens
-      const saved = localStorage.getItem(`user_comments_${userId}`);
-      setComments(saved ? JSON.parse(saved) : []);
+
       fetchUserDetails();
     }
   }, [isOpen, userId]);
@@ -711,6 +733,37 @@ export default function UserDetailsModal({
                         View All Transactions
                       </Link>
                     </div>
+                  </div>
+                  <h3 className="font-semibold text-gray-800 mb-2 mt-6">
+                    Card Details
+                  </h3>
+                  <div className="space-y-3">
+                    {user.cards && user.cards.length > 0 ? (
+                      user.cards.map((card: CardDetails, index: number) => (
+                        <div
+                          key={index}
+                          className="bg-gray-50 p-3 rounded-xl border"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">{card.issuer}</p>
+                              <p className="text-sm text-gray-600">
+                                {card.type}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-md ">
+                                {card.bin}&nbsp;••••••&nbsp;{card.lastFour}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">
+                        No card information available
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

@@ -38,6 +38,7 @@ type RawTransaction = Partial<{
   errorMessage: string;
   userId: number | string | null;
   bankName: string;
+  transactionReference: string;
 }>;
 
 const rowsPerPage = 10;
@@ -297,6 +298,7 @@ const TransactionsPage = () => {
         ? Number(tx.userId)
         : null,
     bankName: tx.bankName || "N/A",
+    transactionReference: tx.transactionReference || "N/A",
   });
 
   const formatTransactionStatus = (status: string | undefined): string => {

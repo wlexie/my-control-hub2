@@ -1,4 +1,5 @@
 export interface Transaction {
+    
     transactionId: string;
     transactionKey:string;
     senderName: string;
@@ -21,5 +22,9 @@ export interface Transaction {
     errorMessage:string;
     userId: number | null;
     bankName: string | null;
+    maskedPan?:string | null;
+    paymentTypeDescription?: string | null;
+    issuer?: string | null;
+    transactionReference:string;
   }
   

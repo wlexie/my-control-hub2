@@ -17,6 +17,7 @@ export interface User {
   documents?: Document[];
   transaction?: Transaction;
   riskScore?:RiskScore;
+  cards?:CardDetails[];
 }
 
 export interface Document {
@@ -60,4 +61,12 @@ export interface RiskScore {
     transactionsValueScore: number;
     accountStatusScore: number;
   };
+}
+
+export interface CardDetails {
+  issuer: string;
+  type: string;
+  bin: string; // First 6 digits
+  lastFour: string; // Last 4 digits
+  fullMaskedNumber: string; // Full masked number from API (e.g., 535666######9217)
 }
