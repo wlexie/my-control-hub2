@@ -9,53 +9,53 @@ import toast from "react-hot-toast";
 type TransactionModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  transaction: Transaction | null;
+  transactionKey: string | null;
   onRetrySuccess?: (transaction: Transaction) => void;
 };
 
 const getStatusDetails = (status: string, errorMessage?: string) => {
   const baseDetails = {
-    Success: {
+    SUCCESS: {
       title: "Transaction Successful",
       icon: "/backoffice/icons/success.svg",
       reason: "Transaction has been completed and funds have been delivered",
     },
-    Failed: {
+    FAILED: {
       title: "Transaction Failed",
       icon: "/backoffice/icons/failed.svg",
-      reason: errorMessage || "N/A",
+      reason: errorMessage || "Transaction failed to process",
     },
-    Rejected: {
+    REJECTED: {
       title: "Transaction Rejected",
       icon: "/backoffice/icons/rejected.svg",
       reason: errorMessage || "Transaction was rejected by the receiving bank",
     },
-    Pending: {
+    PENDING: {
       title: "Transaction Pending",
       icon: "/backoffice/icons/pending.svg",
       reason: "Transaction is being processed",
     },
-    Reversed: {
+    REVERSED: {
       title: "Transaction Reversed",
       icon: "/backoffice/icons/reversed.svg",
       reason: "Transaction has been reversed to sender",
     },
-    Refunded: {
+    REFUNDED: {
       title: "Transaction Refunded",
       icon: "/backoffice/icons/refunded.svg",
       reason: "Amount has been refunded to sender",
     },
-    Escalated: {
+    ESCALATED: {
       title: "Transaction Escalated",
       icon: "/backoffice/icons/escalated.svg",
       reason: "Transaction requires manual review",
     },
-    Error: {
+    ERROR: {
       title: "Transaction Error",
       icon: "/backoffice/icons/error.svg",
       reason: errorMessage || "Insufficient funds in account",
     },
-    "Under Review": {
+    "UNDER REVIEW": {
       title: "Transaction Under Review",
       icon: "/backoffice/icons/under-review.svg",
       reason: "Transaction is being reviewed for compliance",
@@ -71,28 +71,84 @@ const getStatusDetails = (status: string, errorMessage?: string) => {
   );
 };
 
+const mapApiTransactionToTransaction = (tx: Transaction): Transaction => ({
+  transactionId: tx.transactionId || "N/A",
+  senderName: tx.senderName || "Unknown Sender",
+  receiverName: tx.receiverName || "Unknown Recipient",
+  senderAmount: tx.senderAmount || 0,
+  currencyIso3a: tx.currencyIso3a || "USD",
+  date: tx.date || new Date().toISOString(),
+  status: tx.status || "UNKNOWN",
+  exchangeRate: tx.exchangeRate || 1,
+  transactionType: tx.transactionType || "Unknown",
+  receiverPhone: tx.receiverPhone || "N/A",
+  senderPhone: tx.senderPhone || "N/A",
+  transactionKey: tx.transactionKey || "N/A",
+  accountNumber: Number(tx.accountNumber) || 0,
+  settlementReference: tx.settlementReference || "N/A",
+  recipientAmount: tx.recipientAmount || 0,
+  senderEmail: tx.senderEmail || "N/A",
+  receiverCurrencyIso3a: tx.receiverCurrencyIso3a || "USD",
+  mpesaReference: tx.mpesaReference || "N/A",
+  tpReference: tx.tpReference || "N/A",
+  errorMessage: tx.errorMessage || "N/A",
+  userId:
+    tx.userId !== undefined && tx.userId !== null && !isNaN(Number(tx.userId))
+      ? Number(tx.userId)
+      : null,
+  bankName: tx.bankName || "N/A",
+  transactionReference: tx.transactionReference || "",
+  maskedPan: tx.maskedPan || "N/A",
+  issuer: tx.issuer || "N/A",
+  paymentTypeDescription: tx.paymentTypeDescription || "N/A",
+});
+
 const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
-  transaction: initialTransaction,
+  transactionKey,
   onRetrySuccess,
 }) => {
   const [isClient, setIsClient] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
-  const [transaction, setTransaction] = useState<Transaction | null>(
-    initialTransaction
-  );
+  const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
 
-  if (!isOpen || !transaction) return null;
+    if (isOpen && transactionKey) {
+      fetchTransaction();
+    } else {
+      setTransaction(null);
+      setLoading(true);
+    }
+  }, [isOpen, transactionKey]);
 
-  const statusDetails = getStatusDetails(
-    transaction.status,
-    transaction.errorMessage
-  );
+  console.log("Fetching with transactionKey:", transactionKey);
+
+  const fetchTransaction = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `https://api.tuma-app.com/api/transfer/transaction-by-reference?transactionReference=${transactionKey}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch transaction");
+      }
+
+      const data = await response.json();
+      const mappedTransaction = mapApiTransactionToTransaction(data);
+      setTransaction(mappedTransaction);
+    } catch (error) {
+      console.error("Error fetching transaction:", error);
+      toast.error("Failed to load transaction details");
+      setTransaction(null); // prevent stale values
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatDateTime = (dateString: string): string => {
     const date = new Date(dateString);
@@ -108,7 +164,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
 
   const formatDateEAT = (dateString: string): string => {
     const date = new Date(dateString);
-    date.setHours(date.getHours() + 3);
+    date.setHours(date.getHours() + 3); // Convert to East Africa Time
     return date.toLocaleString("en-GB", {
       day: "2-digit",
       month: "2-digit",
@@ -122,17 +178,21 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   const formatChannelName = (channel: string): string => {
     switch (channel?.toUpperCase()) {
       case "CARD_TO_BANK":
-        return "Bank";
-      case "CARD_TO_PAYBILL":
+        return "Bank Transfer";
+      case "CARD_TO_MPESA":
         return "M-PESA";
+      case "CARD_TO_CARD":
+        return "Card Transfer";
       default:
         return channel || "Unknown";
     }
   };
 
-  const retryPendingPayment = async (transactionReference: string) => {
+  const retryPendingPayment = async () => {
+    if (!transactionKey) return;
+
     const response = await fetch(
-      `https://api.tuma-app.com/api/transfer/settle-pending-payment?transactionReference=${transactionReference}`,
+      `https://api.tuma-app.com/api/transfer/settle-pending-payment?transactionReference=${transactionKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,44 +209,53 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   };
 
   const handleRetryPayment = async () => {
-    if (!transaction) return;
+    if (!transactionKey) return;
 
     setIsRetrying(true);
     try {
-      const response = await retryPendingPayment(transaction.transactionKey);
+      const response = await retryPendingPayment();
       console.log("Retry Payment API Response:", response);
 
       if (response.status === "ok") {
         toast.success(
           response.message || "Payment retry initiated successfully"
         );
-
-        const updatedTransaction = { ...transaction, status: "Success" };
-        setTransaction(updatedTransaction);
-        onRetrySuccess?.(updatedTransaction);
-
-        setTimeout(() => onClose(), 2000);
+        fetchTransaction(); // Refresh the transaction data
+        if (onRetrySuccess && transaction) {
+          onRetrySuccess({ ...transaction, status: "SUCCESS" });
+        }
       } else {
         toast.error(response.message || "Unexpected response from server");
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Retry Payment Error:", error);
-
-        if (error.message?.includes("TRANSACTION.NOT.FOUND")) {
-          toast.error("Transaction not found");
-          setTransaction((prev: Transaction | null) =>
-            prev ? { ...prev, status: "Failed" } : null
-          );
-        } else {
-          toast.error(error.message || "Failed to retry payment");
-        }
+        toast.error(error.message || "Failed to retry payment");
       } else {
         console.error("Unknown error:", error);
         toast.error("An unknown error occurred while retrying payment.");
       }
+    } finally {
+      setIsRetrying(false);
     }
   };
+
+  if (!isOpen) return null;
+
+  if (loading || !transaction) {
+    return (
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="bg-white p-6 rounded-lg shadow-lg">
+          <p>Loading transaction details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const statusDetails = getStatusDetails(
+    transaction.status,
+    transaction.errorMessage
+  );
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50">
@@ -206,7 +275,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   {transaction.transactionId}
                 </h2>
                 <div className="flex items-center gap-2">
-                  {transaction.status === "Pending" && (
+                  {transaction.status === "PENDING" && (
                     <button
                       onClick={handleRetryPayment}
                       disabled={isRetrying}
@@ -260,21 +329,29 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p className="text-gray-500">Transfer Fee:</p>
                       <p>0.00</p>
                       <p className="text-gray-500">Payment Method:</p>
-                      <p>{transaction.transactionType}</p>
+                      <p>{formatChannelName(transaction.transactionType)}</p>
                       <p className="text-gray-500">Bank Name:</p>
                       <p>{transaction.bankName || "N/A"}</p>
+                      <p className="text-gray-500">Card Type:</p>
+                      <p>{transaction.paymentTypeDescription || "N/A"}</p>
+                      <p className="text-gray-500">Card Issuer:</p>
+                      <p>{transaction.issuer || "N/A"}</p>
+                      <p className="text-gray-500">Masked Card:</p>
+                      <p>{transaction.maskedPan || "N/A"}</p>
                       <p className="text-gray-500">Transaction ID:</p>
                       <p className="truncate">{transaction.transactionId}</p>
                       <p className="text-gray-500">User ID:</p>
                       <p>{transaction.userId || "N/A"}</p>
                       <p className="text-gray-500">Tuma Reference:</p>
                       <p>{transaction.transactionKey || "N/A"}</p>
-                      <p className="text-gray-500">Trust Payment:</p>
+                      <p className="text-gray-500">Trust Payment Reference:</p>
                       <p>{transaction.tpReference || "N/A"}</p>
                       <p className="text-gray-500">Settlement Reference:</p>
                       <p>{transaction.settlementReference || "N/A"}</p>
                       <p className="text-gray-500">MPESA Reference:</p>
                       <p>{transaction.mpesaReference || "N/A"}</p>
+                      <p className="text-gray-500">Transaction Reference:</p>
+                      <p>{transaction.transactionReference || "N/A"}</p>
                       <p className="text-gray-500">Origin:</p>
                       <p>UK</p>
                       <p className="text-gray-500">Destination:</p>
@@ -312,14 +389,16 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p className="text-gray-500">Name:</p>
                       <p>{transaction.receiverName}</p>
                       <p className="text-gray-500">Number:</p>
-                      <p>{transaction.receiverPhone}</p>
+                      <p>{transaction.receiverPhone || "N/A"}</p>
+                      <p className="text-gray-500">Account Number:</p>
+                      <p>{transaction.accountNumber || "N/A"}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="sticky bottom-0 left-0 right-0 bg-white p-3 border-t flex justify-between items-center">
-                {isClient && transaction.status === "Success" && (
+                {isClient && transaction.status === "SUCCESS" && (
                   <button
                     onClick={async () => {
                       const blob = await generateReceiptPDF(
@@ -369,7 +448,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   {transaction.transactionId}
                 </h2>
                 <div className="flex items-center gap-4">
-                  {transaction.status === "Pending" && (
+                  {transaction.status === "PENDING" && (
                     <button
                       onClick={handleRetryPayment}
                       disabled={isRetrying}
@@ -423,21 +502,29 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p className="text-gray-400">Transfer Fee:</p>
                       <p>0.00</p>
                       <p className="text-gray-400">Payment Method:</p>
-                      <p>{transaction.transactionType}</p>
+                      <p>{formatChannelName(transaction.transactionType)}</p>
                       <p className="text-gray-400">Bank Name:</p>
                       <p>{transaction.bankName || "N/A"}</p>
+                      <p className="text-gray-400">Card Type:</p>
+                      <p>{transaction.paymentTypeDescription || "N/A"}</p>
+                      <p className="text-gray-400">Card Issuer:</p>
+                      <p>{transaction.issuer || "N/A"}</p>
+                      <p className="text-gray-400">Masked Card:</p>
+                      <p>{transaction.maskedPan || "N/A"}</p>
                       <p className="text-gray-400">Transaction ID:</p>
                       <p>{transaction.transactionId}</p>
                       <p className="text-gray-400">User ID:</p>
                       <p>{transaction.userId || "N/A"}</p>
                       <p className="text-gray-400">Tuma Reference:</p>
                       <p>{transaction.transactionKey || "N/A"}</p>
-                      <p className="text-gray-400">Trust Payment:</p>
+                      <p className="text-gray-400">Trust Payment Reference:</p>
                       <p>{transaction.tpReference || "N/A"}</p>
                       <p className="text-gray-400">Settlement Reference:</p>
                       <p>{transaction.settlementReference || "N/A"}</p>
                       <p className="text-gray-400">MPESA Reference:</p>
                       <p>{transaction.mpesaReference || "N/A"}</p>
+                      <p className="text-gray-400">Transaction Reference:</p>
+                      <p>{transaction.transactionReference || "N/A"}</p>
                       <p className="text-gray-400">Origin:</p>
                       <p>UK</p>
                       <p className="text-gray-400">Destination:</p>
@@ -475,14 +562,16 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p className="text-gray-400">Name:</p>
                       <p>{transaction.receiverName}</p>
                       <p className="text-gray-400">Number:</p>
-                      <p>{transaction.receiverPhone}</p>
+                      <p>{transaction.receiverPhone || "N/A"}</p>
+                      <p className="text-gray-400">Account Number:</p>
+                      <p>{transaction.accountNumber || "N/A"}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className=" flex-shrink-0 sticky bottom-0 left-0 right-0 bg-white p-4 border-t flex justify-between items-center">
-                {isClient && transaction.status === "Success" && (
+              <div className="flex-shrink-0 sticky bottom-0 left-0 right-0 bg-white p-4 border-t flex justify-between items-center">
+                {isClient && transaction.status === "SUCCESS" && (
                   <button
                     onClick={async () => {
                       const blob = await generateReceiptPDF(

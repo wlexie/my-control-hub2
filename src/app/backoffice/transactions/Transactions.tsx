@@ -15,6 +15,35 @@ import { useSearchParams } from "next/navigation";
 import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
 
+interface ExportTransaction {
+  "Transaction ID": number;
+  "Transaction Key": string;
+  "Transaction Reference": string;
+  "User ID": number;
+  "Sender Name": string;
+  "Sender's Number": string;
+  "Sender's Email": string;
+  "Recipient Name": string;
+  "Recipient's Number": string;
+  "Account Number": string;
+  "Sender Amount": number;
+  "Recipient Amount": number;
+  "Sender Currency": string;
+  "Destination Currency": string;
+  "Exchange Rate": number;
+  "Transaction Type": string;
+  "Payment Description": string;
+  "Card Issuer": string;
+  "Masked Card Number": string;
+  "Settlement Reference": string;
+  "MPESA Reference": string;
+  "Trust Payment Reference": string;
+  "Bank Name": string;
+  Status: string;
+  "Error Message": string;
+  "Date & Time (GMT)": string;
+}
+
 type RawTransaction = Partial<{
   transactionId: string;
   senderName: string;
@@ -58,8 +87,9 @@ const TransactionsPage = () => {
   const [error, setError] = useState("");
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<Transaction | null>(null);
+  const [selectedTransactionKey, setSelectedTransactionKey] = useState<
+    string | null
+  >(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState<{
     startDate: Date | null;
@@ -289,7 +319,7 @@ const TransactionsPage = () => {
     settlementReference: tx.settlementReference || "N/A",
     recipientAmount: tx.recipientAmount || 0,
     senderEmail: tx.senderEmail || "N/A",
-    receiverCurrencyIso3a: tx.receiverCurrencyIso3a || "USD",
+    receiverCurrencyIso3a: tx.receiverCurrencyIso3a || "",
     mpesaReference: tx.mpesaReference || "N/A",
     tpReference: tx.tpReference || "N/A",
     errorMessage: tx.errorMessage || "N/A",
@@ -298,7 +328,7 @@ const TransactionsPage = () => {
         ? Number(tx.userId)
         : null,
     bankName: tx.bankName || "N/A",
-    transactionReference: tx.transactionReference || "N/A",
+    transactionReference: tx.transactionReference || "N/A", // Keep this line
   });
 
   const formatTransactionStatus = (status: string | undefined): string => {
@@ -326,22 +356,23 @@ const TransactionsPage = () => {
     }
   };
 
-  const handleOpenModal = (transaction: Transaction) => {
-    setSelectedTransaction(transaction);
+  const handleOpenModal = (transactionKey: string) => {
+    setSelectedTransactionKey(transactionKey);
     setIsModalOpen(true);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const toastId = toast.loading("Export in progress...");
 
     try {
       const fileName = generateExportFileName();
-      const data = prepareExportData();
+      const data = await prepareExportData(); // Await the async call!
 
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
       XLSX.writeFile(workbook, `${fileName}.xlsx`, { compression: true });
+
       toast.success("Export completed!", { id: toastId });
     } catch (error) {
       toast.error("Export failed", { id: toastId });
@@ -364,28 +395,52 @@ const TransactionsPage = () => {
     return fileName;
   };
 
-  const prepareExportData = () => {
-    return filteredTransactions.map((transaction) => ({
-      "Transaction ID": transaction.transactionId,
-      "User ID": transaction.userId,
-      Sender: transaction.senderName,
-      "Sender's Number": transaction.senderPhone,
-      "Sender's Email": transaction.senderEmail,
-      Recipient: transaction.receiverName,
-      "Recipient's Number": transaction.receiverPhone,
-      "Recipient's Amount": transaction.recipientAmount,
-      "Sender Amount": transaction.senderAmount,
-      "Sender Currency": transaction.currencyIso3a,
-      "Destination Currency": transaction.receiverCurrencyIso3a,
-      "Exchange Rate": transaction.exchangeRate,
-      "Transaction Type": transaction.transactionType,
-      "Date & Time (GMT)": formatDateTime(transaction.date),
-      Status: transaction.status,
-      "Settlement Reference": transaction.settlementReference,
-      "MPESA Reference": transaction.mpesaReference,
-      "Trust Payment Reference": transaction.tpReference,
-      "Bank Name": transaction.bankName,
-    }));
+  const prepareExportData = async () => {
+    const exportData: ExportTransaction[] = [];
+
+    for (const transaction of filteredTransactions) {
+      try {
+        const res = await fetch(
+          `https://api.tuma-app.com/api/transfer/transaction-by-reference?transactionReference=${transaction.transactionKey}`
+        );
+        if (!res.ok) throw new Error("Failed to fetch transaction details");
+        const fullDetails = await res.json();
+
+        exportData.push({
+          "Transaction ID": fullDetails.transactionId,
+          "Transaction Key": fullDetails.transactionKey,
+          "Transaction Reference": fullDetails.transactionReference,
+          "User ID": fullDetails.userId,
+          "Sender Name": fullDetails.senderName,
+          "Sender's Number": fullDetails.senderPhone,
+          "Sender's Email": fullDetails.senderEmail,
+          "Recipient Name": fullDetails.receiverName,
+          "Recipient's Number": fullDetails.receiverPhone,
+          "Account Number": fullDetails.accountNumber,
+          "Sender Amount": fullDetails.senderAmount,
+          "Recipient Amount": fullDetails.recipientAmount,
+          "Sender Currency": fullDetails.currencyIso3a,
+          "Destination Currency": fullDetails.receiverCurrencyIso3a,
+          "Exchange Rate": fullDetails.exchangeRate,
+          "Transaction Type": fullDetails.transactionType,
+          "Payment Description": fullDetails.paymentTypeDescription || "N/A",
+          "Card Issuer": fullDetails.issuer || "N/A",
+          "Masked Card Number": fullDetails.maskedPan || "N/A",
+          "Settlement Reference": fullDetails.settlementReference,
+          "MPESA Reference": fullDetails.mpesaReference,
+          "Trust Payment Reference": fullDetails.tpReference,
+          "Bank Name": fullDetails.bankName || "N/A",
+          Status: fullDetails.status,
+          "Error Message": fullDetails.errorMessage || "N/A",
+          "Date & Time (GMT)": formatDateTime(fullDetails.date),
+        });
+      } catch (error) {
+        console.error("Error fetching details for export:", error);
+        toast.error("Failed to fetch all transaction details for export");
+      }
+    }
+
+    return exportData;
   };
 
   const formatDateTime = (dateString: string): string => {
@@ -648,7 +703,9 @@ const TransactionsPage = () => {
                             <tr
                               key={transaction.transactionId}
                               className="border-b hover:bg-gray-50 cursor-pointer"
-                              onClick={() => handleOpenModal(transaction)}
+                              onClick={() =>
+                                handleOpenModal(transaction.transactionKey)
+                              }
                             >
                               <td className="px-6 py-4 hidden sm:table-cell">
                                 {transaction.transactionId}
@@ -757,12 +814,12 @@ const TransactionsPage = () => {
         </div>
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && selectedTransactionKey && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <TransactionModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
-            transaction={selectedTransaction}
+            transactionKey={selectedTransactionKey}
             onRetrySuccess={handleRetrySuccess}
           />
         </div>

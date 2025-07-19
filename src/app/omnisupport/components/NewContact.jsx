@@ -4,7 +4,7 @@ import { X, Search, ChevronDown, Loader2 } from 'lucide-react';
 import { LuSendHorizontal } from "react-icons/lu";
 
 // List of country codes you want to fetch
-const countryCodesToFetch = 'KE,TZ,UG,BI,RW,ZM,ZA';
+const countryCodesToFetch = 'KE,TZ,UG,BI,RW,ZM,ZA,GB';
 const REST_COUNTRIES_ENDPOINT = `https://restcountries.com/v3.1/alpha?codes=${countryCodesToFetch}&fields=name,cca2,idd,flags`;
 
 export default function NewContact({ isOpen, onClose, onSelectContact }) {
