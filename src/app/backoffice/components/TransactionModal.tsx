@@ -14,6 +14,7 @@ type TransactionModalProps = {
 };
 
 const getStatusDetails = (status: string, errorMessage?: string) => {
+  const normalizedStatus = status === "ERROR" ? "FAILED" : status;
   const baseDetails = {
     SUCCESS: {
       title: "Transaction Successful",
@@ -53,7 +54,7 @@ const getStatusDetails = (status: string, errorMessage?: string) => {
     ERROR: {
       title: "Transaction Error",
       icon: "/backoffice/icons/error.svg",
-      reason: errorMessage || "Insufficient funds in account",
+      reason: errorMessage,
     },
     "UNDER REVIEW": {
       title: "Transaction Under Review",
@@ -63,7 +64,7 @@ const getStatusDetails = (status: string, errorMessage?: string) => {
   };
 
   return (
-    baseDetails[status as keyof typeof baseDetails] || {
+    baseDetails[normalizedStatus as keyof typeof baseDetails] || {
       title: "Transaction Status Unknown",
       icon: "/backoffice/icons/unknown.png",
       reason: "Status reason not available",
@@ -253,7 +254,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   }
 
   const statusDetails = getStatusDetails(
-    transaction.status,
+    transaction.status === "ERROR" ? "FAILED" : transaction.status,
     transaction.errorMessage
   );
 
