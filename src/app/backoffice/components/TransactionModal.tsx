@@ -102,6 +102,7 @@ const mapApiTransactionToTransaction = (tx: Transaction): Transaction => ({
   maskedPan: tx.maskedPan || "N/A",
   issuer: tx.issuer || "N/A",
   paymentTypeDescription: tx.paymentTypeDescription || "N/A",
+  receiverAddress: tx.receiverAddress || "N/A",
 });
 
 const TransactionModal: React.FC<TransactionModalProps> = ({
@@ -356,7 +357,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p className="text-gray-500">Origin:</p>
                       <p>UK</p>
                       <p className="text-gray-500">Destination:</p>
-                      <p>Kenya</p>
+                      <p>{transaction.receiverAddress}</p>
                       <p className="text-gray-500">Time Sent:</p>
                       <p>{formatDateTime(transaction.date)}</p>
                       <p className="text-gray-500">Time Received:</p>
@@ -455,7 +456,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       disabled={isRetrying}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isRetrying ? "Processing..." : "Retry Payment"}
+                      {isRetrying ? "Processing..." : "Settle Payment"}
                     </button>
                   )}
                   <button
@@ -529,7 +530,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p className="text-gray-400">Origin:</p>
                       <p>UK</p>
                       <p className="text-gray-400">Destination:</p>
-                      <p>Kenya</p>
+                      <p>{transaction.receiverAddress}</p>
                       <p className="text-gray-400">Time Sent:</p>
                       <p>{formatDateTime(transaction.date)}</p>
                       <p className="text-gray-400">Time Received:</p>

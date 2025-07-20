@@ -26,5 +26,6 @@ export interface Transaction {
     paymentTypeDescription?: string | null;
     issuer?: string | null;
     transactionReference:string;
+    receiverAddress:string;
   }
   
