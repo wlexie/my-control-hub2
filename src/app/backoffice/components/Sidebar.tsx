@@ -8,9 +8,9 @@ import { HiMenu, HiX } from "react-icons/hi";
 import User from "../../access-manager/components/User";
 
 import { useSelector } from "react-redux";
-import { RootState } from "../../../store/store"; 
+import { RootState } from "../../../store/store";
 
-const allNavLinks = [ 
+const allNavLinks = [
   {
     href: "/backoffice/dashboard",
     label: "Dashboard",
@@ -48,10 +48,10 @@ const allNavLinks = [
     match: "/backoffice/fees",
   },
   {
-    href: "/backoffice/compliance",
+    href: "/backoffice/compliance-security",
     label: "Compliance & Security",
     icon: "/backoffice/compliance.png",
-    match: "/backoffice/compliance",
+    match: "/backoffice/compliance-security",
   },
   {
     href: "/backoffice/reports",
@@ -88,12 +88,12 @@ const Sidebar = () => {
     }
 
     // 2. If user has 'BACKOFFICE' role, show only specific links
-    if (user.roles.includes('BACKOFFICE')) {
+    if (user.roles.includes("BACKOFFICE")) {
       return allNavLinks.filter(
         (link) => link.label === "Dashboard" || link.label === "Transactions"
       );
     }
-    
+
     // 3. For any other logged-in user, show all links
     return allNavLinks;
   };
@@ -157,7 +157,9 @@ const Sidebar = () => {
   return (
     <>
       {/* Desktop: always visible, pushed left */}
-      <div className="hidden md:block fixed h-screen w-full md:w-80">{content}</div>
+      <div className="hidden md:block fixed h-screen w-full md:w-80">
+        {content}
+      </div>
 
       {/* Mobile: hamburger button */}
       <button
@@ -165,7 +167,11 @@ const Sidebar = () => {
         className="fixed top-4 right-4 z-50  text-white rounded-lg md:hidden hover:bg-blue-600 transition-colors"
         aria-label="Toggle menu"
       >
-        {open ? <HiX size={28} className="text-blue-600"/> : <HiMenu size={28} className="text-blue-600" />}
+        {open ? (
+          <HiX size={28} className="text-blue-600" />
+        ) : (
+          <HiMenu size={28} className="text-blue-600" />
+        )}
       </button>
 
       {/* Mobile: slide-in panel */}

@@ -8,6 +8,7 @@ import DateFilter from "../components/DateFilter";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import TransactionModal from "../components/TransactionModal";
+import FraudModal from "./components/FraudModal";
 import { Transaction } from "../types/transactions";
 import * as XLSX from "xlsx";
 import api from "../../../hooks/useApi";
@@ -106,6 +107,8 @@ const TransactionsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loadedPages, setLoadedPages] = useState(new Set([1]));
   const dateFilterRef = useRef<HTMLDivElement>(null);
+  const [showFraudModal, setShowFraudModal] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
 
   const statusOptions = [
     "All",
@@ -488,6 +491,10 @@ const TransactionsPage = () => {
     );
   };
 
+  const toggleDropdown = (transactionId: string) => {
+    setDropdownOpen(dropdownOpen === transactionId ? null : transactionId);
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
@@ -495,7 +502,9 @@ const TransactionsPage = () => {
       <div className="flex-1 md:ml-80 h-full overflow-y-auto bg-white">
         <div className="p-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-            <h2 className="text-2xl font-semibold text-black">Transactions</h2>
+            <h2 className="text-2xl font-semibold text-black">
+              Compliance and Security
+            </h2>
             <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
               <div className="relative w-full md:w-[450px]">
                 <input
@@ -662,6 +671,7 @@ const TransactionsPage = () => {
                       <th className="px-6 py-3 hidden lg:table-cell">Type</th>
                       <th className="px-6 py-3">Time</th>
                       <th className="px-6 py-3">Status</th>
+                      <th className="px-6 py-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -707,6 +717,7 @@ const TransactionsPage = () => {
                         <th className="px-6 py-3 hidden lg:table-cell">Type</th>
                         <th className="px-6 py-3">Time</th>
                         <th className="px-6 py-3">Status</th>
+                        <th className="px-6 py-3">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -719,10 +730,7 @@ const TransactionsPage = () => {
                           .map((transaction) => (
                             <tr
                               key={transaction.transactionId}
-                              className="border-b hover:bg-gray-50 cursor-pointer"
-                              onClick={() =>
-                                handleOpenModal(transaction.transactionKey)
-                              }
+                              className="border-b hover:bg-gray-50"
                             >
                               <td className="px-6 py-4 hidden sm:table-cell">
                                 {transaction.transactionId}
@@ -776,6 +784,52 @@ const TransactionsPage = () => {
                                 >
                                   {transaction.status}
                                 </span>
+                              </td>
+
+                              <td className="px-6 py-4 relative">
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleDropdown(transaction.transactionId);
+                                    }}
+                                    className="text-gray-500 hover:text-gray-700"
+                                  >
+                                    ⋯
+                                  </button>
+                                  {dropdownOpen ===
+                                    transaction.transactionId && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOpenModal(
+                                            transaction.transactionKey
+                                          );
+                                          setDropdownOpen(null);
+                                        }}
+                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                      >
+                                        View Transaction Info
+                                      </button>
+                                      {transaction.fraudReference && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowFraudModal(true);
+                                            setSelectedTransactionKey(
+                                              transaction.fraudReference
+                                            );
+                                            setDropdownOpen(null);
+                                          }}
+                                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                          View Fraud Info
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))
@@ -838,6 +892,15 @@ const TransactionsPage = () => {
             onClose={() => setIsModalOpen(false)}
             transactionKey={selectedTransactionKey}
             onRetrySuccess={handleRetrySuccess}
+          />
+        </div>
+      )}
+      {showFraudModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <FraudModal
+            isOpen={showFraudModal}
+            onClose={() => setShowFraudModal(false)}
+            fraudReference={selectedTransactionKey}
           />
         </div>
       )}

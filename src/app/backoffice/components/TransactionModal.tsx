@@ -103,6 +103,7 @@ const mapApiTransactionToTransaction = (tx: Transaction): Transaction => ({
   issuer: tx.issuer || "N/A",
   paymentTypeDescription: tx.paymentTypeDescription || "N/A",
   receiverAddress: tx.receiverAddress || "N/A",
+  fraudReference: tx.fraudReference,
 });
 
 const TransactionModal: React.FC<TransactionModalProps> = ({

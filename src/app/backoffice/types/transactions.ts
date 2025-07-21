@@ -27,5 +27,6 @@ export interface Transaction {
     issuer?: string | null;
     transactionReference:string;
     receiverAddress:string;
+    fraudReference:string;
   }
   
