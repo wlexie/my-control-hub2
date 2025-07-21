@@ -30,6 +30,7 @@ interface ExportTransaction {
   "Recipient Amount": number;
   "Sender Currency": string;
   "Destination Currency": string;
+  Destination: string;
   "Exchange Rate": number;
   "Transaction Type": string;
   "Payment Description": string;
@@ -68,6 +69,7 @@ type RawTransaction = Partial<{
   userId: number | string | null;
   bankName: string;
   transactionReference: string;
+  receiverAddress: string;
 }>;
 
 const rowsPerPage = 10;
@@ -119,41 +121,45 @@ const TransactionsPage = () => {
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
 
   const availableCountries = useMemo(() => {
-    const countries = [
+    return [
       {
-        code: "KE",
-        label: "Kenya",
-        flag: "/backoffice/kenya-flag.png",
-        currency: "KES",
-      },
-    ];
-
-    const hasTZS = allTransactions.some(
-      (tx) => tx.receiverCurrencyIso3a === "TZS"
-    );
-    const hasGBP = allTransactions.some(
-      (tx) => tx.receiverCurrencyIso3a === "GBP"
-    );
-
-    if (hasTZS) {
-      countries.push({
-        code: "TZ",
-        label: "Tanzania",
-        flag: "/backoffice/tz-flag.png",
-        currency: "TZS",
-      });
-    }
-    if (hasGBP) {
-      countries.push({
         code: "UK",
         label: "United Kingdom",
         flag: "/backoffice/uk-flag.png",
         currency: "GBP",
-      });
-    }
-
-    return countries;
-  }, [allTransactions]);
+      },
+      {
+        code: "MW",
+        label: "Malawi",
+        flag: "/backoffice/malawi.png",
+        currency: "MWK",
+      },
+      {
+        code: "RW",
+        label: "Rwanda",
+        flag: "/backoffice/rwanda.png",
+        currency: "RWF",
+      },
+      {
+        code: "BI",
+        label: "Burundi",
+        flag: "/backoffice/burundi.png",
+        currency: "BIF",
+      },
+      {
+        code: "TZ",
+        label: "Tanzania",
+        flag: "/backoffice/tz-flag.png",
+        currency: "TZS",
+      },
+      {
+        code: "GH",
+        label: "Ghana",
+        flag: "/backoffice/ghana.png",
+        currency: "GHS",
+      },
+    ];
+  }, []);
 
   const countryDropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -265,16 +271,21 @@ const TransactionsPage = () => {
   useEffect(() => {
     let filtered = [...allTransactions];
 
+    // First exclude any transactions with KES as destination currency
+    filtered = filtered.filter((t) => t.receiverCurrencyIso3a !== "KES");
+
     if (statusFilter !== "All") {
       filtered = filtered.filter((t) => t.status === statusFilter);
     }
-
-    if (selectedCountry === "KE") {
-      filtered = filtered.filter((t) => t.receiverCurrencyIso3a === "KES");
-    } else if (selectedCountry === "TZ") {
-      filtered = filtered.filter((t) => t.receiverCurrencyIso3a === "TZS");
-    } else if (selectedCountry === "UK") {
-      filtered = filtered.filter((t) => t.receiverCurrencyIso3a === "GBP");
+    if (selectedCountry) {
+      const country = availableCountries.find(
+        (c) => c.code === selectedCountry
+      );
+      if (country) {
+        filtered = filtered.filter(
+          (t) => t.receiverCurrencyIso3a === country.currency
+        );
+      }
     }
 
     if (searchQuery.trim()) {
@@ -328,7 +339,8 @@ const TransactionsPage = () => {
         ? Number(tx.userId)
         : null,
     bankName: tx.bankName || "N/A",
-    transactionReference: tx.transactionReference || "N/A", // Keep this line
+    transactionReference: tx.transactionReference || "N/A",
+    receiverAddress: tx.receiverAddress || "N/A",
   });
 
   const formatTransactionStatus = (status: string | undefined): string => {
@@ -421,6 +433,7 @@ const TransactionsPage = () => {
           "Recipient Amount": fullDetails.recipientAmount,
           "Sender Currency": fullDetails.currencyIso3a,
           "Destination Currency": fullDetails.receiverCurrencyIso3a,
+          Destination: fullDetails.receiverAddress,
           "Exchange Rate": fullDetails.exchangeRate,
           "Transaction Type": fullDetails.transactionType,
           "Payment Description": fullDetails.paymentTypeDescription || "N/A",
