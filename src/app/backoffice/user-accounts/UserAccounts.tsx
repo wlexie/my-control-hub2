@@ -27,6 +27,10 @@ interface User {
   step: string;
   userId: number | null;
   kycStatus: string;
+  riskScore?: {
+    riskLevel?: string;
+    totalScore?: number;
+  };
 }
 
 export default function UserAccounts() {
@@ -62,6 +66,7 @@ export default function UserAccounts() {
   }>({ startDate: null, endDate: null });
   const [showDateFilter, setShowDateFilter] = useState(false);
   const dateFilterRef = useRef<HTMLDivElement>(null);
+  const [riskFilter, setRiskFilter] = useState<string | null>(null);
 
   const usersPerPage = isMobile ? 7 : 10;
   const initialLoadCount = usersPerPage * 2; // Load double the page size initially
@@ -126,6 +131,15 @@ export default function UserAccounts() {
     const tokens = rawQuery.toLowerCase().split(/\s+/);
 
     const filtered = allUsers.filter((user) => {
+      // Only show users from the United Kingdom
+      const isUK = user.country === "United Kingdom";
+      if (!isUK) return false;
+
+      // Risk filter
+      const matchesRisk =
+        !riskFilter || user.riskScore?.riskLevel === riskFilter;
+
+      // Text match fields
       const fields = [
         `${user.firstName} ${user.lastName}`.toLowerCase(),
         user.email?.toLowerCase() ?? "",
@@ -135,6 +149,7 @@ export default function UserAccounts() {
         user.accountId?.toString() ?? "",
       ];
 
+      // Date filter
       const date = new Date(user.registrationDate).getTime();
       const inDateRange =
         !dateRange.startDate ||
@@ -146,12 +161,12 @@ export default function UserAccounts() {
         fields.some((field) => field.includes(token))
       );
 
-      return inDateRange && matchesAllTokens;
+      return isUK && matchesRisk && inDateRange && matchesAllTokens;
     });
 
     setFilteredUsers(filtered);
     setDisplayedUsers(filtered.slice(0, initialLoadCount));
-  }, [searchQuery, dateRange, allUsers]);
+  }, [searchQuery, dateRange, allUsers, riskFilter]);
 
   // Infinite scroll handler
   const handleScroll = useCallback(() => {
@@ -411,6 +426,17 @@ export default function UserAccounts() {
                 )}
               </div>
 
+              <select
+                value={riskFilter || ""}
+                onChange={(e) => setRiskFilter(e.target.value || null)}
+                className="px-4 py-2 border rounded-md text-sm shadow-sm"
+              >
+                <option value="">Risk Score</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+
               <button
                 onClick={handleExport}
                 className="flex items-center gap-2 px-3 py-2 bg-white border rounded-md shadow-sm text-sm"
@@ -537,6 +563,7 @@ export default function UserAccounts() {
                   <th className="px-4 py-3">COUNTRY</th>
                   <th className="px-4 py-3">REGISTRATION DATE</th>
                   <th className="px-4 py-3">ACCOUNT STATUS</th>
+                  <th className="px-4 py-3">RISK SCORE</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -567,6 +594,9 @@ export default function UserAccounts() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="h-6 bg-gray-200 rounded w-20" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-4 bg-gray-200 rounded w-6" />
                       </td>
                       <td className="px-4 py-3">
                         <div className="h-4 bg-gray-200 rounded w-6" />
@@ -632,6 +662,10 @@ export default function UserAccounts() {
                             {user.accountStatus}
                           </span>
                         </td>
+                        <td className="px-4 py-3 text-gray-500">
+                          {user.riskScore?.riskLevel || "—"}
+                        </td>
+
                         <td className="px-4 py-3 text-right">⋯</td>
                       </tr>
                     ))}
