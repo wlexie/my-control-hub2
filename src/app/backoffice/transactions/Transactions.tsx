@@ -131,6 +131,12 @@ const TransactionsPage = () => {
         currency: "GBP",
       },
       {
+        code: "KE",
+        label: "Kenya",
+        flag: "/backoffice/kenya.png",
+        currency: "KES",
+      },
+      {
         code: "MW",
         label: "Malawi",
         flag: "/backoffice/malawi.png",
@@ -151,7 +157,7 @@ const TransactionsPage = () => {
       {
         code: "TZ",
         label: "Tanzania",
-        flag: "/backoffice/tz-flag.png",
+        flag: "/backoffice/tz.png",
         currency: "TZS",
       },
       {
@@ -272,9 +278,6 @@ const TransactionsPage = () => {
 
   useEffect(() => {
     let filtered = [...allTransactions];
-
-    // First exclude any transactions with KES as destination currency
-    filtered = filtered.filter((t) => t.receiverCurrencyIso3a !== "KES");
 
     if (statusFilter !== "All") {
       filtered = filtered.filter((t) => t.status === statusFilter);

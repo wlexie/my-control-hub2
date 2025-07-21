@@ -131,10 +131,6 @@ export default function UserAccounts() {
     const tokens = rawQuery.toLowerCase().split(/\s+/);
 
     const filtered = allUsers.filter((user) => {
-      // Only show users from the United Kingdom
-      const isUK = user.country === "United Kingdom";
-      if (!isUK) return false;
-
       // Risk filter
       const matchesRisk =
         !riskFilter || user.riskScore?.riskLevel === riskFilter;
@@ -161,7 +157,7 @@ export default function UserAccounts() {
         fields.some((field) => field.includes(token))
       );
 
-      return isUK && matchesRisk && inDateRange && matchesAllTokens;
+      return matchesRisk && inDateRange && matchesAllTokens;
     });
 
     setFilteredUsers(filtered);
@@ -331,7 +327,7 @@ export default function UserAccounts() {
           {!isMobile && "Kenya"}
         </>
       );
-    } else if (code === "United Kingdom" || code === "GBR") {
+    } else if (code === "United Kingdom") {
       return (
         <>
           <img
@@ -339,7 +335,7 @@ export default function UserAccounts() {
             className="w-5 h-5 inline-block mr-1"
             alt="UK flag"
           />
-          {!isMobile && "United Kingdom"}
+          {!isMobile && "UK"}
         </>
       );
     } else if (code === "Tanzania") {
