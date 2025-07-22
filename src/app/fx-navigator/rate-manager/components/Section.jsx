@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import api from "../../../../utils/apiService";
 import Image from "next/image";
 import Update from "./Update";
+import CreatePairModal from "./CreatePairModal"; // 1. Import the new modal
 import { ChevronDown, Check } from "lucide-react";
 
 // --- A. Definitions and Custom Hook ---
@@ -32,7 +33,8 @@ const useClickOutside = (ref, handler) => {
 
 // --- B. Main Section Component ---
 const Section = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // Renamed for clarity
+  const [isCreatePairModalOpen, setIsCreatePairModalOpen] = useState(false); // 2. State for the new modal
   const [rates, setRates] = useState({
     paybill: null, mpesa: null, bank: null, card: null,
   });
@@ -43,7 +45,7 @@ const Section = () => {
   
   useClickOutside(dropdownRef, () => setIsDropdownOpen(false));
 
-  // --- C. API and Data Handling ---
+  // --- C. API and Data Handling (remains unchanged) ---
   const fetchRates = useCallback(async (base, target) => {
     try {
       const response = await api.get(
@@ -121,7 +123,7 @@ const Section = () => {
                                     {selectedPair.base === pair.base && selectedPair.target === pair.target ? (
                                         <Check className="w-4 h-4 mr-2 text-blue-600" />
                                     ) : (
-                                        <div className="w-4 h-4 mr-2" /> // Adjusted for alignment
+                                        <div className="w-4 h-4 mr-2" />
                                     )}
                                     <span>{pair.base} → {pair.target}</span>
                                 </li>
@@ -131,9 +133,16 @@ const Section = () => {
                 )}
              </div>
           </div>
+           <button
+            onClick={() => setIsCreatePairModalOpen(true)} // 3. This button now opens the new modal
+            className="md:px-6 px-2 py-1 md:py-2 h-fit bg-white font-medium text-blue-600 border-2 border-blue-600 rounded-lg text-[14px] md:text-base 
+             hover:bg-blue-700 hover:text-white transition"
+          >
+            Create Pair 
+          </button>
           
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setIsUpdateModalOpen(true)} // This button opens the original "Update" modal
             className="md:px-6 px-2 py-1 md:py-2 h-fit bg-[#276EF1] font-semibold text-white rounded-lg text-[14px] md:text-base 
              hover:bg-blue-700 transition"
           >
@@ -142,12 +151,6 @@ const Section = () => {
         </div>
       </div>
 
-      {/* 
-        HERE IS THE CHANGE:
-        - `grid-cols-2` sets the default to two columns for small screens.
-        - `gap-4` is a slightly smaller gap which works well for mobile.
-        - `lg:grid-cols-4` overrides the default on large screens to show all four cards in a row.
-      */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <RateCard icon="/fx/svgs/paybill.svg" label="Paybill" rate={rates.paybill} color="#27AAE1" />
         <RateCard icon="/fx/svgs/mpesa.svg" label="MPESA" rate={rates.mpesa} color="#3CA8A4" />
@@ -155,12 +158,15 @@ const Section = () => {
         <RateCard icon="/fx/svgs/card.svg" label="Card" rate={rates.card} color="#F9CB38" />
       </div>
 
-      <Update isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      {/* 4. Render the Modals */}
+      <Update isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} />
+      <CreatePairModal isOpen={isCreatePairModalOpen} onClose={() => setIsCreatePairModalOpen(false)} />
+
     </section>
   );
 };
 
-// --- E. RateCard Component ---
+// --- E. RateCard Component (remains unchanged) ---
 const RateCard = ({ icon, label, rate, color }) => (
     <div className="flex items-center md:p-3 p-1 bg-white border border-gray-200 rounded-xl">
         <Image src={icon} alt={label} className={`md:mr-4 mr-2 rounded-full ${label === "MPESA" ? "px-3 py-4" : "p-3"} bg-[#F3F5F8]`} width={50} height={50} />

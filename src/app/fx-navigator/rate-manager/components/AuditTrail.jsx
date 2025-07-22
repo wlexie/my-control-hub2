@@ -52,7 +52,7 @@ export default function AuditTrail() {
     };
 
     fetchData();
-  }, []); // Corrected dependency array to run only once
+  }, ); 
 
   // 3. Add the function to handle the Excel export
   const handleExport = () => {
