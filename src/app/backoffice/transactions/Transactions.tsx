@@ -731,7 +731,10 @@ const TransactionsPage = () => {
                           .map((transaction) => (
                             <tr
                               key={transaction.transactionId}
-                              className="border-b hover:bg-gray-50"
+                              className="border-b hover:bg-gray-50 cursor-pointer"
+                              onClick={() =>
+                                handleOpenModal(transaction.transactionKey)
+                              }
                             >
                               <td className="px-6 py-4 hidden sm:table-cell">
                                 {transaction.transactionId}
@@ -787,48 +790,43 @@ const TransactionsPage = () => {
                                 </span>
                               </td>
 
-                              <td className="px-6 py-4 relative">
+                              <td
+                                className="px-6 py-4 relative"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <div className="relative">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleDropdown(transaction.transactionId);
-                                    }}
-                                    className="text-gray-500 hover:text-gray-700"
-                                  >
-                                    ⋯
-                                  </button>
-                                  {dropdownOpen ===
-                                    transaction.transactionId && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                                  {transaction.fraudReference && (
+                                    <>
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleOpenModal(
-                                            transaction.transactionKey
+                                          toggleDropdown(
+                                            transaction.transactionId
                                           );
-                                          setDropdownOpen(null);
                                         }}
-                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="text-gray-500 hover:text-gray-700"
                                       >
-                                        View Transaction Info
+                                        ⋯
                                       </button>
-                                      {transaction.fraudReference && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowFraudModal(true);
-                                            setSelectedTransactionKey(
-                                              transaction.fraudReference
-                                            );
-                                            setDropdownOpen(null);
-                                          }}
-                                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                        >
-                                          View Fraud Info
-                                        </button>
+                                      {dropdownOpen ===
+                                        transaction.transactionId && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setShowFraudModal(true);
+                                              setSelectedTransactionKey(
+                                                transaction.fraudReference
+                                              );
+                                              setDropdownOpen(null);
+                                            }}
+                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                          >
+                                            View Fraud Info
+                                          </button>
+                                        </div>
                                       )}
-                                    </div>
+                                    </>
                                   )}
                                 </div>
                               </td>

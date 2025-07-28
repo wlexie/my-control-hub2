@@ -842,17 +842,6 @@ export default function UserDetailsModal({
                       No comments yet
                     </p>
                   )}
-
-                  {/* <div className="space-y-3 text-sm">
-                  <div className="bg-gray-50 p-3 rounded-xl">
-                    <p className="text-xs text-gray-500 font-semibold">Sarah Johnson · June 24, 2025 - 15:10</p>
-                    <p className="mt-1">Customer called to ask about verification status. I explained that we're still processing their documents and it should be completed within 24 hours.</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-xl">
-                    <p className="text-xs text-gray-500 font-semibold">John Doe · June 23, 2025 - 11:25</p>
-                    <p className="mt-1">Reviewing SEON report. The medium risk score is mainly due to VPN usage and new email domain. Customer has provided valid ID and proof of address, so this may be acceptable.</p>
-                  </div>
-                </div> */}
                 </div>
               )}
             </div>

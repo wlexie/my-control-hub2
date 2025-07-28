@@ -44,27 +44,27 @@ export default function AverageTransactionTime({ startDate, endDate }: Props) {
         const mappedData: TransactionItem[] = [
           {
             name: "Card",
-            time: `${processingTime.cardProcessingTime} Seconds`,
+            time: `${processingTime.cardProcessingTime}`,
             color: "bg-blue-500",
           },
           {
             name: "MPESA",
-            time: `${processingTime.mpesaProcessingTime} Seconds`,
+            time: `${processingTime.mpesaProcessingTime}`,
             color: "bg-purple-500",
           },
           {
             name: "Bank ",
-            time: `${processingTime.bankProcessingTime} Seconds`,
+            time: `${processingTime.bankProcessingTime}`,
             color: "bg-indigo-600",
           },
           {
             name: "Paybill ",
-            time: `${processingTime.paybillProcessingTime} Seconds`,
+            time: `${processingTime.paybillProcessingTime}`,
             color: "bg-red-500",
           },
           {
             name: "Till Number ",
-            time: `${processingTime.tillProcessingTime} Seconds` || "N/A",
+            time: `${processingTime.tillProcessingTime}` || "N/A",
             color: "bg-red-500",
           },
         ];
@@ -85,7 +85,7 @@ export default function AverageTransactionTime({ startDate, endDate }: Props) {
     <div className="w-full max-w-3xl p-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-black">
-          Average Time To Complete Transactions
+          Average Time To Complete Transactions (Seconds)
         </h2>
         <button className="bg-blue-500 text-white px-3 py-1 text-sm rounded-md">
           {getLabelFromDateRange()}

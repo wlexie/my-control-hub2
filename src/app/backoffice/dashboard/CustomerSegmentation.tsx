@@ -8,18 +8,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-
-// Define JSON data inline
-const customerData = [
-  {
-    category: "customers",
-    active: 500,
-    inactive: 300,
-    highNetWorth: 200,
-    dormant: 200,
-    totalCustomers: 189,
-  },
-];
+import api from "@/hooks/useApi";
 
 // Chart config for customer categories
 const chartConfig = {
@@ -41,42 +30,100 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+interface CustomerSegmentationData {
+  totalCustomers: number;
+  segmentation: {
+    active: number;
+    inactive: number;
+    dormant: number;
+    highNetWorth: number;
+  };
+}
+
 const CustomerSegmentation = () => {
   const [mounted, setMounted] = useState(false);
+  const [data, setData] = useState<CustomerSegmentationData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { get } = api();
 
   useEffect(() => {
     setMounted(true);
+    fetchCustomerData();
   }, []);
+
+  const fetchCustomerData = async () => {
+    try {
+      setLoading(true);
+      const response = await get<CustomerSegmentationData>(
+        "https://api.tuma-app.com/api/analytics/client-segmentation"
+      );
+      setData(response);
+    } catch (err) {
+      setError("Failed to fetch customer segmentation data");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!mounted) return null;
 
+  // Prepare chart data from API response
+  const chartData = data
+    ? [
+        {
+          category: "customers",
+          active: data.segmentation.active,
+          inactive: data.segmentation.inactive,
+          highNetWorth: data.segmentation.highNetWorth,
+          dormant: data.segmentation.dormant,
+          totalCustomers: data.totalCustomers,
+        },
+      ]
+    : [];
+
   // Prepare legend data
-  const legendData = [
-    {
-      label: chartConfig.active.label,
-      value: customerData[0].active,
-      color: chartConfig.active.color,
-    },
-    {
-      label: chartConfig.inactive.label,
-      value: customerData[0].inactive,
-      color: chartConfig.inactive.color,
-    },
-    {
-      label: chartConfig.highNetWorth.label,
-      value: customerData[0].highNetWorth,
-      color: chartConfig.highNetWorth.color,
-    },
-    {
-      label: chartConfig.dormant.label,
-      value: customerData[0].dormant,
-      color: chartConfig.dormant.color,
-    },
-  ];
+  const legendData = data
+    ? [
+        {
+          label: chartConfig.active.label,
+          value: data.segmentation.active,
+          color: chartConfig.active.color,
+        },
+        {
+          label: chartConfig.inactive.label,
+          value: data.segmentation.inactive,
+          color: chartConfig.inactive.color,
+        },
+        {
+          label: chartConfig.highNetWorth.label,
+          value: data.segmentation.highNetWorth,
+          color: chartConfig.highNetWorth.color,
+        },
+        {
+          label: chartConfig.dormant.label,
+          value: data.segmentation.dormant,
+          color: chartConfig.dormant.color,
+        },
+      ]
+    : [];
 
   // Define chart dimensions
-  const chartWidth = 800; // Adjust as needed
-  const chartHeight = 300; // Adjust as needed
+  const chartWidth = 800;
+  const chartHeight = 300;
+
+  if (loading) {
+    return <div>Loading customer segmentation data...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
+
+  if (!data) {
+    return <div>No data available</div>;
+  }
 
   return (
     <div className="w-full">
@@ -84,9 +131,6 @@ const CustomerSegmentation = () => {
         <h1 className="text-black font-semibold text-lg">
           Customer Segmentation
         </h1>
-        <button className="rounded-lg px-4 py-1 bg-blue-500 text-white text-md">
-          Weekly
-        </button>
       </div>
       <div className="flex flex-col items-center w-full p-0">
         {/* Chart Container */}
@@ -96,7 +140,7 @@ const CustomerSegmentation = () => {
             style={{ width: chartWidth, height: chartHeight }}
           >
             <RadialBarChart
-              data={customerData}
+              data={chartData}
               endAngle={360}
               innerRadius={100}
               outerRadius={180}
@@ -118,7 +162,7 @@ const CustomerSegmentation = () => {
                             y={(viewBox.cy || 0) - 16}
                             className="fill-foreground text-2xl font-extrabold"
                           >
-                            {customerData[0].totalCustomers.toLocaleString()}
+                            {data.totalCustomers.toLocaleString()}
                           </tspan>
                           <tspan
                             x={viewBox.cx}
