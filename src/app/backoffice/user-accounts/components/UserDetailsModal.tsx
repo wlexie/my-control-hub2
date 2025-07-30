@@ -66,7 +66,7 @@ export default function UserDetailsModal({
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isLoadingComments] = useState(false);
   const [userMap, setUserMap] = useState<Record<string, string>>({});
 
   const sectionRefs = {
@@ -152,7 +152,7 @@ export default function UserDetailsModal({
 
       const mappedComments: Comment[] = commentList.map((item) => ({
         id: item.id,
-        author: nameMap[item.internalUser] || "System",
+        author: nameMap[item.internalUser] || "Admin",
         createdAt: item.createdAt,
         text: item.text,
         commentType: item.commentType,
