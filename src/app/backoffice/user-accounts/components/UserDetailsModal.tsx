@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Cookies from "js-cookie";
 import {
   getInitials,
   getPastelColor,
@@ -21,12 +22,28 @@ interface Props {
   onUserUpdated: (userId: number, updates: Partial<User>) => void;
 }
 
-interface Comment {
-  id: string;
-  author: string;
-  date: string;
-  content: string;
+interface RawComment {
+  id: number;
+  commentType: string;
+  text: string;
+  internalUser: string;
+  createdAt: string;
+  modifiedAt: string;
 }
+
+interface Comment {
+  id: number;
+  author: string;
+  createdAt: string;
+  text: string;
+  commentType: string;
+}
+
+interface UserProfile {
+  firstName: string;
+  lastName: string;
+}
+
 const tabs = [
   { key: "overview", label: "Overview" },
   { key: "kyc", label: "KYC & Verification" },
@@ -49,12 +66,18 @@ export default function UserDetailsModal({
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
 
   const sectionRefs = {
     overview: React.useRef<HTMLDivElement>(null),
     transactions: React.useRef<HTMLDivElement>(null),
     kyc: React.useRef<HTMLDivElement>(null),
     notes: React.useRef<HTMLDivElement>(null),
+  };
+
+  const getAuthToken = () => {
+    return Cookies.get("accessToken");
   };
 
   const scrollToSection = (section: keyof typeof sectionRefs) => {
@@ -81,25 +104,176 @@ export default function UserDetailsModal({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const fetchComments = async (accountKey: string) => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    try {
+      const res = await fetch(
+        `https://api.tuma-app.com/api/communication/comments/${accountKey}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch comments");
+
+      const result: { comments: RawComment[] } = await res.json();
+      const commentList = result.comments || [];
+
+      const internalUserKeys = [
+        ...new Set(commentList.map((c) => c.internalUser).filter(Boolean)),
+      ];
+
+      const nameMap: Record<string, string> = { ...userMap };
+
+      // Fetch missing user names using accountKey
+      await Promise.all(
+        internalUserKeys.map(async (accountKey) => {
+          if (!nameMap[accountKey]) {
+            const userRes = await fetch(
+              `https://api.tuma-app.com/api/account/client-profile?accountKey=${accountKey}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+
+            if (userRes.ok) {
+              const data: UserProfile = await userRes.json();
+              nameMap[accountKey] = `${data.firstName} ${data.lastName}`.trim();
+            }
+          }
+        })
+      );
+
+      setUserMap(nameMap);
+
+      const mappedComments: Comment[] = commentList.map((item) => ({
+        id: item.id,
+        author: nameMap[item.internalUser] || "System",
+        createdAt: item.createdAt,
+        text: item.text,
+        commentType: item.commentType,
+      }));
+
+      setComments(mappedComments);
+    } catch (err) {
+      console.error("Error fetching comments", err);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!comment.trim()) {
+      toast.error("Please enter a comment");
+      return;
+    }
+
+    if (!user?.accountKey) {
+      toast.error("No account key found");
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      const token = getAuthToken();
+
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await fetch(
+        "https://api.tuma-app.com/api/communication/add-comment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            commentType: "TEST",
+            text: comment.trim(),
+            accountUser: user.accountKey,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(result.message || "Comment added successfully");
+        setComment("");
+        setIsAddingComment(false);
+        await fetchComments(user.accountKey);
+      } else {
+        throw new Error(result.message || "Failed to add comment");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to add comment"
+      );
+      console.error("Add comment error:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleAddSystemComment = async (commentText: string) => {
+    if (!user?.accountKey) return;
+
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      await fetch("https://api.tuma-app.com/api/communication/add-comment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          commentType: "SYSTEM",
+          text: commentText,
+          accountUser: user.accountKey,
+        }),
+      });
+      await fetchComments(user.accountKey);
+    } catch (error) {
+      console.error("Failed to add system comment:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "notes" && user?.accountKey) {
+      fetchComments(user.accountKey);
+    }
+  }, [activeTab, user?.accountKey]);
+
   useEffect(() => {
     if (isOpen && userId) {
       const fetchUserDetails = async () => {
         try {
           setLoading(true);
+          const token = getAuthToken();
+
           const res = await fetch(
-            `https://api.tuma-app.com/api/account/client-profile?userId=${userId}`
+            `https://api.tuma-app.com/api/account/client-profile?userId=${userId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
           );
           if (!res.ok) throw new Error("Failed to fetch user details");
           const data = await res.json();
 
-          // Parse card data with first 6 digits and last four digits
           const parsedCards =
             data.cards?.map((cardString: string) => {
               const [issuerAndType, numberPart] = cardString.split(" - ");
               const [issuer, ...typeParts] = issuerAndType.split(", ");
               const type = typeParts.join(", ");
 
-              // Extract first 6 and last 4 digits
               const bin = numberPart?.substring(0, 6) || "";
               const lastFour = numberPart?.slice(-4) || "";
 
@@ -108,7 +282,7 @@ export default function UserDetailsModal({
                 type: type.trim(),
                 bin,
                 lastFour,
-                fullMaskedNumber: numberPart, // Store the original masked format
+                fullMaskedNumber: numberPart,
               };
             }) || [];
 
@@ -116,6 +290,11 @@ export default function UserDetailsModal({
             ...data,
             cards: parsedCards,
           });
+
+          setUserMap((prev) => ({
+            ...prev,
+            [data.accountKey]: `${data.firstName} ${data.lastName}`.trim(),
+          }));
         } catch (error) {
           console.error("Error fetching user details:", error);
         } finally {
@@ -135,12 +314,15 @@ export default function UserDetailsModal({
 
     try {
       toast.loading("Sending approval request...");
+      const token = getAuthToken();
+
       const response = await fetch(
         `https://api.tuma-app.com/api/account/document-recheck?applicantId=${user.userId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -176,12 +358,15 @@ export default function UserDetailsModal({
     try {
       setIsProcessing(true);
       toast.loading("Reinstating user...");
+      const token = getAuthToken();
+
       const response = await fetch(
         `https://api.tuma-app.com/api/account/reinstate-user?userId=${userId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -195,21 +380,7 @@ export default function UserDetailsModal({
         onUserUpdated(userId, {
           accountStatus: "Basic",
         });
-
-        // Add system comment about reinstatement
-        const newComment = {
-          id: Date.now().toString(),
-          author: "System",
-          date: new Date().toLocaleString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          content: "User account reinstated to Basic status",
-        };
-        setComments((prev) => [newComment, ...prev]);
+        await handleAddSystemComment("User account reinstated to Basic status");
       } else {
         toast.error(result.message || "Reinstatement failed");
       }
@@ -236,20 +407,45 @@ export default function UserDetailsModal({
     try {
       setIsProcessing(true);
       toast.loading("Declining user...");
-      const response = await fetch(
+      const token = getAuthToken();
+
+      // First add the comment
+      const commentResponse = await fetch(
+        "https://api.tuma-app.com/api/communication/add-comment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            commentType: "INTERNAL_NOTE",
+            text: `Account declined: ${comment.trim()}`,
+            accountUser: user.accountKey,
+          }),
+        }
+      );
+
+      if (!commentResponse.ok) {
+        throw new Error("Failed to add decline comment");
+      }
+
+      // Then decline the user
+      const declineResponse = await fetch(
         `https://api.tuma-app.com/api/account/manual-account-decline?applicantId=${user.userId}&comment=${encodeURIComponent(comment)}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
-      const result = await response.json();
+      const result = await declineResponse.json();
       toast.dismiss();
 
-      if (response.ok) {
+      if (declineResponse.ok) {
         toast.success(result.message || "User successfully declined");
         setUser((prev) =>
           prev ? { ...prev, accountStatus: "Declined" } : prev
@@ -257,29 +453,15 @@ export default function UserDetailsModal({
         onUserUpdated(userId, {
           accountStatus: "Declined",
         });
-
-        // Add the decline comment
-        const newComment = {
-          id: Date.now().toString(),
-          author: "Admin",
-          date: new Date().toLocaleString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          content: `Account declined: ${comment}`,
-        };
-        setComments((prev) => [newComment, ...prev]);
         setComment("");
         setIsAddingComment(false);
+        await fetchComments(user.accountKey);
       } else {
-        toast.error(result.message || "Decline failed");
+        throw new Error(result.message || "Decline failed");
       }
     } catch (error) {
       toast.dismiss();
-      toast.error("An error occurred. Please try again.");
+      toast.error(error instanceof Error ? error.message : "An error occurred");
       console.error(error);
     } finally {
       setIsProcessing(false);
@@ -289,13 +471,16 @@ export default function UserDetailsModal({
   const handleSuspendUser = async () => {
     try {
       setIsProcessing(true);
+      const token = getAuthToken();
       toast.loading("Suspending user...");
+
       const response = await fetch(
         `https://api.tuma-app.com/api/account/suspend-account?userId=${userId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -311,70 +496,13 @@ export default function UserDetailsModal({
         onUserUpdated(userId, {
           accountStatus: "Temporary Blocked",
         });
-
-        // Add system comment about suspension
-        const newComment = {
-          id: Date.now().toString(),
-          author: "System",
-          date: new Date().toLocaleString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          content: "User account suspended",
-        };
-        setComments((prev) => [newComment, ...prev]);
+        await handleAddSystemComment("User account suspended");
       } else {
         toast.error(result.message || "Suspension failed");
       }
     } catch (error) {
       toast.dismiss();
       toast.error("An error occurred. Please try again.");
-      console.error(error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleAddComment = async () => {
-    if (!comment.trim()) {
-      toast.error("Please enter a comment");
-      return;
-    }
-
-    try {
-      setIsProcessing(true);
-
-      const newComment = {
-        id: Date.now().toString(),
-        author: "Admin",
-        date: new Date().toLocaleString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        content: comment,
-      };
-
-      // Update state AND localStorage together
-      setComments((prev) => {
-        const updatedComments = [newComment, ...prev];
-        localStorage.setItem(
-          `user_comments_${userId}`,
-          JSON.stringify(updatedComments)
-        );
-        return updatedComments;
-      });
-
-      setComment("");
-      setIsAddingComment(false);
-      toast.success("Comment added");
-    } catch (error) {
-      toast.error("Failed to add comment");
       console.error(error);
     } finally {
       setIsProcessing(false);
@@ -420,7 +548,6 @@ export default function UserDetailsModal({
               </div>
 
               <div className="flex gap-2">
-                {/* Only show buttons if user is not Declined */}
                 {user.accountStatus !== "Declined" && (
                   <>
                     {user.step === "KYC_IN_PROGRESS" && (
@@ -469,7 +596,6 @@ export default function UserDetailsModal({
                   </>
                 )}
 
-                {/* Show a status message if user is Declined */}
                 {user.accountStatus === "Declined" && (
                   <div className="text-sm text-gray-600 italic">
                     This account has been declined
@@ -490,7 +616,6 @@ export default function UserDetailsModal({
 
                 {/* Status Tags */}
                 <div className="mt-2 flex gap-2 flex-wrap justify-center">
-                  {/* KYC Status */}
                   <div
                     className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
                       statusStyles[user.kycStatus]?.bg || "bg-gray-200"
@@ -504,11 +629,12 @@ export default function UserDetailsModal({
                     KYC: {user.kycStatus}
                   </div>
 
-                  {/* Account Status */}
                   <div
                     className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
                       statusStyles[user.accountStatus]?.bg || "bg-gray-100"
-                    } ${statusStyles[user.accountStatus]?.text || "text-gray-700"}`}
+                    } ${
+                      statusStyles[user.accountStatus]?.text || "text-gray-700"
+                    }`}
                   >
                     <span
                       className={`w-2 h-2 rounded-full ${
@@ -518,7 +644,6 @@ export default function UserDetailsModal({
                     Account: {user.accountStatus}
                   </div>
 
-                  {/* Risk Score */}
                   <span
                     className={`text-xs px-2 py-1 rounded ${
                       riskScoreStyles[user.riskScore?.riskLevel || ""] ||
@@ -599,6 +724,7 @@ export default function UserDetailsModal({
                   </div>
                 </div>
               )}
+
               {/* KYC Verification */}
               {activeTab === "kyc" && (
                 <div className="pt-5">
@@ -610,7 +736,17 @@ export default function UserDetailsModal({
                       <div className="flex justify-between items-center">
                         <span>ID Verification</span>
                         <span
-                          className={`${statusStyles[user.kycStatus]?.text || "text-gray-600"} text-xs px-2 py-0.5 rounded ${statusStyles[user.kycStatus]?.dot ? statusStyles[user.kycStatus].dot.replace("w-2 h-2", "bg-opacity-20") : "bg-gray-100"}`}
+                          className={`${
+                            statusStyles[user.kycStatus]?.text ||
+                            "text-gray-600"
+                          } text-xs px-2 py-0.5 rounded ${
+                            statusStyles[user.kycStatus]?.dot
+                              ? statusStyles[user.kycStatus].dot.replace(
+                                  "w-2 h-2",
+                                  "bg-opacity-20"
+                                )
+                              : "bg-gray-100"
+                          }`}
                         >
                           {user.kycStatus}
                         </span>
@@ -624,7 +760,17 @@ export default function UserDetailsModal({
                       <div className="flex justify-between items-center">
                         <span>Selfie Verification</span>
                         <span
-                          className={`${statusStyles[user.kycStatus]?.text || "text-gray-600"} text-xs px-2 py-0.5 rounded ${statusStyles[user.kycStatus]?.dot ? statusStyles[user.kycStatus].dot.replace("w-2 h-2", "bg-opacity-20") : "bg-gray-100"}`}
+                          className={`${
+                            statusStyles[user.kycStatus]?.text ||
+                            "text-gray-600"
+                          } text-xs px-2 py-0.5 rounded ${
+                            statusStyles[user.kycStatus]?.dot
+                              ? statusStyles[user.kycStatus].dot.replace(
+                                  "w-2 h-2",
+                                  "bg-opacity-20"
+                                )
+                              : "bg-gray-100"
+                          }`}
                         >
                           {user.kycStatus}
                         </span>
@@ -634,7 +780,6 @@ export default function UserDetailsModal({
                       </div>
                     </div>
                   </div>
-                  {/* SEON Risk Analysis */}
                   <div>
                     <h3 className="font-semibold text-gray-800 mb-2 mt-4">
                       SEON Risk Analysis
@@ -767,9 +912,10 @@ export default function UserDetailsModal({
                   </div>
                 </div>
               )}
+
               {/* Internal Comments */}
               {activeTab === "notes" && (
-                <div className="pt-5">
+                <div className="pt-5" ref={sectionRefs.notes}>
                   <h3 className="font-semibold text-gray-800 mb-2 flex justify-between items-center">
                     Internal Comments
                     <button
@@ -823,7 +969,11 @@ export default function UserDetailsModal({
                     </div>
                   )}
 
-                  {comments.length > 0 ? (
+                  {isLoadingComments ? (
+                    <div className="flex justify-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : comments.length > 0 ? (
                     <div className="space-y-3 text-sm">
                       {comments.map((comment) => (
                         <div
@@ -831,9 +981,23 @@ export default function UserDetailsModal({
                           className="bg-gray-50 p-3 rounded-xl"
                         >
                           <p className="text-xs text-gray-500 font-semibold">
-                            {comment.author} · {comment.date}
+                            {comment.author} •{" "}
+                            {new Date(comment.createdAt).toLocaleString(
+                              "en-GB",
+                              {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: false,
+                                timeZone: "GMT",
+                              }
+                            )}{" "}
+                            GMT
                           </p>
-                          <p className="mt-1">{comment.content}</p>
+
+                          <p className="mt-1">{comment.text}</p>
                         </div>
                       ))}
                     </div>
