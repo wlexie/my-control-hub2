@@ -349,6 +349,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p>{transaction.transactionKey || "N/A"}</p>
                       <p className="text-gray-500">Trust Payment Reference:</p>
                       <p>{transaction.tpReference || "N/A"}</p>
+                      <p className="text-gray-500">Fraud Reference:</p>
+                      <p>{transaction.fraudReference || "N/A"}</p>
                       <p className="text-gray-500">Settlement Reference:</p>
                       <p>{transaction.settlementReference || "N/A"}</p>
                       <p className="text-gray-500">MPESA Reference:</p>
@@ -522,6 +524,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p>{transaction.transactionKey || "N/A"}</p>
                       <p className="text-gray-400">Trust Payment Reference:</p>
                       <p>{transaction.tpReference || "N/A"}</p>
+                      <p className="text-gray-400">Fraud Reference:</p>
+                      <p>{transaction.fraudReference || "N/A"}</p>
                       <p className="text-gray-400">Settlement Reference:</p>
                       <p>{transaction.settlementReference || "N/A"}</p>
                       <p className="text-gray-400">MPESA Reference:</p>

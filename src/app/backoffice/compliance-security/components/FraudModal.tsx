@@ -89,7 +89,7 @@ export default function FraudModal({
             <h2 className="text-xl font-semibold">Fraud Information</h2>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 text-2xl"
             >
               &times;
             </button>
@@ -130,14 +130,19 @@ export default function FraudModal({
                       <span className="font-medium">Device OS:</span>{" "}
                       {data.deviceDetails?.type?.toUpperCase()}
                     </p>
-                    <p>
-                      <span className="font-medium">Device:</span>{" "}
-                      {data.deviceDetails?.mobileDetails?.deviceName}
-                    </p>
-                    <p>
-                      <span className="font-medium">Android Version:</span>{" "}
-                      {data.deviceDetails?.androidVersion}
-                    </p>
+                    {data.deviceDetails?.type?.toLowerCase() !== "ios" && (
+                      <>
+                        <p>
+                          <span className="font-medium">Device:</span>{" "}
+                          {data.deviceDetails?.mobileDetails?.deviceName}
+                        </p>
+                        <p>
+                          <span className="font-medium">Android Version:</span>{" "}
+                          {data.deviceDetails?.androidVersion}
+                        </p>
+                      </>
+                    )}
+
                     <p>
                       <span className="font-medium">IP Address:</span>{" "}
                       {data.deviceDetails?.deviceIpAddress}
