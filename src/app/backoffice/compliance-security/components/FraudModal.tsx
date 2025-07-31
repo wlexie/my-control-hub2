@@ -24,6 +24,7 @@ interface FraudData {
     deviceIpCountry: string;
     deviceIpIsp: string;
     vpnState: string;
+    type: string;
   };
   ipDetails: {
     ip: string;
@@ -125,6 +126,10 @@ export default function FraudModal({
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="font-semibold mb-2">Device Details</h3>
                   <div className="space-y-2">
+                    <p>
+                      <span className="font-medium">Device OS:</span>{" "}
+                      {data.deviceDetails?.type?.toUpperCase()}
+                    </p>
                     <p>
                       <span className="font-medium">Device:</span>{" "}
                       {data.deviceDetails?.mobileDetails?.deviceName}
