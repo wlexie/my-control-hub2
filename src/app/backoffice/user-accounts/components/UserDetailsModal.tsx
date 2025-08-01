@@ -66,7 +66,7 @@ export default function UserDetailsModal({
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isLoadingComments] = useState(false);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [userMap, setUserMap] = useState<Record<string, string>>({});
 
   const sectionRefs = {
@@ -109,6 +109,7 @@ export default function UserDetailsModal({
     if (!token) return;
 
     try {
+      setIsLoadingComments(true);
       const res = await fetch(
         `https://api.tuma-app.com/api/communication/comments/${accountKey}`,
         {
@@ -161,6 +162,8 @@ export default function UserDetailsModal({
       setComments(mappedComments);
     } catch (err) {
       console.error("Error fetching comments", err);
+    } finally {
+      setIsLoadingComments(false);
     }
   };
 
@@ -971,7 +974,11 @@ export default function UserDetailsModal({
 
                   {isLoadingComments ? (
                     <div className="flex justify-center py-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                      <div
+                        className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
+                        style={{ borderTopColor: "transparent" }}
+                      ></div>
+                      <span className="ml-2">Loading comments...</span>
                     </div>
                   ) : comments.length > 0 ? (
                     <div className="space-y-3 text-sm">

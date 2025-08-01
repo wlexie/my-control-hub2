@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Transaction } from "../types/transactions";
 import { generateReceiptPDF } from "./generateReceipt";
 import toast from "react-hot-toast";
+import Cookies from "js-cookie";
 
 type TransactionModalProps = {
   isOpen: boolean;
@@ -12,6 +13,28 @@ type TransactionModalProps = {
   transactionKey: string | null;
   onRetrySuccess?: (transaction: Transaction) => void;
 };
+
+interface RawComment {
+  id: number;
+  commentType: string;
+  text: string;
+  internalUser: string;
+  createdAt: string;
+  modifiedAt: string;
+}
+
+interface Comment {
+  id: number;
+  author: string;
+  createdAt: string;
+  text: string;
+  commentType: string;
+}
+
+interface UserProfile {
+  firstName: string;
+  lastName: string;
+}
 
 const getStatusDetails = (status: string, errorMessage?: string) => {
   const normalizedStatus = status === "ERROR" ? "FAILED" : status;
@@ -116,6 +139,139 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   const [isRetrying, setIsRetrying] = useState(false);
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [comment, setComment] = useState("");
+  const [isAddingComment, setIsAddingComment] = useState(false);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
+
+  const getAuthToken = () => {
+    return Cookies.get("accessToken");
+  };
+  const fetchComments = async (transactionId: string) => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    try {
+      setIsLoadingComments(true);
+      const res = await fetch(
+        `https://api.tuma-app.com/api/communication/transaction-comments/${transactionId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch comments");
+
+      const result: { comments: RawComment[] } = await res.json();
+      const commentList = result.comments || [];
+
+      const internalUserKeys = [
+        ...new Set(commentList.map((c) => c.internalUser).filter(Boolean)),
+      ];
+
+      const nameMap: Record<string, string> = { ...userMap };
+
+      // Fetch missing user names using accountKey
+      await Promise.all(
+        internalUserKeys.map(async (accountKey) => {
+          if (!nameMap[accountKey]) {
+            const userRes = await fetch(
+              `https://api.tuma-app.com/api/account/client-profile?accountKey=${accountKey}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+
+            if (userRes.ok) {
+              const data: UserProfile = await userRes.json();
+              nameMap[accountKey] = `${data.firstName} ${data.lastName}`.trim();
+            }
+          }
+        })
+      );
+
+      setUserMap(nameMap);
+
+      const mappedComments: Comment[] = commentList.map((item) => ({
+        id: item.id,
+        author: nameMap[item.internalUser] || "Admin",
+        createdAt: item.createdAt,
+        text: item.text,
+        commentType: item.commentType,
+      }));
+
+      setComments(mappedComments);
+    } catch (err) {
+      console.error("Error fetching comments", err);
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!comment.trim()) {
+      toast.error("Please enter a comment");
+      return;
+    }
+
+    if (!transaction?.transactionId) {
+      toast.error("No transaction ID found");
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      const token = getAuthToken();
+
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await fetch(
+        "https://api.tuma-app.com/api/communication/add-transaction-comment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            commentType: "INTERNAL_NOTE",
+            text: comment.trim(),
+            transactionId: transaction.transactionId,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(result.message || "Comment added successfully");
+        setComment("");
+        setIsAddingComment(false);
+        await fetchComments(transaction.transactionId);
+      } else {
+        throw new Error(result.message || "Failed to add comment");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to add comment"
+      );
+      console.error("Add comment error:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && transaction?.transactionId) {
+      fetchComments(transaction.transactionId);
+    }
+  }, [isOpen, transaction?.transactionId]);
 
   useEffect(() => {
     setIsClient(true);
@@ -349,8 +505,6 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p>{transaction.transactionKey || "N/A"}</p>
                       <p className="text-gray-500">Trust Payment Reference:</p>
                       <p>{transaction.tpReference || "N/A"}</p>
-                      <p className="text-gray-500">Fraud Reference:</p>
-                      <p>{transaction.fraudReference || "N/A"}</p>
                       <p className="text-gray-500">Settlement Reference:</p>
                       <p>{transaction.settlementReference || "N/A"}</p>
                       <p className="text-gray-500">MPESA Reference:</p>
@@ -398,6 +552,89 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p className="text-gray-500">Account Number:</p>
                       <p>{transaction.accountNumber || "N/A"}</p>
                     </div>
+                  </div>
+
+                  <div className="bg-gray-100 p-3 rounded-lg mt-3">
+                    <h3 className="font-semibold text-gray-800 mb-2 flex justify-between items-center">
+                      Internal Comments
+                      <button
+                        onClick={() => setIsAddingComment(true)}
+                        className="text-blue-600 text-xs underline cursor-pointer"
+                      >
+                        Add Comment
+                      </button>
+                    </h3>
+
+                    {isAddingComment && (
+                      <div className="mb-4">
+                        <textarea
+                          rows={3}
+                          placeholder="Type your comment here..."
+                          className="w-full border rounded p-2 text-sm"
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={handleAddComment}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded"
+                            disabled={isProcessing}
+                          >
+                            Add Comment
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsAddingComment(false);
+                              setComment("");
+                            }}
+                            className="border text-sm border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-100"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {isLoadingComments ? (
+                      <div className="flex justify-center py-4">
+                        <div
+                          className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
+                          style={{ borderTopColor: "transparent" }}
+                        ></div>
+                        <span className="ml-2">Loading comments...</span>
+                      </div>
+                    ) : comments.length > 0 ? (
+                      <div className="space-y-3 text-sm">
+                        {comments.map((comment) => (
+                          <div
+                            key={comment.id}
+                            className="bg-white p-3 rounded-lg border"
+                          >
+                            <p className="text-xs text-gray-500 font-semibold">
+                              {comment.author} •{" "}
+                              {new Date(comment.createdAt).toLocaleString(
+                                "en-GB",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                                  timeZone: "GMT",
+                                }
+                              )}{" "}
+                              GMT
+                            </p>
+                            <p className="mt-1">{comment.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">
+                        No comments yet
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -573,6 +810,89 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p className="text-gray-400">Account Number:</p>
                       <p>{transaction.accountNumber || "N/A"}</p>
                     </div>
+                  </div>
+
+                  <div className="bg-gray-100 p-4 rounded-lg mt-4">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex justify-between items-center">
+                      Internal Comments
+                      <button
+                        onClick={() => setIsAddingComment(true)}
+                        className="text-blue-600 text-sm underline cursor-pointer"
+                      >
+                        Add Comment
+                      </button>
+                    </h3>
+
+                    {isAddingComment && (
+                      <div className="mb-4">
+                        <textarea
+                          rows={3}
+                          placeholder="Type your comment here..."
+                          className="w-full border rounded p-2 text-sm"
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={handleAddComment}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded"
+                            disabled={isProcessing}
+                          >
+                            Add Comment
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsAddingComment(false);
+                              setComment("");
+                            }}
+                            className="border text-sm border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-100"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {isLoadingComments ? (
+                      <div className="flex justify-center py-4">
+                        <div
+                          className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
+                          style={{ borderTopColor: "transparent" }}
+                        ></div>
+                        <span className="ml-2">Loading comments...</span>
+                      </div>
+                    ) : comments.length > 0 ? (
+                      <div className="space-y-3 text-sm">
+                        {comments.map((comment) => (
+                          <div
+                            key={comment.id}
+                            className="bg-white p-3 rounded-lg border"
+                          >
+                            <p className="text-xs text-gray-500 font-semibold">
+                              {comment.author} •{" "}
+                              {new Date(comment.createdAt).toLocaleString(
+                                "en-GB",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                                  timeZone: "GMT",
+                                }
+                              )}{" "}
+                              GMT
+                            </p>
+                            <p className="mt-1">{comment.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">
+                        No comments yet
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
