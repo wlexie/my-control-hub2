@@ -13,7 +13,11 @@ const TEMPLATES = [
   'potential_user',
   'welcome_decline',
   'welcome_leads',
-  'country_updates'
+  'country_updates',
+  'insufficient_funds',
+  'bank_restriction',
+  'Paybill_Transaction',
+  'pending_transaction'
 ];
 
 // Storing the content for each template (no changes here)
@@ -98,9 +102,56 @@ Team Tuma.`
 
  🌍 Send money to 12 more African countries
  🔔 Get instant in-app updates
- 🔒 Enjoy stronger security
+ 🔒 Enjoy stronger securities
 
 Update Tuma app now to enjoy the improved experience:
+    `
+  },  
+  insufficient_funds:{
+    header: "💸Top up your account💸",
+    body: `
+  Hi😊 
+
+We noticed your transaction didn’t go through due to insufficient funds. 
+You can try topping up your account or use a different card 💳. 
+Let us know if you need any help!💬
+With 💙,
+Team Tuma.
+    `
+  },
+    bank_restriction:{
+    header: "Bank authorization💳",
+    body: `
+   Hi 😊 
+
+We noticed your transaction was unsuccessful due to a restriction placed by your bank — this often happens when using a new card 💳 or trying a larger transaction for the first time on Tuma💸.
+Kindly contact your bank to authorize the transaction✅.
+
+Once that’s done, just let us know and we’ll help reactivate your Tuma account 🚀
+With 💙,
+Team Tuma.
+    `
+  },
+    Paybill_Transaction:{
+    header: "Hang Tight 🤗",
+    body: `
+   Hi 😊 
+
+Your paybill payment was received. We’re completing the service and will confirm once it’s done. Thank you for your patience."
+With 💙,
+Team Tuma.
+    `
+  },
+    pending_transaction:{
+    header: "Transaction in Progress 🔄",
+    body: `
+  Hi 😊 
+  Your transaction is processing and will be completed soon⏳💸. We’ll notify you as soon as it’s done. 
+
+  Thanks for bearing with us!"
+
+  With 💙,
+  Team Tuma.
     `
   }
 };

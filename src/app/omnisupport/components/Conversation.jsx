@@ -34,7 +34,11 @@ const TEMPLATE_MEDIA_URLS = {
   'welcome_leads': 'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642477.jpg',
   'welcome_decline': null,
   'country_updates': null,
-};
+  'insufficient_funds': null,
+  'bank_restriction': null,
+  'Paybill_Transaction': null,
+  'pending_transaction': null,
+}; 
 
 const TEMPLATE_BODIES = {
   'welcome_dormant': "Hi {{1}}, we noticed you haven't been active lately. Is there anything we can help you with to get you started?",
