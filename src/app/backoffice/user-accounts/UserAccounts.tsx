@@ -143,6 +143,7 @@ export default function UserAccounts() {
         user.country?.toLowerCase() ?? "",
         user.accountStatus?.toLowerCase() ?? "",
         user.accountId?.toString() ?? "",
+        `tuma${user.accountId}`,
       ];
 
       // Date filter
