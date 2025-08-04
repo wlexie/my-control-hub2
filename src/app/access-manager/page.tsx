@@ -1,6 +1,8 @@
 "use client";
 
 import SideNav from "./components/SideNav";
+import Roles from './components/Roles'; // Adjust the import path as needed
+
 
 export default function OTPPage() {
   return (
@@ -11,8 +13,9 @@ export default function OTPPage() {
       </div>
 
       {/* Main Content - 4/5 width (80%) */}
-      <div className="md:w-4/5 w-full p-8 overflow-auto">
-      
+      <div className="md:w-4/5 w-full  overflow-auto">
+            <Roles />
+
       </div>
     </div>
   );
