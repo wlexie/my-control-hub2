@@ -80,7 +80,7 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({ isOpen, onClose, onRo
       onClick={onClose}
     >
       <div
-        className={`bg-gray-100 shadow-sm relative transform transition-transform duration-300 ease-in-out w-full max-w-md mx-2 max-h-[100vh] rounded-t-xl md:h-screen md:rounded-t-none ${
+        className={`bg-gray-100 shadow-md relative transform transition-transform duration-300 ease-in-out w-full max-w-md mx-2 max-h-[100vh] rounded-t-xl md:h-screen md:rounded-t-none ${
           isOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'
         }`}
         onClick={(e) => e.stopPropagation()}
