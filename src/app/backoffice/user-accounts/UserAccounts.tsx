@@ -31,6 +31,7 @@ interface User {
     riskLevel?: string;
     totalScore?: number;
   };
+  onfidoApplicantId?: string;
 }
 
 export default function UserAccounts() {
@@ -144,6 +145,7 @@ export default function UserAccounts() {
         user.accountStatus?.toLowerCase() ?? "",
         user.accountId?.toString() ?? "",
         `tuma${user.accountId}`,
+        user.onfidoApplicantId?.toLowerCase() ?? "",
       ];
 
       // Date filter
