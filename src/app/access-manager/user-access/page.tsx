@@ -220,7 +220,7 @@ export default function UserTable() {
         <div className="overflow-x-auto font-poppins">
 
           {/* Header & Search */}
-          <div className="flex justify-between items-center md:mb-6 sticky top-0 bg-white py-4">
+          <div className="flex justify-between items-center md:mb-5 sticky top-0 bg-white py-4">
             <h1 className="text-[18px] font-[600]">User roles & access</h1>
             
             {/* Number of Users Display */}
