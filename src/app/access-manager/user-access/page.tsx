@@ -225,7 +225,7 @@ export default function UserTable() {
             
             {/* Number of Users Display */}
             <div className="flex  hidden md:block items-center">
-              <label htmlFor="user-count" className="mr-2 font-semibold text-gray-700 whitespace-nowrap">
+              <label htmlFor="user-count" className="mr-1 font-semibold text-gray-700 whitespace-nowrap">
                 Number of Users:
               </label>
              <input
