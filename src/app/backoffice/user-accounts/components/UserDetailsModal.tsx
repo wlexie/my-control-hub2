@@ -688,7 +688,9 @@ export default function UserDetailsModal({
                     </div>
                     <div>
                       <p className="text-gray-500">Gender</p>
-                      <p className="font-semibold">{document?.gender || "—"}</p>
+                      <p className="font-semibold">
+                        {user.documents?.[0]?.gender || "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500">Registration Date</p>
@@ -703,19 +705,19 @@ export default function UserDetailsModal({
                     <div>
                       <p className="text-gray-500">Date of Birth</p>
                       <p className="font-semibold">
-                        {document?.dateOfBirth || "—"}
+                        {user.documents?.[0]?.dateOfBirth || "—"}
                       </p>
                     </div>
                     <div>
                       <p className="text-gray-500">Issuing Country</p>
                       <p className="font-semibold">
-                        {document?.issuingCountry || "—"}
+                        {user.documents?.[0]?.issuingCountry || "—"}
                       </p>
                     </div>
                     <div>
                       <p className="text-gray-500">ID Document number</p>
                       <p className="font-semibold">
-                        {document?.documentNumber || "—"}
+                        {user.documents?.[0]?.documentNumber || "—"}
                       </p>
                     </div>
                   </div>
@@ -725,6 +727,100 @@ export default function UserDetailsModal({
                       {user.onfidoApplicantId || "—"}
                     </p>
                   </div>
+
+                  {/* New Document Information Section */}
+                  {user.documents && user.documents.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="font-semibold text-gray-800 mb-2">
+                        Document Information
+                      </h3>
+                      <div className="space-y-4">
+                        {user.documents.map((doc, index) => (
+                          <div
+                            key={doc.id}
+                            className="bg-gray-50 p-4 rounded-xl border"
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-medium">
+                                Document {index + 1}:{" "}
+                                {doc.type?.replace("_", " ").toUpperCase()}
+                              </h4>
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                {doc.side === "front"
+                                  ? "FRONT SIDE"
+                                  : "BACK SIDE"}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-y-4 text-sm">
+                              <div>
+                                <p className="text-gray-500">Document Number</p>
+                                <p className="font-semibold">
+                                  {doc.documentNumber || "—"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Issuing Country</p>
+                                <p className="font-semibold">
+                                  {doc.issuingCountry || "—"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">
+                                  Issuing Authority
+                                </p>
+                                <p className="font-semibold">
+                                  {doc.issuingAuthority || "—"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Issuing Date</p>
+                                <p className="font-semibold">
+                                  {doc.issuingDate
+                                    ? new Date(
+                                        doc.issuingDate
+                                      ).toLocaleDateString("en-GB")
+                                    : "—"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Date of Birth</p>
+                                <p className="font-semibold">
+                                  {doc.dateOfBirth
+                                    ? new Date(
+                                        doc.dateOfBirth
+                                      ).toLocaleDateString("en-GB")
+                                    : "—"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Expiry Date</p>
+                                <p className="font-semibold">
+                                  {doc.dateOfExpiry
+                                    ? new Date(
+                                        doc.dateOfExpiry
+                                      ).toLocaleDateString("en-GB")
+                                    : "—"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Place of Birth</p>
+                                <p className="font-semibold">
+                                  {doc.placeOfBirth || "—"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Nationality</p>
+                                <p className="font-semibold">
+                                  {doc.nationality || "—"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
