@@ -513,7 +513,7 @@ export default function UserDetailsModal({
   };
 
   if (!user) return null;
-  const document = user.documents?.[0];
+  //const document = user.documents?.[0];
   const fullName = `${user.firstName} ${user.lastName}`.trim();
   const totalTransactions = user.transaction?.totalTransactions
     ? user.transaction.totalTransactions.successfulTransactions +
