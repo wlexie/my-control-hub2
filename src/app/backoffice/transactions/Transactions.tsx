@@ -45,6 +45,8 @@ interface ExportTransaction {
   "Error Message": string;
   "Date & Time (GMT)": string;
   "Fraud Reference": string;
+  "Payment Purpose": string;
+  "Source of Funds": string;
 }
 
 type RawTransaction = Partial<{
@@ -73,6 +75,8 @@ type RawTransaction = Partial<{
   transactionReference: string;
   receiverAddress: string;
   fraudReference: string;
+  paymentPurpose: string;
+  fundsSource: string;
 }>;
 
 const rowsPerPage = 10;
@@ -350,6 +354,8 @@ const TransactionsPage = () => {
     transactionReference: tx.transactionReference || "N/A",
     receiverAddress: tx.receiverAddress || "N/A",
     fraudReference: tx.fraudReference || "N/A",
+    paymentPurpose: tx.paymentPurpose || "N/A",
+    fundsSource: tx.fundsSource || "N/A",
   });
 
   const formatTransactionStatus = (status: string | undefined): string => {
@@ -456,6 +462,8 @@ const TransactionsPage = () => {
           "Error Message": fullDetails.errorMessage || "N/A",
           "Date & Time (GMT)": formatDateTime(fullDetails.date),
           "Fraud Reference": fullDetails.fraudReference,
+          "Payment Purpose": fullDetails.paymentPurpose,
+          "Source of Funds": fullDetails.fundsSource,
         });
       } catch (error) {
         console.error("Error fetching details for export:", error);

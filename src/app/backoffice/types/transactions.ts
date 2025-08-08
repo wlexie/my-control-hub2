@@ -28,5 +28,7 @@ export interface Transaction {
     transactionReference:string;
     receiverAddress:string;
     fraudReference:string;
+    paymentPurpose:string;
+    fundsSource:string;
   }
   

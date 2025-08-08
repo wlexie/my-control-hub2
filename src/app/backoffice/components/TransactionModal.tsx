@@ -127,6 +127,8 @@ const mapApiTransactionToTransaction = (tx: Transaction): Transaction => ({
   paymentTypeDescription: tx.paymentTypeDescription || "N/A",
   receiverAddress: tx.receiverAddress || "N/A",
   fraudReference: tx.fraudReference,
+  paymentPurpose: tx.paymentPurpose,
+  fundsSource: tx.fundsSource,
 });
 
 const TransactionModal: React.FC<TransactionModalProps> = ({
@@ -515,6 +517,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p>UK</p>
                       <p className="text-gray-500">Destination:</p>
                       <p>{transaction.receiverAddress}</p>
+                      <p className="text-gray-500">Payment Purpose:</p>
+                      <p>{transaction.paymentPurpose}</p>
+                      <p className="text-gray-500">Source of Funds:</p>
+                      <p>{transaction.fundsSource}</p>
                       <p className="text-gray-500">Time Sent:</p>
                       <p>{formatDateTime(transaction.date)}</p>
                       <p className="text-gray-500">Time Received:</p>
@@ -773,6 +779,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <p>UK</p>
                       <p className="text-gray-400">Destination:</p>
                       <p>{transaction.receiverAddress}</p>
+                      <p className="text-gray-400">Payment Purpose:</p>
+                      <p>{transaction.paymentPurpose}</p>
+                      <p className="text-gray-400">Source of Funds:</p>
+                      <p>{transaction.fundsSource}</p>
                       <p className="text-gray-400">Time Sent:</p>
                       <p>{formatDateTime(transaction.date)}</p>
                       <p className="text-gray-400">Time Received:</p>
