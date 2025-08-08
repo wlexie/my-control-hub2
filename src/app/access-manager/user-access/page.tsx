@@ -90,20 +90,23 @@ export default function UserTable() {
     const fetchUsers = async () => {
       try {
         const data = await get<ApiUser[]>("/account/system-users-requests");
-        const transformedUsers = data.map((user: ApiUser): User => ({
-          id: user.id,
-          userKey: user.userKey || `user_${user.id}`,
-          accountKey: user.accountKey || null,
-          firstName: user.firstName || "Unknown",
-          lastName: user.lastName || "User",
-          email: user.email,
-          phoneNumber: user.phoneNumber || "N/A",
-          department: user.department || "N/A",
-          roleName: user.role?.roleName || "Unassigned", // Map roleName from API
-          status: user.status === true ? "active" : "pending",
-          createdAt: user.createdAt ? new Date(user.createdAt).getTime() : Date.now(),
-          modifiedAt: user.modifiedAt ? new Date(user.modifiedAt).getTime() : Date.now(),
-        }));
+        const transformedUsers = data
+          .map((user: ApiUser): User => ({
+            id: user.id,
+            userKey: user.userKey || `user_${user.id}`,
+            accountKey: user.accountKey || null,
+            firstName: user.firstName || "Unknown",
+            lastName: user.lastName || "User",
+            email: user.email,
+            phoneNumber: user.phoneNumber || "N/A",
+            department: user.department || "N/A",
+            roleName: user.role?.roleName || "Unassigned", // Map roleName from API
+            status: user.status === true ? "active" : "pending",
+            createdAt: user.createdAt ? new Date(user.createdAt).getTime() : Date.now(),
+            modifiedAt: user.modifiedAt ? new Date(user.modifiedAt).getTime() : Date.now(),
+          }))
+          .filter(user => user.email.endsWith("@tuma.com")); // Filter users by email domain
+
         setUsers(transformedUsers);
         setFilteredUsers(transformedUsers);
       } catch (err) {
@@ -215,24 +218,57 @@ export default function UserTable() {
       <div className="md:w-1/5 w-full"><SideNav /></div>
       <div className="md:w-4/5 w-full md:p-8 p-3 overflow-auto">
         <div className="overflow-x-auto font-poppins">
+
           {/* Header & Search */}
-          <div className="flex justify-between sticky items-center mb-6">
+          <div className="flex justify-between items-center md:mb-6 sticky top-0 bg-white py-4">
             <h1 className="text-[18px] font-[600]">User roles & access</h1>
+            
+            {/* Number of Users Display */}
+            <div className="flex  hidden md:block items-center">
+              <label htmlFor="user-count" className="mr-2 font-semibold text-gray-700 whitespace-nowrap">
+                Number of Users:
+              </label>
+             <input
+                id="user-count"
+                type="text"
+                readOnly
+                value={users.length}
+                className="px-3 py-1 border border-gray-400 text-blue-700 font-semibold text-xl rounded-md bg-gray-100 text-center w-24"
+              />
+
+            </div>
+             {/* Number of Users Display */}
+            <div className="flex flex-col md:hidden items-center">
+              <label htmlFor="user-count" className="mr-2 font-semibold text-gray-700 whitespace-nowrap">
+                Number of Users:
+              </label>
+              <input
+                id="user-count"
+                type="text"
+                readOnly
+                value={users.length}
+                className="px-3 py-1 border border-gray-400 rounded-md bg-gray-100 text-center w-24"
+              />
+            </div>
+            
+            {/* Search Input */}
             <div className="relative">
               <IoIosSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text" placeholder="Search by name or email..."
-                className="pl-10 pr-4 py-2 border-2 border-gray-400 rounded-lg text-sm md:w-64  w-48 focus:outline-none"
+                className="pl-10 pr-4 py-2 border-2 border-gray-400 rounded-lg text-sm md:w-64  w-32 focus:outline-none"
                 value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
+          
           {/* Message Banner */}
           {message && (
             <div className={`p-3 mb-4 rounded-md text-sm ${messageType === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
               {message}
             </div>
           )}
+          
           {/* Table */}
           <table className="w-full bg-white rounded-lg overflow-auto">
             {/* Table Head */}
@@ -240,10 +276,10 @@ export default function UserTable() {
               <tr>
                 <th className="py-2 md:px-3 hidden md:block px-1 text-left">#</th>
                 <th className="py-2 md:px-3 px-1 text-left">User</th>
-                <th className="py-2md:px-3 px-1 text-left">Email</th>
+                <th className="py-2 md:px-3 px-1 text-left">Email</th>
                 <th className="py-2 md:px-3 hidden md:block px-1 text-left">Phone</th>
-                <th className="py-2 hidden  px-3 text-left">Department</th>
-                <th className="py-2 md:px-3 px-1 text-left">Role Name</th> {/* Added Column Header */}
+                <th className="py-2 hidden px-3 text-left">Department</th>
+                <th className="py-2 md:px-3 px-1 text-left">Role Name</th>
                 <th className="py-2 md:px-3 px-1 text-center">Actions</th>
                 <th className="py-2 md:px-3 px-1 text-left"></th>
               </tr>
@@ -252,10 +288,10 @@ export default function UserTable() {
             <tbody className="divide-y divide-gray-100 md:text-[13px] text-[11px]">
               {filteredUsers.map((user, index) => (
                 <tr key={user.id} onClick={() => handleRowClick(user)} className={`hover:bg-gray-50 ${user.accountKey ? 'cursor-pointer' : 'cursor-default'}`}>
-                  <td className="pb-3 px-3 hidden md:block  text-[#808A92]">{index + 1}</td>
+                  <td className="pb-3 px-3 hidden md:block text-[#808A92]">{index + 1}</td>
                   <td className="py-2 md:px-3 px-1">
                     <div className="flex items-center">
-                      <div className={`h-10 w-10  rounded-full flex items-center justify-center mr-3 ${getInitialsColor(getInitials(user.firstName, user.lastName)).split(" ")[0]}`}>
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${getInitialsColor(getInitials(user.firstName, user.lastName)).split(" ")[0]}`}>
                         <span className={`font-semibold ${getInitialsColor(getInitials(user.firstName, user.lastName)).split(" ")[1]}`}>{getInitials(user.firstName, user.lastName)}</span>
                       </div>
                       <span>{user.firstName} {user.lastName}</span>
@@ -263,8 +299,8 @@ export default function UserTable() {
                   </td>
                   <td className="py-3 md:px-3 px-1 text-[#808A92] font-[400]">{user.email}</td>
                   <td className="py-3 md:px-3 px-1 hidden md:block text-[#808A92] font-[400]">{user.phoneNumber}</td>
-                  <td className="py-3 hidden  px-3 text-[#808A92] font-[400]">{user.department}</td>
-                  <td className="py-3  md:px-3 md:px-1 text-[#808A92] text-gray-700 font-[600]">{user.roleName}</td> {/* Added Column Data */}
+                  <td className="py-3 hidden px-3 text-[#808A92] font-[400]">{user.department}</td>
+                  <td className="py-3 md:px-3 px-1 text-[#808A92] text-gray-700 font-[600]">{user.roleName}</td>
                   <td className="py-3 md:px-3 px-1 text-center relative">
                     <button onClick={(e) => { e.stopPropagation(); setOpenActionMenu(openActionMenu === user.id ? null : user.id); }} className="p-2 rounded-full hover:bg-gray-200">
                       <BsThreeDotsVertical className="h-5 w-5 text-gray-600" />
@@ -272,7 +308,6 @@ export default function UserTable() {
                     {openActionMenu === user.id && (
                       <div onClick={(e) => e.stopPropagation()} className="absolute right-8 top-full -mt-4 w-40 bg-white rounded-md shadow z-20 border border-gray-100">
                         <ul className="py-1 text-left">
-                          {/* --- MODIFIED: This button now opens the modal instead of calling the API directly --- */}
                           {user.accountKey === null && (
                             <li>
                               <button
