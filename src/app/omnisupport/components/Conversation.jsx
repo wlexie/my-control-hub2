@@ -38,6 +38,8 @@ const TEMPLATE_MEDIA_URLS = {
   'bank_restriction': null,
   'Paybill_Transaction': null,
   'pending_transaction': null,
+  'error_help': null,
+
 }; 
 
 const TEMPLATE_BODIES = {

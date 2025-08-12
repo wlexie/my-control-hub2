@@ -17,7 +17,8 @@ const TEMPLATES = [
   'insufficient_funds',
   'bank_restriction',
   'Paybill_Transaction',
-  'pending_transaction'
+  'pending_transaction',
+  'error_help',
 ];
 
 // Storing the content for each template (no changes here)
@@ -149,6 +150,16 @@ Team Tuma.
   Your transaction is processing and will be completed soon⏳💸. We’ll notify you as soon as it’s done. 
 
   Thanks for bearing with us!"
+
+  With 💙,
+  Team Tuma.
+    `
+  },
+    error_help:{
+    header: "Let’s Sort This Out 🤝",
+    body: `
+  Hi 😊 
+  We understand you may have run into an issue. Could you please share a screenshot 📸 and a short description of the error you’re seeing? This will help us sort it out for you quickly ✅"
 
   With 💙,
   Team Tuma.
