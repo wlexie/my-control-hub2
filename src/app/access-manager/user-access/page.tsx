@@ -220,12 +220,12 @@ export default function UserTable() {
         <div className="overflow-x-auto font-poppins">
 
           {/* Header & Search */}
-          <div className="flex justify-between items-center md:mb-5 sticky top-0 bg-white py-4">
+          <div className="flex justify-between items-center md:mb-6 sticky top-0 bg-white py-4">
             <h1 className="text-[18px] font-[600]">User roles & access</h1>
             
             {/* Number of Users Display */}
             <div className="flex  hidden md:block items-center">
-              <label htmlFor="user-count" className="mr-2 font-semibold text-gray-700 whitespace-nowrap">
+              <label htmlFor="user-count" className="mr-1 font-semibold text-gray-700 whitespace-nowrap">
                 Number of Users:
               </label>
              <input
