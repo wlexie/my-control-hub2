@@ -41,11 +41,6 @@ interface Comment {
   commentBy: string;
 }
 
-interface UserProfile {
-  firstName: string;
-  lastName: string;
-}
-
 const tabs = [
   { key: "overview", label: "Overview" },
   { key: "kyc", label: "KYC & Verification" },
@@ -69,7 +64,7 @@ export default function UserDetailsModal({
   const [comments, setComments] = useState<Comment[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
-  const [userMap, setUserMap] = useState<Record<string, string>>({});
+  const [, setUserMap] = useState<Record<string, string>>({});
 
   const sectionRefs = {
     overview: React.useRef<HTMLDivElement>(null),
