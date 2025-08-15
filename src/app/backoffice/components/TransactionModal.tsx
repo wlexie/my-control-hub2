@@ -10,7 +10,7 @@ import Cookies from "js-cookie";
 type TransactionModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  transactionKey: string | null;
+  transactionId: string | null;
   onRetrySuccess?: (transaction: Transaction) => void;
 };
 
@@ -134,7 +134,7 @@ const mapApiTransactionToTransaction = (tx: Transaction): Transaction => ({
 const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
-  transactionKey,
+  transactionId,
   onRetrySuccess,
 }) => {
   const [isClient, setIsClient] = useState(false);
@@ -278,21 +278,21 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   useEffect(() => {
     setIsClient(true);
 
-    if (isOpen && transactionKey) {
+    if (isOpen && transactionId) {
       fetchTransaction();
     } else {
       setTransaction(null);
       setLoading(true);
     }
-  }, [isOpen, transactionKey]);
+  }, [isOpen, transactionId]);
 
-  console.log("Fetching with transactionKey:", transactionKey);
+  console.log("Fetching with transactionKey:", transactionId);
 
   const fetchTransaction = async () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `https://api.tuma-app.com/api/transfer/transaction-by-reference?transactionReference=${transactionKey}`
+        `https://api.tuma-app.com/api/transfer/transaction-details?transactionId=${transactionId}`
       );
 
       if (!response.ok) {
@@ -350,10 +350,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   };
 
   const retryPendingPayment = async () => {
-    if (!transactionKey) return;
+    if (!transactionId) return;
 
     const response = await fetch(
-      `https://api.tuma-app.com/api/transfer/settle-pending-payment?transactionReference=${transactionKey}`,
+      `https://api.tuma-app.com/api/transfer/settle-pending-payment?transactionReference=${transactionId}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -370,7 +370,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   };
 
   const handleRetryPayment = async () => {
-    if (!transactionKey) return;
+    if (!transactionId) return;
 
     setIsRetrying(true);
     try {

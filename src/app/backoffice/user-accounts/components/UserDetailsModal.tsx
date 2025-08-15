@@ -29,6 +29,7 @@ interface RawComment {
   internalUser: string;
   createdAt: string;
   modifiedAt: string;
+  commentBy: string;
 }
 
 interface Comment {
@@ -37,6 +38,7 @@ interface Comment {
   createdAt: string;
   text: string;
   commentType: string;
+  commentBy: string;
 }
 
 interface UserProfile {
@@ -124,39 +126,13 @@ export default function UserDetailsModal({
       const result: { comments: RawComment[] } = await res.json();
       const commentList = result.comments || [];
 
-      const internalUserKeys = [
-        ...new Set(commentList.map((c) => c.internalUser).filter(Boolean)),
-      ];
-
-      const nameMap: Record<string, string> = { ...userMap };
-
-      // Fetch missing user names using accountKey
-      await Promise.all(
-        internalUserKeys.map(async (accountKey) => {
-          if (!nameMap[accountKey]) {
-            const userRes = await fetch(
-              `https://api.tuma-app.com/api/account/client-profile?accountKey=${accountKey}`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
-            );
-
-            if (userRes.ok) {
-              const data: UserProfile = await userRes.json();
-              nameMap[accountKey] = `${data.firstName} ${data.lastName}`.trim();
-            }
-          }
-        })
-      );
-
-      setUserMap(nameMap);
-
       const mappedComments: Comment[] = commentList.map((item) => ({
         id: item.id,
-        author: nameMap[item.internalUser] || "Admin",
+        author: item.commentBy,
         createdAt: item.createdAt,
         text: item.text,
         commentType: item.commentType,
+        commentBy: item.commentBy,
       }));
 
       setComments(mappedComments);
@@ -198,6 +174,7 @@ export default function UserDetailsModal({
             commentType: "TEST",
             text: comment.trim(),
             accountUser: user.accountKey,
+            commentBy: `${user.firstName} ${user.lastName}`,
           }),
         }
       );
@@ -236,7 +213,7 @@ export default function UserDetailsModal({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          commentType: "SYSTEM",
+          commentType: "TEST",
           text: commentText,
           accountUser: user.accountKey,
         }),
@@ -425,6 +402,7 @@ export default function UserDetailsModal({
             commentType: "INTERNAL_NOTE",
             text: `Account declined: ${comment.trim()}`,
             accountUser: user.accountKey,
+            commentBy: `${user.firstName} ${user.lastName}`,
           }),
         }
       );
@@ -1083,7 +1061,7 @@ export default function UserDetailsModal({
                           className="bg-gray-50 p-3 rounded-xl"
                         >
                           <p className="text-xs text-gray-500 font-semibold">
-                            {comment.author} •{" "}
+                            {comment.commentBy} •{" "}
                             {new Date(comment.createdAt).toLocaleString(
                               "en-GB",
                               {
