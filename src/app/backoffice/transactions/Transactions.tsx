@@ -383,8 +383,8 @@ const TransactionsPage = () => {
     }
   };
 
-  const handleOpenModal = (transactionKey: string) => {
-    setSelectedTransactionKey(transactionKey);
+  const handleOpenModal = (transactionId: string) => {
+    setSelectedTransactionKey(transactionId);
     setIsModalOpen(true);
   };
 
@@ -428,7 +428,7 @@ const TransactionsPage = () => {
     for (const transaction of filteredTransactions) {
       try {
         const res = await fetch(
-          `https://api.tuma-app.com/api/transfer/transaction-by-reference?transactionReference=${transaction.transactionKey}`
+          `https://api.tuma-app.com/api/transfer/transaction-details?transactionId=${transaction.transactionId}`
         );
         if (!res.ok) throw new Error("Failed to fetch transaction details");
         const fullDetails = await res.json();
@@ -741,7 +741,7 @@ const TransactionsPage = () => {
                               key={transaction.transactionId}
                               className="border-b hover:bg-gray-50 cursor-pointer"
                               onClick={() =>
-                                handleOpenModal(transaction.transactionKey)
+                                handleOpenModal(transaction.transactionId)
                               }
                             >
                               <td className="px-6 py-4 hidden sm:table-cell">
@@ -901,7 +901,7 @@ const TransactionsPage = () => {
           <TransactionModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
-            transactionKey={selectedTransactionKey}
+            transactionId={selectedTransactionKey}
             onRetrySuccess={handleRetrySuccess}
           />
         </div>
