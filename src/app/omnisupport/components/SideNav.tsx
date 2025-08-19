@@ -80,7 +80,7 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
                   <span className="font-medium">{item.name}</span>
                 </div>
                 <span
-                  className={`px-2.5 py-0.5 text-sm font-bold rounded-full
+                  className={`px-2.5 py-0.5 text-sm font-semibold rounded-full
                     ${isActive ? 'bg-[#D6E2FD] text-[#2B66F6]' : 'bg-[#4E81F7]'}`}
                 >
                   {item.count}
