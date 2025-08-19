@@ -182,7 +182,7 @@ export default function TemplateModal({ closeModal, onSelectTemplate, userName }
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={closeModal}>
       <div
-        className="bg-white rounded-2xl shadow-lg w-full max-w-lg p-5 relative transform transition-all"
+        className="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6 relative transform transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         <button
