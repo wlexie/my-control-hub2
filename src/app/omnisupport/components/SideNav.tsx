@@ -1,45 +1,56 @@
 'use client';
-//import { useState } from 'react';
-
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import logo from '../../../../public/fx/images/logo.png';
-//import set from '../../../../public/omnisupport/images/settings.png';
-import User from '../../access-manager/components/User';
-import { AiOutlineMessage } from "react-icons/ai";
-import { FiX } from "react-icons/fi"; // Import the close icon
-//import { MdDomainVerification } from "react-icons/md";
 import { useRouter } from 'next/navigation';
 
-// Update component to accept an optional onClose prop
+// Assuming your logo and user component are correctly placed
+import logo from '../../../../public/fx/images/logo.png'; // Make sure this path is correct
+import User from '../../access-manager/components/User'; // Make sure this path is correct
+
+// --- IMPORTING ICONS ---
+// You may need to install react-icons: npm install react-icons
+import { FiX, FiSmartphone, FiMail } from "react-icons/fi";
+import { AiOutlineMessage } from "react-icons/ai";
+import { FaWhatsapp } from "react-icons/fa";
+import { BsChatDots } from "react-icons/bs";
+
+// --- NAVIGATION ITEMS DATA ---
+// This makes it easier to manage the links and their data
+const messageSources = [
+  { name: 'All Messages', href: '/omnisupport', icon: AiOutlineMessage, count: 24, active: true },
+  { name: 'WhatsApp', href: '/omnisupport/whatsapp', icon: FaWhatsapp, count: 12 },
+  { name: 'In-App', href: '/omnisupport/in-app', icon: FiSmartphone, count: 8 },
+  { name: 'Email', href: '/omnisupport/email', icon: FiMail, count: 3 },
+  { name: 'SMS', href: '/omnisupport/sms', icon: BsChatDots, count: 1 },
+];
+
+// Update component to accept an optional onClose prop for mobile view
 export default function SideNav({ onClose }: { onClose?: () => void }) {
   const router = useRouter();
-  const pathname = usePathname(); // Get current route
+  const pathname = usePathname(); // Use this to dynamically set the active link
 
   const handleLogoClick = () => {
-    router.push('/dashboard'); 
+    router.push('/dashboard');
   };
 
   return (
-    <div className="w-full h-screen font-poppins px-4 pt-8 bg-blue-600 text-white flex flex-col">
-      {/* Updated Header to include the close button */}
-      <div className="flex justify-between items-center mb-16">
-        <div className="flex items-center">
-            <Image 
-                src={logo} 
-                alt="Logo" 
-                width={30} 
-                height={24}
-                onClick={handleLogoClick}
-                className="cursor-pointer"
+    <div className="w-full h-screen font-sans p-6 bg-[#2B66F6] text-white flex flex-col">
+      {/* Header with Logo and optional Close Button */}
+      <div className="flex justify-between items-center mb-10">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={handleLogoClick}>
+            <Image
+                src={logo} // Your logo path
+                alt="Omnisupport Logo"
+                width={40}
+                height={40}
+                className="object-contain"
             />
-            <div className="font-semibold text-[20px] font-lufga mt-2 ml-3">
+            <span className="font-bold text-2xl">
                 Omnisupport
-            </div>
+            </span>
         </div>
-        {/* --- CLOSE BUTTON (MOBILE ONLY) --- */}
-        {/* This button only shows if the onClose function is passed */}
+        {/* Close button for mobile */}
         {onClose && (
             <button
                 onClick={onClose}
@@ -51,135 +62,69 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      <div className="relative group ">
-        <Link href="/omnisupport">
-          {' '}
-          {/* Link to the homepage */}
-          <button
-            className={`group flex items-center pl-4 pr-5 py-2 rounded-lg mt-2 text-2xl transition duration-300 ease-in-out 
-              ${pathname === '/' ? 'bg-gray-200 text-blue-600' : 'hover:bg-[#F3F5F8] hover:text-blue-600'}`}
-          >
-         <AiOutlineMessage />
-
-            <span className="text-[18px] ml-3 font-medium">All Messages</span>
-          </button>
-        </Link>
-        
-        <Link href="/">
-    
-      </Link>
-      
-      <Link href="/omnisupport/in-app">
-        <button
-          className={`flex items-center pl-4 pr-5 py-2 rounded-lg mt-2 transition duration-300 ease-in-out 
-            ${pathname === '/in-app' ? 'bg-gray-200 text-blue-600' : 'hover:bg-[#F3F5F8] hover:text-blue-600'}`}
-        >
-          <span className="text-[18px] font-medium ml-9">In-app</span>
-        </button>
-      </Link>
-      
-      <Link href="/omnisupport/email">
-        <button
-          className={`flex items-center pl-4 pr-5 py-2 rounded-lg mt-2 transition duration-300 ease-in-out 
-            ${pathname === '/email' ? 'bg-gray-200 text-blue-600' : 'hover:bg-[#F3F5F8] hover:text-blue-600'}`}
-        >
-          <span className="text-[18px] ml-9 font-medium">Email</span>
-        </button>
-      </Link>
-      
-      <Link href="/omnisupport/sms">
-        <button
-          className={`flex items-center pl-4 pr-5 py-2 rounded-lg mt-2 transition duration-300 ease-in-out 
-            ${pathname === '/sms' ? 'bg-gray-200 text-blue-600' : 'hover:bg-[#F3F5F8] hover:text-blue-600'}`}
-        >
-          <span className="text-[18px] ml-9 font-medium">WhatsApp</span>
-        </button>
-      </Link>
-      <Link href="/omnisupport/sms">
-        <button
-          className={`flex items-center pl-4 pr-5 py-2 rounded-lg mt-2 transition duration-300 ease-in-out 
-            ${pathname === '/sms' ? 'bg-gray-200 text-blue-600' : 'hover:bg-[#F3F5F8] hover:text-blue-600'}`}
-        >
-          <span className="text-[18px] ml-9 font-medium">App Store</span>
-        </button>
-      </Link>
-      <Link href="/omnisupport/sms">
-        <button
-          className={`flex items-center pl-4 pr-5 py-2 rounded-lg mt-2 transition duration-300 ease-in-out 
-            ${pathname === '/sms' ? 'bg-gray-200 text-blue-600' : 'hover:bg-[#F3F5F8] hover:text-blue-600'}`}
-        >
-          <span className="text-[18px]  ml-9 font-medium">Playstore</span>
-        </button>
-      </Link>
-      <Link href="/omnisupport/transactions">
-          <button className="flex ml-9 items-center pl-4 pr-12 py-2 mt-2 rounded-lg  border-white text-white transition duration-300   ease-in-out hover:bg-white hover:border-blue-600 hover:text-blue-600">
-            
-
-            {/* Settings Text */}
-            <span className="text-[18px] font-medium transition duration-300 ease-in-out">
-              KPLC 
-            </span>
-          </button>
-        </Link>
-           <Link href="/omnisupport/e-citizen">
-          <button className="flex ml-9 items-center pl-4 pr-12 py-2 mt-2 rounded-lg  border-white text-white transition duration-300   ease-in-out hover:bg-white hover:border-blue-600 hover:text-blue-600">
-            
-
-            {/* Settings Text */}
-            <span className="text-[18px] font-medium transition duration-300 ease-in-out">
-              E-CITIZEN 
-            </span>
-          </button>
-        </Link>
-{/** 
-      <Link href="/">
-  <button className="group flex items-center text-2xl pl-4 pr-12 py-2 mt-2 rounded-lg border-white text-white transition duration-300 ease-in-out hover:bg-white hover:border-blue-600 hover:text-blue-600">
-  <MdDomainVerification />
-
-
-    <span className="text-[18px] font-medium transition ml-3  duration-300 ease-in-out">
-      Verification
-    </span>
-  </button>
-</Link>
-*/}
-
-
-
-        <Link href="/">
-          <button className="flex items-center pl-4 pr-12 py-2 mt-2 rounded-lg  border-white text-white transition duration-300   ease-in-out hover:bg-white hover:border-blue-600 hover:text-blue-600">
-            {/* SVG Settings Icon */}
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="mr-4 transition duration-300 ease-in-out"
-            >
-              <path d="M12 2v2"></path>
-              <path d="M12 20v2"></path>
-              <path d="M4.93 4.93l1.41 1.41"></path>
-              <path d="M17.66 17.66l1.41 1.41"></path>
-              <path d="M2 12h2"></path>
-              <path d="M20 12h2"></path>
-              <path d="M6.34 17.66l-1.41 1.41"></path>
-              <path d="M19.07 4.93l-1.41 1.41"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-
-            {/* Settings Text */}
-            <span className="text-[18px] font-medium transition duration-300 ease-in-out">
-              Settings
-            </span>
-          </button>
-        </Link>
+      {/* Message Sources Section */}
+      <div className="flex flex-col gap-2">
+        <h2 className="text-sm text-gray-200 font-semibold mb-2 px-2">Message Sources</h2>
+        {messageSources.map((item, index) => {
+          // Check if the current path matches the item's href
+          const isActive = pathname === item.href;
+          
+          return (
+            <Link href={item.href} key={item.name}>
+              <div
+                className={`flex items-center justify-between w-full px-3 py-3 rounded-lg cursor-pointer transition-all duration-300
+                  ${isActive ? 'bg-white text-[#2B66F6]' : 'hover:bg-white/20'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon size={20} />
+                  <span className="font-medium">{item.name}</span>
+                </div>
+                <span
+                  className={`px-2.5 py-0.5 text-sm font-bold rounded-full
+                    ${isActive ? 'bg-[#D6E2FD] text-[#2B66F6]' : 'bg-[#4E81F7]'}`}
+                >
+                  {item.count}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
-      {/* Bottom Section */}
-      <div className="mt-auto mb-4">
+
+      {/* Spacer to push content down */}
+      <div className="flex-grow"></div>
+
+      {/* Today's Stats Card */}
+      <div className="bg-blue-700 p-4 rounded-xl mb-6">
+        <h3 className="font-bold text-lg mb-4">Today's Stats</h3>
+        <div className="flex flex-col gap-3 text-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-200">Avg Response</span>
+            <span className="font-semibold">2.3 min</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-200">Resolution Rate</span>
+            <span className="font-semibold text-green-300">94%</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-200">Tickets Resolved</span>
+            <span className="font-semibold">18</span>
+          </div>
+        </div>
+      </div>
+
+      {/* End Shift Button */}
+      <button className="w-full flex items-center justify-between px-3 py-2 mb-8 bg-blue-600 border border-white/50 rounded-lg hover:bg-white/20 transition-all duration-300">
+          <div className="flex items-center gap-3">
+            <span className="w-3 h-3 bg-green-400 rounded-full"></span>
+            <span className="font-medium">End Shift</span>
+          </div>
+          <span>0h 0m</span>
+      </button>
+
+      {/* Bottom User Section */}
+      <div className="mt-auto">
+        {/* Assuming User component is styled to match the image */}
         <User />
       </div>
     </div>

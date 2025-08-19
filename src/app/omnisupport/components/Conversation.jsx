@@ -5,13 +5,14 @@ import PropTypes from 'prop-types';
 import axios from 'axios';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
 // --- Icon Imports ---
 import {
-  NotebookPen, MessageSquare, MoreVertical, Paperclip, Smile, Pin, Send,
+  NotebookPen, MessageSquare, MoreVertical, Paperclip, Smile, Send,
   Loader2, CheckCheck, X, UploadCloud, ArrowLeft
 } from 'lucide-react';
-import { FaPlus } from "react-icons/fa6";
+import { FaPlus, FaWhatsapp, FaListAlt, FaStickyNote } from "react-icons/fa";
 
 
 // --- Component Imports ---
@@ -56,30 +57,48 @@ const TEMPLATE_BODIES = {
 // =================================================================================
 // ---  HELPER UTILITY FUNCTIONS  ---
 // =================================================================================
+
+const getCountryCode = (msisdn) => {
+  if (!msisdn || typeof msisdn !== 'string') return null;
+  const formattedMsisdn = msisdn.startsWith('+') ? msisdn : `+${msisdn}`;
+  try {
+    const phoneNumber = parsePhoneNumberFromString(formattedMsisdn);
+    if (phoneNumber && phoneNumber.country) return phoneNumber.country;
+  } catch (error) {
+    console.error("Error parsing phone number:", error);
+  }
+  return null;
+};
+
 const avatarColorPalette = ['bg-red-500', 'bg-green-500', 'bg-purple-500', 'bg-blue-500', 'bg-indigo-500', 'bg-pink-500', 'bg-orange-500'];
 const getColorForId = (id) => { if (!id) return 'bg-gray-400'; let hash = 0; for (let i = 0; i < id.length; i++) { hash = id.charCodeAt(i) + ((hash << 5) - hash); } const index = Math.abs(hash % avatarColorPalette.length); return avatarColorPalette[index]; };
 const getInitials = (name = '') => { if (!name || typeof name !== 'string' || name.toLowerCase() === 'unknown') return 'UN'; const parts = name.split(' ').filter(Boolean); if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase(); if (parts.length === 1 && parts[0].length > 1) return parts[0].substring(0, 2).toUpperCase(); if (parts.length === 1) return parts[0][0].toUpperCase(); return '??'; };
 const formatDateSeparator = (dateStr) => { const date = new Date(dateStr); const today = new Date(); const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); if (date.toDateString() === today.toDateString()) return 'Today'; if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'; return date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); };
-const formatMessageTimestamp = (timestampStr) => { if (!timestampStr) return ""; const messageDate = new Date(timestampStr); const today = new Date(); const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); if (messageDate.toDateString() === today.toDateString()) { return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }); } if (messageDate.toDateString() === yesterday.toDateString()) { return "Yesterday"; } return messageDate.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
+
+const formatFullTimestamp = (timestampStr) => {
+    if (!timestampStr) return "";
+    const date = new Date(timestampStr);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+    const timeString = date.toLocaleTimeString('en-US', timeOptions).replace(' ', '');
+    if (date.toDateString() === today.toDateString()) return `Today at ${timeString}`;
+    if (date.toDateString() === yesterday.toDateString()) return `Yesterday at ${timeString}`;
+    return `${date.toLocaleDateString()} at ${timeString}`;
+};
+
 
 // =================================================================================
 // ---  MAIN CONVERSATION COMPONENT  ---
 // =================================================================================
 export default function Conversation({ selectedChat, setSelectedChat, onCloseMobile }) {
 
-  // --- STATE MANAGEMENT ---
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [errorMessages, setErrorMessages] = useState(null);
-
-  // ADDED: State to hold chat details that might be missing from the initial prop
-  const [chatDetails, setChatDetails] = useState({
-    name: selectedChat?.contactName || '',
-    phone: selectedChat?.msisdn || '',
-  });
-
-  // UI State
+  const [chatDetails, setChatDetails] = useState({ name: selectedChat?.contactName || '', phone: selectedChat?.msisdn || '' });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -88,54 +107,33 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
-  const [messageNotes, setMessageNotes] = useState({});
-  const [activeNoteEditorId, setActiveNoteEditorId] = useState(null);
-  const [currentNoteText, setCurrentNoteText] = useState("");
 
-  // --- REFS ---
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
-  const noteTextareaRef = useRef(null);
   const dragCounter = useRef(0);
 
-  // --- DERIVED STATE & MEMOIZED VALUES ---
-  // CHANGED: Use the new `chatDetails` state for display, with fallbacks.
-  const userName = chatDetails.name || 'Unknown';
-  const userPhoneNumber = chatDetails.phone;
+  const userName = chatDetails.name || selectedChat?.contactName || 'Unknown';
+  const userPhoneNumber = chatDetails.phone || selectedChat?.msisdn;
   const userInitials = getInitials(userName);
   const userAvatarColor = useMemo(() => getColorForId(selectedChat?.id), [selectedChat?.id]);
+  const countryCode = useMemo(() => getCountryCode(userPhoneNumber), [userPhoneNumber]);
 
-  // --- DATA FETCHING ---
   const fetchFullConversation = useCallback(async (isBackgroundPoll = false) => {
     const identifier = selectedChat?.id || selectedChat?.msisdn;
-    if (!identifier) {
-      setMessages([]);
-      return;
-    }
-
+    if (!identifier) { setMessages([]); return; }
     if (!isBackgroundPoll) { setLoadingMessages(true); }
     setErrorMessages(null);
-
     try {
       const response = await axios.get(`${API_BASE_URL}/messages/${identifier}?page=0&size=50`);
       const fetchedMessages = response.data.content || response.data || [];
-      //console.log(`Fetched messages for identifier ${identifier}:`, fetchedMessages);
-
-      // --- ADDED LOGIC TO UPDATE HEADER DETAILS ---
-      // On the initial fetch, if details are missing, grab them from the first message.
       if (!isBackgroundPoll && fetchedMessages.length > 0) {
         setChatDetails(prevDetails => {
-          if (prevDetails.phone && prevDetails.name) return prevDetails; // Already have details, do nothing.
+          if (prevDetails.phone && prevDetails.name) return prevDetails;
           const firstUserMessage = fetchedMessages.find(msg => msg.direction === 'received');
-          return {
-            name: prevDetails.name || 'Unknown', // Name is not in the message data, so we default to Unknown
-            phone: prevDetails.phone || (firstUserMessage ? firstUserMessage.fromNumber : ''),
-          };
+          return { name: prevDetails.name || selectedChat?.contactName, phone: prevDetails.phone || (firstUserMessage ? firstUserMessage.fromNumber : selectedChat?.msisdn) };
         });
       }
-      // --- END OF ADDED LOGIC ---
-
       const processedMessages = fetchedMessages.map(msg => {
         try {
           const parsedContent = JSON.parse(msg.content);
@@ -146,27 +144,20 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
           return { ...msg, type, payload };
         } catch { return null; }
       }).filter(Boolean);
-
       setMessages(currentMessages => {
         const serverMessagesMap = new Map(processedMessages.map(m => [m.id, m]));
         const pendingOptimisticMessages = currentMessages.filter(localMsg => {
           if (!localMsg.id.toString().startsWith('temp-')) return false;
           let isConfirmed = false;
           for (const serverMsg of processedMessages) {
-            if (serverMsg.direction === 'sent' && serverMsg.type === localMsg.type && serverMsg.payload === localMsg.payload) {
-              isConfirmed = true; break;
-            }
-            if (serverMsg.direction === 'sent' && serverMsg.type === 'image' && localMsg.type === 'image' && serverMsg.payload.url === localMsg.payload.url) {
-              isConfirmed = true; break;
-            }
+            if (serverMsg.direction === 'sent' && serverMsg.type === localMsg.type && serverMsg.payload === localMsg.payload) { isConfirmed = true; break; }
+            if (serverMsg.direction === 'sent' && serverMsg.type === 'image' && localMsg.type === 'image' && serverMsg.payload.url === localMsg.payload.url) { isConfirmed = true; break; }
           }
           return !isConfirmed;
         });
         const newMessages = [...processedMessages, ...pendingOptimisticMessages];
-        return Array.from(new Map(newMessages.map(m => [m.id, m])).values())
-          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        return Array.from(new Map(newMessages.map(m => [m.id, m])).values()).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       });
-
     } catch (err) {
       if (err.response?.status !== 404) {
         console.error("Error fetching conversation:", err);
@@ -177,40 +168,27 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
     } finally {
       if (!isBackgroundPoll) setLoadingMessages(false);
     }
-  }, [selectedChat?.id, selectedChat?.msisdn]);
+  }, [selectedChat?.id, selectedChat?.msisdn, selectedChat?.contactName]);
 
-  // --- SIDE EFFECTS ---
   useEffect(() => { if (textareaRef.current) { textareaRef.current.style.height = 'auto'; textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; } }, [newMessage]);
-  useEffect(() => { if (noteTextareaRef.current) { noteTextareaRef.current.style.height = 'auto'; noteTextareaRef.current.style.height = `${noteTextareaRef.current.scrollHeight}px`; } }, [currentNoteText]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-  
-  // CHANGED: This effect now also resets chatDetails.
   useEffect(() => {
     setMessages([]);
     setNewMessage('');
     setShowEmojiPicker(false);
-    setActiveNoteEditorId(null);
-    setChatDetails({
-      name: selectedChat?.contactName || '',
-      phone: selectedChat?.msisdn || '',
-    });
-    if (selectedChat?.id) {
-      fetchFullConversation(false);
-    }
-  }, [selectedChat, fetchFullConversation]); // Added selectedChat dependency
-
+    setChatDetails({ name: selectedChat?.contactName || '', phone: selectedChat?.msisdn || '' });
+    if (selectedChat?.id) fetchFullConversation(false);
+  }, [selectedChat, fetchFullConversation]);
   useEffect(() => {
     if (!selectedChat?.id || selectedChat.isClosed) return;
     const intervalId = setInterval(() => fetchFullConversation(true), POLLING_INTERVAL);
     return () => clearInterval(intervalId);
   }, [selectedChat?.id, selectedChat?.isClosed, fetchFullConversation]);
-  
   useEffect(() => { document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen || isTemplateModalOpen); }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen, isTemplateModalOpen]);
 
-  // --- EVENT HANDLERS ---
   const sendMessage = async () => {
     if (newMessage.trim() === '' || !selectedChat) return;
-    const recipientPhoneNumber = userPhoneNumber; // Use the state-managed phone number
+    const recipientPhoneNumber = userPhoneNumber;
     if (!recipientPhoneNumber) { console.error('Recipient phone number (msisdn) could not be determined.'); return; }
     const userMsg = { id: `temp-${Date.now()}`, payload: newMessage, createdAt: new Date().toISOString(), direction: 'sent', type: 'text' };
     setMessages(prevMessages => [...prevMessages, userMsg]);
@@ -228,7 +206,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
 
   const handleFileUpload = async (file) => {
     if (!file || !selectedChat) return;
-    const recipientPhoneNumber = userPhoneNumber; // Use the state-managed phone number
+    const recipientPhoneNumber = userPhoneNumber;
     if (!recipientPhoneNumber) { alert("Could not determine the recipient's phone number."); return; }
     const formData = new FormData();
     formData.append('file', file);
@@ -243,33 +221,25 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
       alert("File upload failed. Please try again.");
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) { fileInputRef.current.value = ""; }
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
   const handleSendTemplate = async (templateName) => {
-    if (!userPhoneNumber || !templateName) {
-      alert("Error: Cannot determine recipient's phone number or template name.");
-      return;
-    }
+    if (!userPhoneNumber || !templateName) { alert("Error: Cannot determine recipient's phone number or template name."); return; }
     const templateParams = [{ "default": userName === 'Unknown' ? 'there' : userName }];
     const mediaUrl = TEMPLATE_MEDIA_URLS[templateName];
     const templateBody = TEMPLATE_BODIES[templateName];
     const optimisticMessages = [];
     const timestamp = new Date().toISOString();
-
-    if (mediaUrl) {
-      optimisticMessages.push({ id: `temp-img-${Date.now()}`, type: 'image', direction: 'sent', createdAt: timestamp, payload: { url: mediaUrl } });
-    }
+    if (mediaUrl) optimisticMessages.push({ id: `temp-img-${Date.now()}`, type: 'image', direction: 'sent', createdAt: timestamp, payload: { url: mediaUrl } });
     if (templateBody) {
       const populatedBody = templateBody.replace('{{1}}', userName === 'Unknown' ? 'there' : userName);
       optimisticMessages.push({ id: `temp-text-${Date.now()}`, type: 'text', direction: 'sent', createdAt: timestamp, payload: populatedBody });
     }
-    if (optimisticMessages.length > 0) {
-      setMessages(prev => [...prev, ...optimisticMessages]);
-    }
+    if (optimisticMessages.length > 0) setMessages(prev => [...prev, ...optimisticMessages]);
     try {
-      await axios.post('/api/sendTemplate', { recipient: userPhoneNumber, templateName: templateName, params: templateParams, mediaUrl: mediaUrl });
+      await axios.post('/api/sendTemplate', { recipient: userPhoneNumber, templateName, params: templateParams, mediaUrl });
       setIsTemplateModalOpen(false);
       setTimeout(() => fetchFullConversation(true), 2000);
     } catch (error) {
@@ -280,82 +250,105 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
     }
   };
   
-  // Other event handlers (unchanged)
-  const addEmoji = (emoji) => { setNewMessage(prev => prev + emoji.native); };
+  const addEmoji = (emoji) => setNewMessage(prev => prev + emoji.native);
   const handleCloseChat = async () => { if (!selectedChat || !selectedChat.id) return; try { await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`); setSelectedChat(null); } catch (error) { console.error("Error closing conversation:", error.response?.data || error.message); alert("Failed to close the conversation."); } finally { setIsModalOpen(false); } };
-  const handleFileChange = (e) => { const file = e.target.files[0]; if (file) { handleFileUpload(file); } };
+  const handleFileChange = (e) => { const file = e.target.files[0]; if (file) handleFileUpload(file); };
   const handleSelectTemplate = (text) => { setNewMessage(text); setIsTemplatesModalOpen(false); };
-  const handleNoteIconClick = (id) => { setActiveNoteEditorId(id); setCurrentNoteText(messageNotes[id] || ""); };
-  const handleSaveNote = () => { if (!activeNoteEditorId) return; setMessageNotes(prev => ({ ...prev, [activeNoteEditorId]: currentNoteText })); setActiveNoteEditorId(null); setCurrentNoteText(""); };
-  const handleCancelNote = () => { setActiveNoteEditorId(null); setCurrentNoteText(""); };
   const handleDragEnter = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current++; if (e.dataTransfer.items?.length > 0) setIsDraggingOver(true); };
   const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current === 0) setIsDraggingOver(false); };
   const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
   const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(false); dragCounter.current = 0; if (e.dataTransfer.files?.length > 0) { handleFileUpload(e.dataTransfer.files[0]); e.dataTransfer.clearData(); } };
 
-
-  // --- JSX RENDER ---
   return (
-    <div className="flex flex-col h-screen bg-gray-50 p-4 relative" onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
-      {/* Overlays & Modals */}
+    <div className="flex flex-col h-screen bg-white relative" onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
       {isDraggingOver && ( <div className="absolute inset-0 z-50 bg-blue-500/30 border-4 border-dashed border-blue-600 rounded-2xl flex flex-col items-center justify-center pointer-events-none"><UploadCloud className="w-24 h-24 text-blue-600" /><p className="mt-4 text-2xl font-bold text-blue-800">Drop file to upload</p></div> )}
       {lightboxImage && ( <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 cursor-pointer" onClick={() => setLightboxImage(null)}> <button onClick={() => setLightboxImage(null)} className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/75 rounded-full p-2" > <X size={24} /> </button> <img src={lightboxImage} alt="Lightbox view" className="max-w-full max-h-full rounded-lg shadow-2xl cursor-default" onClick={(e) => e.stopPropagation()} /> </div> )}
       {isTemplatesModalOpen && ( <TemplatesModal closeModal={() => setIsTemplatesModalOpen(false)} onSelectTemplate={handleSelectTemplate} userName={userName} /> )}
       {isTemplateModalOpen && ( <TemplateModal closeModal={() => setIsTemplateModalOpen(false)} onSelectTemplate={handleSendTemplate} userName={userName}/> )}
 
-      {/* Main Content */}
       {!selectedChat ? ( <div className="text-gray-500 flex justify-center items-center h-full"> Select a chat to start a conversation </div> ) 
       : (
         <>
-          <header className="pb-2 mb-4 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              {onCloseMobile && ( <button onClick={onCloseMobile} className="md:hidden mr-2 p-2 hover:bg-gray-100 rounded-full" aria-label="Back to messages"><ArrowLeft className="w-5 h-5 text-gray-600" /></button> )}
-              <div className={`flex items-center justify-center w-10 h-10 ${userAvatarColor} rounded-full font-semibold text-white`}>{userInitials}</div>
-              <div><h2 className="text-sm font-semibold text-gray-800">{userName}</h2><p className="text-xs text-gray-500">{userPhoneNumber}</p></div>
-            </div>
-            {!selectedChat.isClosed && (
-              <div className="relative">
-                <button onClick={() => setIsModalOpen(true)} className="p-1 hover:bg-gray-100 rounded-full"><MoreVertical className="w-5 h-5 text-gray-600" /></button>
-                {isModalOpen && ( <Modal closeModal={() => setIsModalOpen(false)} closeChat={handleCloseChat} openEscalateModal={() => { setIsModalOpen(false); setIsEscalateModalOpen(true); }} /> )}
-                {isEscalateModalOpen && ( <EscalateIssueModal closeModal={() => setIsEscalateModalOpen(false)} goBackToModal1={() => { setIsEscalateModalOpen(false); setIsModalOpen(true); }} /> )}
-              </div>
-            )}
-          </header>
+          <header className="bg-white p-4 border-b border-gray-200">
+            <div className='flex flex-wrap items-start justify-between gap-4'>
+                <div className="flex items-start ">
+                  <div className='flex flex-col'>
 
+                  
+                  <div className='flex  gap-4'>
+
+                    <div className="relative flex-shrink-0">
+                        <div className={`flex items-center justify-center w-10 h-10 ${userAvatarColor} rounded-full font-semibold text-white text-lg`}>{userInitials}</div>
+                        {countryCode && (<img className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white" src={`https://flagcdn.com/${countryCode.toLowerCase()}.svg`} alt={`${countryCode} flag`} title={countryCode}/>)}
+                    </div>
+                    <div className="flex flex-col">
+                        <h2 className="text-lg font-semibold text-gray-800">{userName}</h2>
+                        <p className="text-[12px] text-gray-400 mt-0.5">{userPhoneNumber.replace('+', '')}</p>
+                       
+                    </div>
+                                    </div>
+
+                     <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <span className="text-sm font-medium text-gray-600">Ticket #TK-2024-001</span>
+                        <span className="px-2 py-0.5 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">In Progress</span>
+                        <span className="px-2 py-0.5 text-xs font-semibold text-red-800 bg-red-100 rounded-full">Urgent</span>
+                        <button className="px-2 py-0.5 text-xs text-gray-500 border border-dashed border-gray-400 rounded-md hover:bg-gray-100">+ Add Tag</button>
+                        </div>
+                                          </div>
+
+                <div className="flex items-center gap-2">
+                    <button className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Assign</button>
+                    <button onClick={() => setIsEscalateModalOpen(true)} className="px-4 py-2 text-sm font-semibold text-orange-600 bg-white border border-orange-400 rounded-lg hover:bg-orange-50 transition-colors">Escalate</button>
+                    <button onClick={handleCloseChat} className="px-4 py-2 text-sm font-semibold text-white bg-green-500 border border-green-500 rounded-lg hover:bg-green-600 transition-colors">Close Ticket</button>
+                    <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100 transition-colors"><MoreVertical size={20} /></button>
+                    {isEscalateModalOpen && ( <EscalateIssueModal closeModal={() => setIsEscalateModalOpen(false)} goBackToModal1={() => { setIsEscalateModalOpen(false); setIsModalOpen(true); }} /> )}
+                </div>
+            </div>
+                              </div>
+
+          </header>
+          
           <main className="relative flex-1 flex flex-col min-h-0">
-            <div className="overflow-y-auto bg-white border border-gray-200 rounded-2xl p-4 flex-1">
+            <div className="overflow-y-auto p-6 space-y-6 flex-1">
               {loadingMessages ? ( <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div> ) 
               : errorMessages ? ( <div className="text-red-500 text-center">{errorMessages}</div> ) 
-              : ( messages.map((msg, index) => {
+              : ( messages.map((msg) => {
                   if (!msg || !msg.payload) return null;
-                  const showDateSeparator = index === 0 || new Date(msg.createdAt).toDateString() !== new Date(messages[index - 1].createdAt).toDateString();
                   const isSent = msg.direction === 'sent';
                   
-                  return (
-                    <Fragment key={msg.id}>
-                      {showDateSeparator && <div className="flex justify-center my-4"><span className="bg-gray-200 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">{formatDateSeparator(msg.createdAt)}</span></div>}
-                      <div className={`flex flex-col ${isSent ? 'items-end' : 'items-start'}`}>
-                        <div className={`flex w-full mt-2 items-end gap-2 ${isSent ? 'justify-end' : 'justify-start'}`}>
-                          {!isSent && <div className={`flex-shrink-0 w-6 h-6 ${userAvatarColor} rounded-full text-xs font-semibold text-white flex items-center justify-center self-end`}>{userInitials}</div>}
-                          <div className={`flex items-end max-w-[85%] sm:max-w-[75%] md:max-w-xl ${isSent ? 'flex-row-reverse' : ''}`}>
-                            <div className={`px-3 py-2 rounded-2xl ${isSent ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
-                              {msg.type === 'text' && <p className="break-words whitespace-pre-wrap">{msg.payload}</p>}
-                              {msg.type === 'image' && <img src={msg.payload.url} alt="User attachment" className="rounded-lg max-w-[200px] cursor-pointer" onClick={() => setLightboxImage(msg.payload.url)} />}
-                              {msg.type === 'file' && <a href={msg.payload.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-300 hover:text-white underline"><Paperclip size={16} /><span>File Attachment</span></a>}
-                              {!isSent && <div className="mt-1 text-right text-xs text-gray-500">{formatMessageTimestamp(msg.createdAt)}</div>}
-                            </div>
-                            <div className="flex items-center mx-2 text-gray-400">
-                              <button className="p-1 text-blue-600 hover:text-blue-800 disabled:text-gray-300" onClick={() => handleNoteIconClick(msg.id)} disabled={selectedChat.isClosed}><MessageSquare size={16}/></button>
-                              {!isSent && <button className="p-1 hover:text-gray-600"><MoreVertical size={16}/></button>}
-                            </div>
-                          </div>
-                          {isSent && <div className="flex-shrink-0 w-6 h-6 bg-blue-200 rounded-full text-xs font-semibold text-blue-800 flex items-center justify-center self-end">TM</div>}
+                  return isSent ? (
+                    <div key={msg.id} className="flex justify-end items-start gap-3">
+                      <div className="flex flex-col items-end">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-bold text-gray-800">Tuma Agent</span>
+                          <span className="text-xs text-gray-500">{formatFullTimestamp(msg.createdAt)}</span>
                         </div>
-                        {isSent && <div className="flex items-center gap-2 mt-1 mr-10 text-xs text-gray-500"><span>You</span><span>{formatMessageTimestamp(msg.createdAt)}</span><CheckCheck className="w-4 h-4 text-blue-500" /></div>}
-                        {activeNoteEditorId === msg.id && ( <div className="w-full max-w-xl mt-2 p-2 border border-blue-300 bg-blue-50/50 rounded-lg"><textarea ref={noteTextareaRef} value={currentNoteText} onChange={(e) => setCurrentNoteText(e.target.value)} rows={2} className="w-full bg-transparent text-sm text-gray-800 resize-none focus:outline-none" placeholder="Add a note..."/><div className="flex justify-end gap-2 mt-2"><button onClick={handleCancelNote} className="px-3 py-1 text-sm text-gray-600 rounded-md hover:bg-gray-200">Cancel</button><button onClick={handleSaveNote} className="px-3 py-1 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700">Save</button></div></div>)}
-                        {messageNotes[msg.id] && activeNoteEditorId !== msg.id && ( <div className="w-full max-w-xl mt-2 p-2 border-l-4 bg-yellow-100/60 border-yellow-400 rounded-r-lg"><div className="flex items-start gap-2"><NotebookPen className="flex-shrink-0 w-4 h-4 mt-0.5 text-yellow-600" /><p className="text-sm italic text-gray-700">{messageNotes[msg.id]}</p></div></div>)}
+                        <div className="bg-blue-600 text-white p-3 rounded-lg max-w-lg">
+                           {/* --- FIX: CONDITIONAL RENDERING FOR SENT MESSAGES --- */}
+                           {msg.type === 'text' && <p className="text-sm break-words whitespace-pre-wrap">{msg.payload}</p>}
+                           {msg.type === 'image' && <img src={msg.payload.url} alt="Agent attachment" className="rounded-lg max-w-[200px] cursor-pointer" onClick={() => setLightboxImage(msg.payload.url)} />}
+                           {msg.type === 'file' && <a href={msg.payload.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-300 hover:text-white underline"><Paperclip size={16} /><span>File Attachment</span></a>}
+                        </div>
                       </div>
-                    </Fragment>
+                      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">AG</div>
+                    </div>
+                  ) : (
+                    <div key={msg.id} className="flex justify-start items-start gap-3">
+                      <div className={`w-10 h-10 rounded-full ${userAvatarColor} flex items-center justify-center text-white font-semibold flex-shrink-0`}>{userInitials}</div>
+                      <div className="flex flex-col items-start">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-bold text-gray-800">{userName}</span>
+                          <span className="text-xs text-gray-500">{formatFullTimestamp(msg.createdAt)}</span>
+                          <FaWhatsapp className="text-green-500" />
+                        </div>
+                        <div className="bg-gray-100 text-gray-800 p-3 rounded-lg max-w-lg">
+                            {/* --- FIX: CONDITIONAL RENDERING FOR RECEIVED MESSAGES --- */}
+                           {msg.type === 'text' && <p className="text-sm break-words whitespace-pre-wrap">{msg.payload}</p>}
+                           {msg.type === 'image' && <img src={msg.payload.url} alt="User attachment" className="rounded-lg max-w-[200px] cursor-pointer" onClick={() => setLightboxImage(msg.payload.url)} />}
+                           {msg.type === 'file' && <a href={msg.payload.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:underline"><Paperclip size={16} /><span>File Attachment</span></a>}
+                        </div>
+                      </div>
+                    </div>
                   );
                 })
               )}
@@ -365,23 +358,59 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
           </main>
           
           {!selectedChat.isClosed && (
-            <button onClick={() => setIsTemplateModalOpen(true)} className="absolute bottom-24 right-7 z-20 bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" title="Send a Template Message">
-              <FaPlus size={24} />
+            <button onClick={() => setIsTemplateModalOpen(true)} className="absolute bottom-32 right-7 z-20 bg-green-500 hover:bg-green-600 text-white rounded-full p-3 shadow-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" title="Send a Template Message">
+              <FaPlus size={20} />
             </button>
           )}
 
-          <footer className="pt-4">
+          <footer className="pt-4 px-4 pb-4">
             {selectedChat.isClosed ? ( <div className="p-3 text-center bg-gray-100 rounded-lg"><p className="text-sm text-gray-500">This conversation is closed.</p></div> ) 
             : (
-              <div className="flex items-center p-2 bg-white border border-gray-200 rounded-xl">
-                <textarea ref={textareaRef} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())} rows={1} className="flex-1 px-2 text-sm bg-transparent resize-none max-h-40 focus:outline-none" placeholder="Type your message here" />
-                <div className="flex items-center space-x-1">
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*, .pdf, .doc, .docx, .txt" />
-                  <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => fileInputRef.current.click()} disabled={isUploading}>{isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}</button>
-                  <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => setShowEmojiPicker(p => !p)}><Smile className="w-5 h-5" /></button>
-                  <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => setIsTemplatesModalOpen(true)}><Pin className="w-5 h-5" /></button>
+              <div>
+                <div className="p-1 bg-white border border-gray-200 rounded-xl">
+                    <textarea 
+                        ref={textareaRef} 
+                        value={newMessage} 
+                        onChange={(e) => setNewMessage(e.target.value)} 
+                        onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())} 
+                        rows={1} 
+                        className="w-full flex-1 px-2 py-2 text-sm bg-transparent resize-none max-h-40 focus:outline-none" 
+                        placeholder="Please type here..." 
+                    />
                 </div>
-                <button onClick={sendMessage} className="p-2 ml-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-300" disabled={!newMessage.trim() && !isUploading}><Send className="w-5 h-5" /></button>
+                <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-1">
+                            <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => setShowEmojiPicker(p => !p)}>
+                                <Smile className="w-5 h-5" />
+                            </button>
+                            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*, .pdf, .doc, .docx, .txt" />
+                            <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => fileInputRef.current.click()} disabled={isUploading}>
+                                {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
+                            </button>
+                        </div>
+                        
+                      
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900" onClick={() => setIsTemplatesModalOpen(true)}>
+                            <FaListAlt className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm font-medium">Templates</span>
+                        </button>
+                        <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                            <FaStickyNote className="w-4 h-4 text-yellow-500" />
+                            <span className="text-sm font-medium">Add Note</span>
+                        </button>
+                        </div>
+
+                    <button 
+                        onClick={sendMessage} 
+                        className="px-8 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-300" 
+                        disabled={!newMessage.trim() && !isUploading}
+                    >
+                        Send
+                    </button>
+                </div>
               </div>
             )}
           </footer>

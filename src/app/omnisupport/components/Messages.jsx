@@ -3,12 +3,20 @@
 import { useState } from 'react';
 import NewContact from './NewContact';
 import ChatManager from './ChatManager';
-import { Search } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 
 export default function Messages({ onSelectChat, activeChat }) {
-  const [activeTab, setActiveTab] = useState('Unread');
+  // Set the default active tab to 'In-Progress' to match the image
+  const [activeTab, setActiveTab] = useState('In-Progress');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
+
+  // State to hold the counts received from ChatManager
+  const [conversationCounts, setConversationCounts] = useState({
+    unread: 0,
+    inProgress: 0,
+    closed: 0,
+  });
 
   const handleSelectContact = (contact) => {
     const newConversation = {
@@ -24,44 +32,68 @@ export default function Messages({ onSelectChat, activeChat }) {
     setModalOpen(false);
   };
 
+  // Data structure for tabs to make rendering cleaner
+  const tabs = [
+    { name: 'Unread', count: conversationCounts.unread, color: 'red' },
+    { name: 'In-Progress', count: conversationCounts.inProgress, color: 'yellow' },
+    { name: 'Closed', count: conversationCounts.closed, color: 'gray' },
+  ];
+
+  const badgeColors = {
+    red: 'bg-red-100 text-red-700',
+    yellow: 'bg-yellow-100 text-yellow-800',
+    gray: 'bg-gray-200 text-gray-800',
+  };
+
   return (
     <div className="bg-white pt-5 flex flex-col shadow-lg h-full">
-      {/* Header with Search and New Button */}
-      <div className="flex justify-between px-4 items-center gap-2 md:gap-4">
-        <h2 className="text-lg md:mt-5 font-semibold">Messages</h2>
-        <div className="flex items-center gap-1 md:gap-3">
-          <div className="relative ml-3 md:ml-0 md:mt-5 flex-grow">
-            <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="md:w-full w-4/5 pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+      <div className="px-4 mb-4">
+        {/* Row 1: Title and New Button */}
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-lg font-semibold text-gray-600">
+            Active tickets
+          </h1>
           <button
             onClick={() => setModalOpen(true)}
-            className="border border-blue-600 text-blue-600 px-4 py-1 md:mt-5 rounded-xl font-medium flex items-center gap-2 hover:bg-blue-100 whitespace-nowrap"
+            className="flex items-center gap-1.5 px-4 py-1.5 border border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200"
           >
-            New <span className="md:text-xl text-lg">+</span>
+            <Plus size={18} strokeWidth={2.5} />
+            <span>New</span>
           </button>
+        </div>
+
+        {/* Row 2: Search Bar */}
+        <div className="relative w-full">
+          <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search tickets..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
+          />
         </div>
       </div>
 
-      {/* Tabs Section */}
-      <div className="flex border-b justify-between mt-5 px-6">
-        {['Unread', 'In-Progress', 'Closed'].map((tab) => (
+      {/* --- UPDATED TABS SECTION --- */}
+      <div className="flex border-b justify-between px-4  mt-2">
+        {tabs.map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm mx-3 font-medium ${
-              activeTab === tab
-                ? 'text-blue-600 border-b-4 font-medium border-blue-600'
-                : 'text-gray-500'
-            }`}
+            key={tab.name}
+            onClick={() => setActiveTab(tab.name)}
+            className={`flex items-center gap-2 pb-2 text-sm font-semibold relative transition-colors duration-200
+              ${activeTab === tab.name ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'}`}
           >
-            {tab}
+            <span>{tab.name}</span>
+            <span
+              className={`px-2 py-0.5 text-xs font-bold rounded-md ${badgeColors[tab.color]}`}
+            >
+              {tab.count}
+            </span>
+            {/* The blue underline for the active tab */}
+            {activeTab === tab.name && (
+              <div className="absolute bottom-[-1px] left-0 w-full h-1 bg-blue-600 rounded-t-full"></div>
+            )}
           </button>
         ))}
       </div>
@@ -72,8 +104,9 @@ export default function Messages({ onSelectChat, activeChat }) {
           searchTerm={searchTerm}
           onSelectChat={onSelectChat}
           activeChat={activeChat}
-          // CHANGE: Pass the setActiveTab function down as a prop
           setActiveTab={setActiveTab}
+          // Pass the state setter function as a callback to receive counts
+          onCountsChange={setConversationCounts}
         />
       </div>
 
