@@ -65,7 +65,7 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
       {/* Message Sources Section */}
       <div className="flex flex-col gap-2">
         <h2 className="text-sm text-gray-200 font-semibold mb-2 px-2">Message Sources</h2>
-        {messageSources.map((item, index) => {
+        {messageSources.map((item) => {
           // Check if the current path matches the item's href
           const isActive = pathname === item.href;
           
@@ -96,7 +96,7 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
 
       {/* Today's Stats Card */}
       <div className="bg-blue-700 p-4 rounded-xl mb-6">
-        <h3 className="font-bold text-lg mb-4">Today's Stats</h3>
+        <h3 className="font-bold text-lg mb-4">Today&apos;s Stats</h3>
         <div className="flex flex-col gap-3 text-sm">
           <div className="flex justify-between items-center">
             <span className="text-gray-200">Avg Response</span>
