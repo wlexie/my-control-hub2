@@ -21,11 +21,13 @@ interface AnalyticsItem {
   transactionType: string;
   totalSenderAmount: number;
   receiverBreakdown: ReceiverBreakdown;
+  percentageChange?: number;
 }
 
 interface ApiResponse {
   transactionsCount: number;
   senderCurrency: string;
+  comparisonPeriod: string;
   analyticsByTransactionType: AnalyticsItem[];
 }
 
@@ -34,16 +36,32 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const formattedStart = startDate.toISOString().split("T")[0];
-  const formattedEnd = endDate.toISOString().split("T")[0];
+  // Format dates to YYYY-MM-DD (without time) for API
+  const formatDateForAPI = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const formattedStart = formatDateForAPI(startDate);
+  const formattedEnd = formatDateForAPI(endDate);
 
   useEffect(() => {
     const fetchTransactionData = async () => {
       setLoading(true);
       try {
+        // Reset data when dates change to avoid showing stale data
+        setData(null);
+
         const res = await fetch(
           `https://api.tuma-app.com/api/analytics/transaction-type-summary?currency=GBP&startDate=${formattedStart}&endDate=${formattedEnd}`
         );
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
         const json: ApiResponse = await res.json();
         setData(json);
       } catch (err) {
@@ -55,29 +73,33 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
     };
 
     fetchTransactionData();
-  }, [currency, formattedStart, formattedEnd]);
+  }, [formattedStart, formattedEnd]); // Using formatted dates as dependencies
 
   const getTotalAmount = () => {
-    if (!data) return 0;
+    if (!data || !data.analyticsByTransactionType) return 0;
 
     if (currency === "GBP") {
+      // Sum up totalSenderAmount from all transaction types for GBP
       return data.analyticsByTransactionType.reduce(
-        (sum, item) => sum + item.totalSenderAmount,
+        (sum, item) => sum + (item.totalSenderAmount || 0),
         0
       );
     } else {
+      // For KES, sum up receiverBreakdown values
       return data.analyticsByTransactionType.reduce((sum, item) => {
-        const received = item.receiverBreakdown[currency];
-        return sum + (received ?? 0);
+        const receiverAmount = item.receiverBreakdown[currency];
+        return sum + (receiverAmount || 0);
       }, 0);
     }
   };
 
-  const formatAmount = (amount: number) =>
-    `${currency === "GBP" ? "£" : "KES"} ${amount.toLocaleString(undefined, {
+  const formatAmount = (amount: number) => {
+    const symbol = currency === "GBP" ? "£" : "KES ";
+    return `${symbol}${amount.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
+  };
 
   const formatDisplayDate = (date: Date) =>
     date.toLocaleDateString("en-GB", {
@@ -85,6 +107,18 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
       month: "short",
       year: "numeric",
     });
+
+  // Calculate percentage change if available
+  const getPercentageChange = () => {
+    if (!data || !data.analyticsByTransactionType.length) return null;
+
+    // Find the first transaction type with a percentage change
+    const itemWithChange = data.analyticsByTransactionType.find(
+      (item) => item.percentageChange !== undefined
+    );
+
+    return itemWithChange?.percentageChange || null;
+  };
 
   if (loading) {
     return (
@@ -103,6 +137,8 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
   }
 
   const totalAmount = getTotalAmount();
+  const transactionsCount = data?.transactionsCount || 0;
+  const percentageChange = getPercentageChange();
 
   return (
     <div className="flex flex-col lg:flex-row items-center justify-between px-4 gap-8 lg:gap-16 w-full">
@@ -121,11 +157,20 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
           <h1 className="text-3xl font-bold text-black whitespace-nowrap">
             {formatAmount(totalAmount)}
           </h1>
-          {/* Kept the static growth percentage for now, you might want to fetch this too */}
-          {!loading && data && (
-            <span className="flex bg-green-100 text-green-600 text-sm rounded-full px-2 py-1 items-center gap-1">
-              <TrendingUp className="text-green-600 text-sm" />
-              13% {/* This is static, consider making it dynamic if needed */}
+          {percentageChange !== null && (
+            <span
+              className={`flex ${
+                percentageChange >= 0
+                  ? "bg-green-100 text-green-600"
+                  : "bg-red-100 text-red-600"
+              } text-sm rounded-full px-2 py-1 items-center gap-1`}
+            >
+              <TrendingUp
+                className={`text-sm ${
+                  percentageChange < 0 ? "transform rotate-180" : ""
+                }`}
+              />
+              {Math.abs(percentageChange).toFixed(2)}%
             </span>
           )}
         </div>
@@ -156,11 +201,7 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
                 No. of Transactions
               </p>
               <p className="text-gray-800 font-medium text-xs">
-                {loading
-                  ? "Loading..."
-                  : data
-                  ? data.transactionsCount.toLocaleString()
-                  : "N/A"}
+                {transactionsCount.toLocaleString()}
               </p>
             </div>
           </div>
