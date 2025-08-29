@@ -51,7 +51,6 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
     const fetchTransactionData = async () => {
       setLoading(true);
       try {
-        // Reset data when dates change to avoid showing stale data
         setData(null);
 
         const res = await fetch(
@@ -108,11 +107,11 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
       year: "numeric",
     });
 
-  // Calculate percentage change if available
+  // Calculating percentage change only if available
   const getPercentageChange = () => {
     if (!data || !data.analyticsByTransactionType.length) return null;
 
-    // Find the first transaction type with a percentage change
+    // Finding the first transaction type with a percentage change
     const itemWithChange = data.analyticsByTransactionType.find(
       (item) => item.percentageChange !== undefined
     );
@@ -214,7 +213,7 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
         className="hidden lg:block h-64 w-[2px] bg-gray-300"
       />
 
-      {/* Right Section - Placeholder or Graph */}
+      {/* Right Section - Graph */}
       <div className="flex justify-center lg:justify-start w-full lg:w-auto">
         <CountryTransactions />
       </div>
