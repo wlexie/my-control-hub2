@@ -173,6 +173,36 @@ const TransactionsPage = () => {
         flag: "/backoffice/ghana.png",
         currency: "GHS",
       },
+      {
+        code: "UG",
+        label: "Uganda",
+        flag: "/backoffice/uganda.png",
+        currency: "UGX",
+      },
+      {
+        code: "CD",
+        label: "Congo DRC",
+        flag: "/backoffice/drc.png",
+        currency: "USD",
+      },
+      {
+        code: "ZA",
+        label: "South Africa",
+        flag: "/backoffice/sa.png",
+        currency: "ZAR",
+      },
+      {
+        code: "SS",
+        label: "South Sudan",
+        flag: "/backoffice/ss.png",
+        currency: "SSP",
+      },
+      {
+        code: "ET",
+        label: "Ethiopia",
+        flag: "/backoffice/ethiopia.png",
+        currency: "ETB",
+      },
     ];
   }, []);
 
