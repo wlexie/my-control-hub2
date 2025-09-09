@@ -130,20 +130,20 @@ const Table: FC = () => {
           status: (item.status === "SUCCESS"
             ? "Success"
             : item.status === "PENDING"
-            ? "Pending"
-            : item.status === "FAILED" || item.status === "ERROR"
-            ? "Failed"
-            : item.status === "REJECTED"
-            ? "Rejected"
-            : item.status === "UNDER_REVIEW"
-            ? "Under Review"
-            : item.status === "REVERSED"
-            ? "Reversed"
-            : item.status === "REFUNDED"
-            ? "Refunded"
-            : item.status === "ESCALATED"
-            ? "Escalated"
-            : "Failed") as Transaction["status"],
+              ? "Pending"
+              : item.status === "FAILED" || item.status === "ERROR"
+                ? "Failed"
+                : item.status === "REJECTED"
+                  ? "Rejected"
+                  : item.status === "UNDER_REVIEW"
+                    ? "Under Review"
+                    : item.status === "REVERSED"
+                      ? "Reversed"
+                      : item.status === "REFUNDED"
+                        ? "Refunded"
+                        : item.status === "ESCALATED"
+                          ? "Escalated"
+                          : "Failed") as Transaction["status"],
           currencyIso3a: item.currencyIso3a,
           receiverCurrencyIso3a: item.receiverCurrencyIso3a,
           transactionType: formatChannelName(item.transactionType),
@@ -397,18 +397,18 @@ const Table: FC = () => {
           status === "Success"
             ? "text-green-700 bg-green-100"
             : status === "Pending"
-            ? "text-yellow-700 bg-yellow-100"
-            : status === "Failed"
-            ? "text-red-700 bg-red-100"
-            : status === "Refunded"
-            ? "text-purple-700 bg-purple-100"
-            : status === "Under Review"
-            ? "text-blue-700 bg-blue-100"
-            : status === "Rejected"
-            ? "text-orange-700 bg-orange-100"
-            : status === "Escalated"
-            ? "text-amber-700 bg-amber-100"
-            : "text-black bg-gray-100"
+              ? "text-yellow-700 bg-yellow-100"
+              : status === "Failed"
+                ? "text-red-700 bg-red-100"
+                : status === "Refunded"
+                  ? "text-purple-700 bg-purple-100"
+                  : status === "Under Review"
+                    ? "text-blue-700 bg-blue-100"
+                    : status === "Rejected"
+                      ? "text-orange-700 bg-orange-100"
+                      : status === "Escalated"
+                        ? "text-amber-700 bg-amber-100"
+                        : "text-black bg-gray-100"
         }`}
       >
         {status}
@@ -596,7 +596,7 @@ const Table: FC = () => {
 
   return (
     <div className=" p-4">
-      <div className="bg-white shadow-sm rounded-lg overflow-x-auto">
+      <div className="bg-white rounded-lg overflow-x-auto">
         <h2 className="px-6 py-4 font-semibold text-black border-b">
           Latest Transactions
         </h2>
@@ -643,7 +643,7 @@ const Table: FC = () => {
                     {transaction.currencyIso3a}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {transaction.recipientAmount.toFixed(2)}
+                    {Math.ceil(transaction.recipientAmount)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {transaction.receiverCurrencyIso3a}

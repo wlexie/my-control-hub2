@@ -684,6 +684,15 @@ const TransactionsPage = () => {
             </div>
           </div>
 
+          {/* Date filter active indicator */}
+          {dateRange.startDate && (
+            <div className="text-sm text-gray-500 mb-2">
+              Showing transactions from{" "}
+              {dateRange.startDate.toLocaleDateString()} to{" "}
+              {dateRange.endDate?.toLocaleDateString()}
+            </div>
+          )}
+
           {loading ? (
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="overflow-x-auto">
