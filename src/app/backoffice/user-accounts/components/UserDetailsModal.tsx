@@ -408,11 +408,11 @@ export default function UserDetailsModal({
       toast.success(result.status || "User suspended successfully");
 
       setUser((prev) =>
-        prev ? { ...prev, accountStatus: "Suspended" } : prev
+        prev ? { ...prev, accountStatus: "Temporary_Blocked" } : prev
       );
 
       onUserUpdated(user.userId ?? userId, {
-        accountStatus: "Suspended",
+        accountStatus: "Temporary_Blocked",
       });
     } catch (error: unknown) {
       toast.dismiss();
