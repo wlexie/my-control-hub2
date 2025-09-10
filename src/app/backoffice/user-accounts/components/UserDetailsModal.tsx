@@ -194,30 +194,30 @@ export default function UserDetailsModal({
     }
   };
 
-  const handleAddSystemComment = async (commentText: string) => {
-    if (!user?.accountKey) return;
+  // const handleAddSystemComment = async (commentText: string) => {
+  //   if (!user?.accountKey) return;
 
-    try {
-      const token = getAuthToken();
-      if (!token) return;
+  //   try {
+  //     const token = getAuthToken();
+  //     if (!token) return;
 
-      await fetch("https://api.tuma-app.com/api/communication/add-comment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          commentType: "TEST",
-          text: commentText,
-          accountUser: user.accountKey,
-        }),
-      });
-      await fetchComments(user.accountKey);
-    } catch (error) {
-      console.error("Failed to add system comment:", error);
-    }
-  };
+  //     await fetch("https://api.tuma-app.com/api/communication/add-comment", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //       body: JSON.stringify({
+  //         commentType: "TEST",
+  //         text: commentText,
+  //         accountUser: user.accountKey,
+  //       }),
+  //     });
+  //     await fetchComments(user.accountKey);
+  //   } catch (error) {
+  //     console.error("Failed to add system comment:", error);
+  //   }
+  // };
 
   useEffect(() => {
     if (activeTab === "notes" && user?.accountKey) {
