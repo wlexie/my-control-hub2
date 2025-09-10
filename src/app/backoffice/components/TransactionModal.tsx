@@ -6,6 +6,7 @@ import { Transaction } from "../types/transactions";
 import { generateReceiptPDF } from "./generateReceipt";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
+import { authFetch } from "@/utils/authFetch";
 
 type TransactionModalProps = {
   isOpen: boolean;
@@ -354,15 +355,14 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       throw new Error("Transaction reference not available");
     }
 
-    const response = await fetch(
-      `https://api.tuma-app.com/api/transfer/settle-pending-payment?transactionReference=${transaction.transactionReference}`,
+    const data = await authFetch(
+      `/transfer/settle-pending-payment?transactionReference=${transaction.transactionReference}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       }
     );
 
-    const data = await response.json();
     return data; // always return, handle logic outside
   };
 
