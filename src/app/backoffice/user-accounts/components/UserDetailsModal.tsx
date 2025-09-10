@@ -1,6 +1,6 @@
 // components/UserDetailsModal.tsx
 "use client";
-
+import { authFetch } from "@/utils/authFetch";
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -282,206 +282,115 @@ export default function UserDetailsModal({
   }, [isOpen, userId]);
 
   const handleApproveUser = async () => {
-    if (!user?.onfidoApplicantId) {
-      toast.error("No applicant ID found.");
+    if (!user) {
+      toast.error("No user selected.");
       return;
     }
 
     try {
-      toast.loading("Sending approval request...");
-      const token = getAuthToken();
+      toast.loading("Approving user...");
+      const result = await authFetch(
+        `/account/document-recheck?applicantId=${user.userId}`,
+        { method: "POST" }
+      );
+      toast.dismiss();
 
-      const response = await fetch(
-        `https://api.tuma-app.com/api/account/document-recheck?applicantId=${user.userId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      toast.success(result.status || "User approved successfully");
+
+      setUser((prev) =>
+        prev ? { ...prev, step: "KYC_COMPLETED", accountStatus: "Basic" } : prev
       );
 
-      const result = await response.json();
-      toast.dismiss();
-
-      if (response.ok) {
-        toast.success(result.status || "Document recheck completed");
-        setUser((prev) =>
-          prev
-            ? {
-                ...prev,
-                step: "KYC_COMPLETED",
-                accountStatus: "Basic",
-              }
-            : prev
-        );
-        onUserUpdated(user.userId ?? userId, {
-          accountStatus: "Basic",
-        });
-      } else {
-        toast.error(result.message || "Approval failed.");
-      }
+      onUserUpdated(user.userId ?? userId, {
+        accountStatus: "Basic",
+      });
     } catch (error) {
       toast.dismiss();
-      toast.error("An error occurred. Please try again.");
+      toast.error("Approval failed");
       console.error(error);
     }
   };
 
   const handleReinstateUser = async () => {
+    if (!user) {
+      toast.error("No user selected.");
+      return;
+    }
+
     try {
-      setIsProcessing(true);
       toast.loading("Reinstating user...");
-      const token = getAuthToken();
-
-      const response = await fetch(
-        `https://api.tuma-app.com/api/account/reinstate-user?userId=${userId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const result = await authFetch(
+        `/account/reinstate-user?userId=${user.userId}`,
+        { method: "POST" }
       );
-
-      const result = await response.json();
       toast.dismiss();
 
-      if (response.ok) {
-        toast.success(result.message || "User successfully reinstated");
-        setUser((prev) => (prev ? { ...prev, accountStatus: "Basic" } : prev));
-        onUserUpdated(userId, {
-          accountStatus: "Basic",
-        });
-        await handleAddSystemComment("User account reinstated to Basic status");
-      } else {
-        toast.error(result.message || "Reinstatement failed");
-      }
+      toast.success(result.status || "User reinstated successfully");
+
+      setUser((prev) => (prev ? { ...prev, accountStatus: "Active" } : prev));
+      onUserUpdated(user.userId ?? userId, {
+        accountStatus: "Active",
+      });
     } catch (error) {
       toast.dismiss();
-      toast.error("An error occurred. Please try again.");
+      toast.error("Reinstate failed");
       console.error(error);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
   const handleDeclineUser = async () => {
-    if (!user?.userId) {
-      toast.error("No user ID found.");
-      return;
-    }
-
-    if (!comment.trim()) {
-      toast.error("Please enter a reason for declining");
+    if (!user) {
+      toast.error("No user selected.");
       return;
     }
 
     try {
-      setIsProcessing(true);
       toast.loading("Declining user...");
-      const token = getAuthToken();
-
-      // First add the comment
-      const commentResponse = await fetch(
-        "https://api.tuma-app.com/api/communication/add-comment",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            commentType: "INTERNAL_NOTE",
-            text: `Account declined: ${comment.trim()}`,
-            accountUser: user.accountKey,
-            commentBy: `${user.firstName} ${user.lastName}`,
-          }),
-        }
+      const result = await authFetch(
+        `/account/manual-account-decline?applicantId=${user.userId}&comment=Declining%20test%20account`,
+        { method: "POST" }
       );
-
-      if (!commentResponse.ok) {
-        throw new Error("Failed to add decline comment");
-      }
-
-      // Then decline the user
-      const declineResponse = await fetch(
-        `https://api.tuma-app.com/api/account/manual-account-decline?applicantId=${user.userId}&comment=${encodeURIComponent(comment)}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const result = await declineResponse.json();
       toast.dismiss();
 
-      if (declineResponse.ok) {
-        toast.success(result.message || "User successfully declined");
-        setUser((prev) =>
-          prev ? { ...prev, accountStatus: "Declined" } : prev
-        );
-        onUserUpdated(userId, {
-          accountStatus: "Declined",
-        });
-        setComment("");
-        setIsAddingComment(false);
-        await fetchComments(user.accountKey);
-      } else {
-        throw new Error(result.message || "Decline failed");
-      }
+      toast.success(result.status || "User declined successfully");
+
+      setUser((prev) => (prev ? { ...prev, accountStatus: "Declined" } : prev));
+      onUserUpdated(user.userId ?? userId, {
+        accountStatus: "Declined",
+      });
     } catch (error) {
       toast.dismiss();
-      toast.error(error instanceof Error ? error.message : "An error occurred");
+      toast.error("Decline failed");
       console.error(error);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
   const handleSuspendUser = async () => {
+    if (!user) {
+      toast.error("No user selected.");
+      return;
+    }
+
     try {
-      setIsProcessing(true);
-      const token = getAuthToken();
       toast.loading("Suspending user...");
-
-      const response = await fetch(
-        `https://api.tuma-app.com/api/account/suspend-account?userId=${userId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const result = await authFetch(
+        `/account/suspend-account?userId=${user.userId}`,
+        { method: "POST" }
       );
-
-      const result = await response.json();
       toast.dismiss();
 
-      if (response.ok) {
-        toast.success(result.message || "User successfully suspended");
-        setUser((prev) =>
-          prev ? { ...prev, accountStatus: "Temporary Blocked" } : prev
-        );
-        onUserUpdated(userId, {
-          accountStatus: "Temporary Blocked",
-        });
-        await handleAddSystemComment("User account suspended");
-      } else {
-        toast.error(result.message || "Suspension failed");
-      }
+      toast.success(result.status || "User suspended successfully");
+
+      setUser((prev) =>
+        prev ? { ...prev, accountStatus: "Temporary_Blocked" } : prev
+      );
+      onUserUpdated(user.userId ?? userId, {
+        accountStatus: "Temporary_Blocked",
+      });
     } catch (error) {
       toast.dismiss();
-      toast.error("An error occurred. Please try again.");
+      toast.error("Suspend failed");
       console.error(error);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
