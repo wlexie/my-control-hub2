@@ -115,33 +115,36 @@ const VerifyOTPContent = () => {
       );
 
       if (response.status === 200 && response.data.accessToken) {
-        // ---- START: THE CORRECTED COOKIE-SETTING LOGIC ----
-
-        // 1. SET THE COOKIE WITH A ROOT PATH
-        // This makes the authentication state available to the server-side middleware
-        // on all pages, not just the page it was set on.
+        // ✅ Store token
         Cookies.set("accessToken", response.data.accessToken, {
-          expires: 1, // Expires in 1 day
-          secure: process.env.NODE_ENV === "production", // Use secure cookies on HTTPS
-          path: '/', // <-- This is the important addition
+          expires: 1, // fallback cookie expiry (1 day)
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
         });
 
-        // 2. UPDATE REDUX (This remains unchanged)
-        // This updates your client-side UI state immediately.
-        const decodedToken = jwtDecode<DecodedToken>(response.data.accessToken);
-        const tokenExpiry = decodedToken.exp * 1000;
+        // ✅ Store exact expiry time from backend
+        Cookies.set("accessTokenExpiry", String(response.data.expireDate), {
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        });
+
+        // ✅ Store refresh token (optional, for later use)
+        Cookies.set("refreshToken", response.data.refreshToken, {
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        });
+
+        // ✅ Update Redux store
         dispatch(
           setCredentials({
             accessToken: response.data.accessToken,
             refreshToken: response.data.refreshToken,
-            tokenExpiry: tokenExpiry,
+            tokenExpiry: response.data.expireDate, // use backend-provided expiry
           })
         );
 
-        // ---- END: THE CORRECTED COOKIE-SETTING LOGIC ----
-
         setIsVerified(true);
-        router.push("/dashboard"); // This will now work correctly
+        router.push("/dashboard");
       } else {
         setError("Invalid OTP or unexpected response. Please try again.");
         setOtp(["", "", "", "", "", ""]);
