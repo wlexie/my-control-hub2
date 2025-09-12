@@ -173,6 +173,36 @@ const TransactionsPage = () => {
         flag: "/backoffice/ghana.png",
         currency: "GHS",
       },
+      {
+        code: "UG",
+        label: "Uganda",
+        flag: "/backoffice/uganda.png",
+        currency: "UGX",
+      },
+      {
+        code: "CD",
+        label: "Congo DRC",
+        flag: "/backoffice/drc.png",
+        currency: "USD",
+      },
+      {
+        code: "ZA",
+        label: "South Africa",
+        flag: "/backoffice/sa.png",
+        currency: "ZAR",
+      },
+      {
+        code: "SS",
+        label: "South Sudan",
+        flag: "/backoffice/ss.png",
+        currency: "SSP",
+      },
+      {
+        code: "ET",
+        label: "Ethiopia",
+        flag: "/backoffice/ethiopia.png",
+        currency: "ETB",
+      },
     ];
   }, []);
 
@@ -653,6 +683,15 @@ const TransactionsPage = () => {
               </button>
             </div>
           </div>
+
+          {/* Date filter active indicator */}
+          {dateRange.startDate && (
+            <div className="text-sm text-gray-500 mb-2">
+              Showing transactions from{" "}
+              {dateRange.startDate.toLocaleDateString()} to{" "}
+              {dateRange.endDate?.toLocaleDateString()}
+            </div>
+          )}
 
           {loading ? (
             <div className="bg-white rounded-lg shadow-md overflow-hidden">

@@ -123,18 +123,25 @@ const VerifyOTPContent = () => {
         Cookies.set("accessToken", response.data.accessToken, {
           expires: 1, // Expires in 1 day
           secure: process.env.NODE_ENV === "production", // Use secure cookies on HTTPS
-          path: '/', // <-- This is the important addition
+          path: "/", // <-- This is the important addition
         });
 
         // 2. UPDATE REDUX (This remains unchanged)
         // This updates your client-side UI state immediately.
         const decodedToken = jwtDecode<DecodedToken>(response.data.accessToken);
         const tokenExpiry = decodedToken.exp * 1000;
+
+        // ⬇Save expiry in cookie
+        Cookies.set("accessTokenExpiry", tokenExpiry.toString(), {
+          expires: 1, // same as accessToken
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        });
         dispatch(
           setCredentials({
             accessToken: response.data.accessToken,
             refreshToken: response.data.refreshToken,
-            tokenExpiry: tokenExpiry,
+            tokenExpiry,
           })
         );
 

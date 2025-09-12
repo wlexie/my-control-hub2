@@ -53,6 +53,11 @@ export default function UserAccounts() {
         user.accountId === userId ? { ...user, ...newStatus } : user
       )
     );
+    setFilteredUsers((prev) =>
+      prev.map((user) =>
+        user.accountId === userId ? { ...user, ...newStatus } : user
+      )
+    );
   };
 
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);

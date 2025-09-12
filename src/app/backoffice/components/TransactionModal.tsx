@@ -6,6 +6,7 @@ import { Transaction } from "../types/transactions";
 import { generateReceiptPDF } from "./generateReceipt";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
+import { authFetch } from "@/utils/authFetch";
 
 type TransactionModalProps = {
   isOpen: boolean;
@@ -57,7 +58,7 @@ const getStatusDetails = (status: string, errorMessage?: string) => {
     PENDING: {
       title: "Transaction Pending",
       icon: "/backoffice/icons/pending.svg",
-      reason: "Transaction is being processed",
+      reason: errorMessage || "Transaction is being processed",
     },
     REVERSED: {
       title: "Transaction Reversed",
@@ -277,14 +278,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
 
   useEffect(() => {
     setIsClient(true);
-
-    if (isOpen && transactionId) {
+    if (transactionId) {
       fetchTransaction();
-    } else {
-      setTransaction(null);
-      setLoading(true);
     }
-  }, [isOpen, transactionId]);
+  }, [transactionId]);
 
   console.log("Fetching with transactionKey:", transactionId);
 
@@ -350,43 +347,52 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   };
 
   const retryPendingPayment = async () => {
-    if (!transactionId) return;
+    if (!transaction?.transactionReference) {
+      throw new Error("Transaction reference not available");
+    }
 
-    const response = await fetch(
-      `https://api.tuma-app.com/api/transfer/settle-pending-payment?transactionReference=${transactionId}`,
+    const data = await authFetch(
+      `/transfer/settle-pending-payment?transactionReference=${transaction.transactionReference}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       }
     );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "Payment retry failed");
-    }
-
-    return data;
+    return data; // always return, handle logic outside
   };
 
   const handleRetryPayment = async () => {
-    if (!transactionId) return;
+    if (!transaction?.transactionReference) {
+      toast.error("Transaction reference not available");
+      return;
+    }
 
     setIsRetrying(true);
     try {
       const response = await retryPendingPayment();
       console.log("Retry Payment API Response:", response);
 
-      if (response.status === "ok") {
-        toast.success(
-          response.message || "Payment retry initiated successfully"
-        );
-        fetchTransaction(); // Refresh the transaction data
+      if (response.status === "ok" && response.success) {
+        toast.success(response.message || "Payment settled successfully");
+
+        // refresh status
+        await fetchTransaction();
+
         if (onRetrySuccess && transaction) {
           onRetrySuccess({ ...transaction, status: "SUCCESS" });
         }
+
+        // Close modal after success
+        onClose();
       } else {
-        toast.error(response.message || "Unexpected response from server");
+        toast.error(
+          response.message || "We are unable to complete your payout request"
+        );
+
+        if (onRetrySuccess && transaction) {
+          onRetrySuccess({ ...transaction, status: "FAILED" });
+        }
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -400,7 +406,6 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       setIsRetrying(false);
     }
   };
-
   if (!isOpen) return null;
 
   if (loading || !transaction) {
@@ -439,7 +444,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   {transaction.status === "PENDING" && (
                     <button
                       onClick={handleRetryPayment}
-                      disabled={isRetrying}
+                      disabled={isRetrying || !transaction.transactionReference}
                       className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isRetrying ? "Processing..." : "Settle Payment"}
@@ -699,7 +704,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   {transaction.status === "PENDING" && (
                     <button
                       onClick={handleRetryPayment}
-                      disabled={isRetrying}
+                      disabled={isRetrying || !transaction.transactionReference}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isRetrying ? "Processing..." : "Settle Payment"}

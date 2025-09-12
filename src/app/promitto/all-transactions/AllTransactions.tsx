@@ -1099,7 +1099,7 @@ export default function AllTransactionsPage() {
                     </td>
                     <td className="py-3 px-4">{transaction.currencyIso3a}</td>
                     <td className="py-3 px-4">
-                      {transaction.recipientAmount.toFixed(2)}
+                      {Math.ceil(transaction.recipientAmount)}
                     </td>
                     <td className="py-3 px-4">
                       {transaction.receiverCurrencyIso3a}
@@ -1168,7 +1168,8 @@ export default function AllTransactionsPage() {
 
         {!allPagesLoaded && (
           <p className="text-xs text-gray-500 mt-1 text-center">
-            ⚠ Filtering results may be incomplete. More data is still loading...
+            ⚠ Filtering results may be incomplete. More data is still
+            loading...
           </p>
         )}
 
