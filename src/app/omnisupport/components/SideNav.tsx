@@ -4,9 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-// Assuming your logo and user component are correctly placed
-import logo from '../../../../public/fx/images/logo.png'; // Make sure this path is correct
-import User from '../../access-manager/components/User'; // Make sure this path is correct
+// --- Assuming your logo and user component are correctly placed ---
+import logo from '../../../../public/fx/images/logo.png'; 
+import User from '../../access-manager/components/User';
 
 // --- IMPORTING ICONS ---
 // You may need to install react-icons: npm install react-icons

@@ -25,7 +25,7 @@ import TemplateModal from './TemplateModal';
 // ---  CONFIGURATION CONSTANTS  ---
 // =================================================================================
 const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
-const POLLING_INTERVAL = 5000;
+const POLLING_INTERVAL = 60000;
 
 const TEMPLATE_MEDIA_URLS = {
   'welcome_dormant': 'https://tuma-whatsapp.s3.us-east-1.amazonaws.com/1000642484.jpg',
@@ -278,29 +278,29 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                   <div className='flex  gap-4'>
 
                     <div className="relative flex-shrink-0">
-                        <div className={`flex items-center justify-center w-10 h-10 ${userAvatarColor} rounded-full font-semibold text-white text-lg`}>{userInitials}</div>
-                        {countryCode && (<img className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white" src={`https://flagcdn.com/${countryCode.toLowerCase()}.svg`} alt={`${countryCode} flag`} title={countryCode}/>)}
+                        <div className={`flex items-center justify-center w-7 h-7 md:w-10 md:h-10 ${userAvatarColor} rounded-full font-semibold text-white text-sm md:text-lg`}>{userInitials}</div>
+                        {countryCode && (<img className="absolute md:-bottom-1 md:-right-1 bottom-3 -right-2  md:w-6 md:h-6 h-5 w-5 rounded-full border-2 border-white" src={`https://flagcdn.com/${countryCode.toLowerCase()}.svg`} alt={`${countryCode} flag`} title={countryCode}/>)}
                     </div>
                     <div className="flex flex-col">
-                        <h2 className="text-lg font-semibold text-gray-800">{userName}</h2>
-                        <p className="text-[12px] text-gray-400 mt-0.5">{userPhoneNumber.replace('+', '')}</p>
+                        <h2 className="md:text-lg text-sm font-semibold text-gray-800">{userName}</h2>
+                        <p className="text-[10px] md:text-[12px] text-gray-400 md:mt-0.5">{userPhoneNumber.replace('+', '')}</p>
                        
                     </div>
                                     </div>
 
-                     <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        <span className="text-sm font-medium text-gray-600">Ticket #TK-2024-001</span>
+                     <div className="flex items-center gap-2 mt-0.5 md:mt-2 flex-wrap">
+                        <span className="text-xs md:text-sm font-medium text-gray-600">Ticket #TK-2024-001</span>
                         <span className="px-2 py-0.5 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">In Progress</span>
                         <span className="px-2 py-0.5 text-xs font-semibold text-red-800 bg-red-100 rounded-full">Urgent</span>
-                        <button className="px-2 py-0.5 text-xs text-gray-500 border border-dashed border-gray-400 rounded-md hover:bg-gray-100">+ Add Tag</button>
+                        <button className="px-2 py-0.5 text-xs text-gray-500 hidden md:block border border-dashed border-gray-400 rounded-md hover:bg-gray-100">+ Add Tag</button>
                         </div>
                                           </div>
 
                 <div className="flex items-center gap-2">
-                    <button className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Assign</button>
-                    <button onClick={() => setIsEscalateModalOpen(true)} className="px-4 py-2 text-sm font-semibold text-orange-600 bg-white border border-orange-400 rounded-lg hover:bg-orange-50 transition-colors">Escalate</button>
-                    <button onClick={handleCloseChat} className="px-4 py-2 text-sm font-semibold text-white bg-green-500 border border-green-500 rounded-lg hover:bg-green-600 transition-colors">Close Ticket</button>
-                    <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100 transition-colors"><MoreVertical size={20} /></button>
+                    <button className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">Assign</button>
+                    <button onClick={() => setIsEscalateModalOpen(true)} className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-orange-600 bg-white border border-orange-400 rounded-sm hover:bg-orange-50 transition-colors">Escalate</button>
+                    <button onClick={handleCloseChat} className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm  font-semibold text-white bg-green-500 border border-green-500 rounded-sm hover:bg-green-600 transition-colors">Close Ticket</button>
+                   {/*} <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100 transition-colors"><MoreVertical size={20} /></button> */}
                     {isEscalateModalOpen && ( <EscalateIssueModal closeModal={() => setIsEscalateModalOpen(false)} goBackToModal1={() => { setIsEscalateModalOpen(false); setIsModalOpen(true); }} /> )}
                 </div>
             </div>
@@ -374,7 +374,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                         onChange={(e) => setNewMessage(e.target.value)} 
                         onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())} 
                         rows={1} 
-                        className="w-full flex-1 px-2 py-2 text-sm bg-transparent resize-none max-h-40 focus:outline-none" 
+                        className="w-full flex-1 px-2 py-5  text-sm bg-transparent resize-none max-h-40  focus:outline-none" 
                         placeholder="Please type here..." 
                     />
                 </div>
@@ -405,7 +405,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
 
                     <button 
                         onClick={sendMessage} 
-                        className="px-8 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-300" 
+                        className="px-3 md:px-8 md:py-2 py-1 font-semibold text-white bg-blue-600 rounded-sm hover:bg-blue-700 disabled:bg-blue-300" 
                         disabled={!newMessage.trim() && !isUploading}
                     >
                         Send
