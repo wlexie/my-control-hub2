@@ -58,7 +58,7 @@ const getStatusDetails = (status: string, errorMessage?: string) => {
     PENDING: {
       title: "Transaction Pending",
       icon: "/backoffice/icons/pending.svg",
-      reason: "Transaction is being processed",
+      reason: errorMessage || "Transaction is being processed",
     },
     REVERSED: {
       title: "Transaction Reversed",
