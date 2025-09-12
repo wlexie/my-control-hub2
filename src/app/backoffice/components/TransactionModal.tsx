@@ -278,14 +278,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
 
   useEffect(() => {
     setIsClient(true);
-
-    if (isOpen && transactionId) {
+    if (transactionId) {
       fetchTransaction();
-    } else {
-      setTransaction(null);
-      setLoading(true);
     }
-  }, [isOpen, transactionId]);
+  }, [transactionId]);
 
   console.log("Fetching with transactionKey:", transactionId);
 
@@ -378,14 +374,17 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       console.log("Retry Payment API Response:", response);
 
       if (response.status === "ok" && response.success) {
-        toast.success(
-          response.message || "Payment retry initiated successfully"
-        );
-        fetchTransaction(); // refresh latest status
+        toast.success(response.message || "Payment settled successfully");
+
+        // refresh status
+        await fetchTransaction();
 
         if (onRetrySuccess && transaction) {
           onRetrySuccess({ ...transaction, status: "SUCCESS" });
         }
+
+        // Close modal after success
+        onClose();
       } else {
         toast.error(
           response.message || "We are unable to complete your payout request"
@@ -407,7 +406,6 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       setIsRetrying(false);
     }
   };
-
   if (!isOpen) return null;
 
   if (loading || !transaction) {
