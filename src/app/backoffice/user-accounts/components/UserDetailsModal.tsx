@@ -14,6 +14,8 @@ import {
 import type { CardDetails, User } from "@/app/backoffice/user-accounts/types";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../../../store/store'; 
 
 interface Props {
   userId: number;
@@ -65,6 +67,8 @@ export default function UserDetailsModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [, setUserMap] = useState<Record<string, string>>({});
+ const userRoles = useSelector((state: RootState) => state.auth.user?.roles);
+  const isAdmin = userRoles?.includes("ADMIN");
 
   const sectionRefs = {
     overview: React.useRef<HTMLDivElement>(null),
@@ -466,8 +470,8 @@ export default function UserDetailsModal({
                 </button>
               </div>
 
-              <div className="flex gap-2">
-                {user.accountStatus !== "Declined" && (
+                <div className="flex gap-2">
+                {user.accountStatus !== "Declined" && isAdmin && ( 
                   <>
                     {user.step === "KYC_IN_PROGRESS" && (
                       <button

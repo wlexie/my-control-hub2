@@ -37,10 +37,18 @@ const ALL_CURRENCY_DATA = {
   SSP: { code: 'SSP', name: 'South Sudanese Pound', flag: `https://flagcdn.com/w40/${getCountryCode('SSP')}.png` },
   MWK: { code: 'MWK', name: 'Malawian Kwacha', flag: `https://flagcdn.com/w40/${getCountryCode('MWK')}.png` },
   UGX: { code: 'UGX', name: 'Ugandan Shilling', flag: `https://flagcdn.com/w40/${getCountryCode('UGX')}.png` },
-};
+  ETB: { code: 'ETB', name: 'Ethiopian Birr', flag: `https://flagcdn.com/w40/${getCountryCode('ETB')}.png` },
+  RWF: { code: 'RWF', name: 'Rwandan Franc', flag: `https://flagcdn.com/w40/${getCountryCode('RWF')}.png` },
+  ZAR: { code: 'ZAR', name: 'South African Rand', flag: `https://flagcdn.com/w40/${getCountryCode('ZAR')}.png` },
+  SSP: { code: 'SSP', name: 'South Sudanese Pound', flag: `https://flagcdn.com/w40/${getCountryCode('SSP')}.png` },
+
+
+
+
+};    
 
 const FROM_CURRENCY_CODES = ["GBP", "USD", "EUR"];
-const TO_CURRENCY_CODES = ["GBP", "USD", "EUR", "KES", "TZS", "BIF", "GHS", "SSP", "MWK", "UGX"];
+const TO_CURRENCY_CODES = ["GBP", "USD", "EUR", "KES", "TZS", "BIF", "GHS", "SSP", "MWK", "UGX", "ETB", "RWF", "ZAR", "SSP"];
 
 // --- Helper Component for Dropdown Items ---
 const CurrencyListItem = memo(({ currency, onSelect }) => (
@@ -154,7 +162,6 @@ const CreatePairModal = ({ isOpen, onClose }) => {
         rate: rate,
       });
 
-      // Using the endpoint from your screenshot
       const url = `https://api.tuma-app.com/api/treasury/create-exchange-rate?${params.toString()}`;
 
       await axios.post(url, {}, { // Empty body as params are in URL

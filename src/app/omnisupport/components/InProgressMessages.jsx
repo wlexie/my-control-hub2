@@ -1,5 +1,3 @@
-// src/components/InProgressMessages.jsx
-
 import { useMemo } from "react";
 import PropTypes from "prop-types";
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
@@ -61,13 +59,15 @@ export default function InProgressMessages({ conversations = [], onSelectChat, a
     return conversations
       .filter(conv => (conv.contactName || '').toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => {
-        if (activeChat) {
-          if (a.id === activeChat.id) return -1;
-          if (b.id === activeChat.id) return 1;
-        }
+        // REMOVED: Logic that moves activeChat to the top.
+        // if (activeChat) {
+        //   if (a.id === activeChat.id) return -1;
+        //   if (b.id === activeChat.id) return 1;
+        // }
+        // The list will now only be sorted by timestamp.
         return new Date(b.timestamp) - new Date(a.timestamp);
       });
-  }, [conversations, searchTerm, activeChat]);
+  }, [conversations, searchTerm, activeChat]); // activeChat is still a dependency, but doesn't influence sort order directly.
 
   return (
     // CHANGE: Added h-full to ensure the component has a defined height boundary from its parent
