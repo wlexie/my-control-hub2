@@ -994,31 +994,36 @@ export default function UserDetailsModal({
                     </div>
                   ) : comments.length > 0 ? (
                     <div className="space-y-3 text-sm">
-                      {comments.map((comment) => (
-                        <div
-                          key={comment.id}
-                          className="bg-gray-50 p-3 rounded-xl"
-                        >
-                          <p className="text-xs text-gray-500 font-semibold">
-                            {comment.commentBy} •{" "}
-                            {new Date(comment.createdAt).toLocaleString(
-                              "en-GB",
-                              {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: false,
-                                timeZone: "GMT",
-                              }
-                            )}{" "}
-                            GMT
-                          </p>
-
-                          <p className="mt-1">{comment.text}</p>
-                        </div>
-                      ))}
+                      {[...comments]
+                        .sort(
+                          (a, b) =>
+                            new Date(b.createdAt).getTime() -
+                            new Date(a.createdAt).getTime()
+                        )
+                        .map((comment) => (
+                          <div
+                            key={comment.id}
+                            className="bg-gray-50 p-3 rounded-xl"
+                          >
+                            <p className="text-xs text-gray-500 font-semibold">
+                              {comment.commentBy} •{" "}
+                              {new Date(comment.createdAt).toLocaleString(
+                                "en-GB",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                                  timeZone: "GMT",
+                                }
+                              )}{" "}
+                              GMT
+                            </p>
+                            <p className="mt-1">{comment.text}</p>
+                          </div>
+                        ))}
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500 italic">
