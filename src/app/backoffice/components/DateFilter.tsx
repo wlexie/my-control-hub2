@@ -24,34 +24,42 @@ const DateFilter: React.FC<DateFilterProps> = ({
   onClose,
 }) => {
   const [selectedRange, setSelectedRange] = useState<Range>({
-    startDate: initialStartDate || new Date(),
-    endDate: initialEndDate || new Date(),
+    startDate: initialStartDate ?? undefined,
+    endDate: initialEndDate ?? undefined,
     key: "selection",
   });
 
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("23:59");
 
+  // Sync with props only when they change
   useEffect(() => {
-    if (selectedRange.startDate) {
-      const startDate = initialStartDate || selectedRange.startDate;
-      setStartTime(
-        `${startDate.getHours().toString().padStart(2, "0")}:${startDate
-          .getMinutes()
-          .toString()
-          .padStart(2, "0")}`
-      );
+    if (initialStartDate || initialEndDate) {
+      setSelectedRange({
+        startDate: initialStartDate ?? undefined,
+        endDate: initialEndDate ?? undefined,
+        key: "selection",
+      });
+
+      if (initialStartDate) {
+        setStartTime(
+          `${initialStartDate.getHours().toString().padStart(2, "0")}:${initialStartDate
+            .getMinutes()
+            .toString()
+            .padStart(2, "0")}`
+        );
+      }
+
+      if (initialEndDate) {
+        setEndTime(
+          `${initialEndDate.getHours().toString().padStart(2, "0")}:${initialEndDate
+            .getMinutes()
+            .toString()
+            .padStart(2, "0")}`
+        );
+      }
     }
-    if (selectedRange.endDate) {
-      const endDate = initialEndDate || selectedRange.endDate;
-      setEndTime(
-        `${endDate.getHours().toString().padStart(2, "0")}:${endDate
-          .getMinutes()
-          .toString()
-          .padStart(2, "0")}`
-      );
-    }
-  }, [selectedRange, initialStartDate, initialEndDate]);
+  }, [initialStartDate, initialEndDate]);
 
   const handleSelect = (ranges: RangeKeyDict) => {
     const selection = ranges.selection;
@@ -84,8 +92,8 @@ const DateFilter: React.FC<DateFilterProps> = ({
     if (onClear) {
       onClear();
       setSelectedRange({
-        startDate: new Date(),
-        endDate: new Date(),
+        startDate: undefined,
+        endDate: undefined,
         key: "selection",
       });
       setStartTime("00:00");
@@ -103,6 +111,7 @@ const DateFilter: React.FC<DateFilterProps> = ({
         onChange={handleSelect}
         moveRangeOnFirstSelection={false}
         rangeColors={["#3b82f6"]}
+        // 👇 remove this if you want users to browse future months
         maxDate={new Date()}
         className="w-full"
       />
