@@ -618,12 +618,7 @@ export default function UserDetailsModal({
                         })}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-gray-500">Date of Birth</p>
-                      <p className="font-semibold">
-                        {user.documents?.[0]?.dateOfBirth || "—"}
-                      </p>
-                    </div>
+
                     <div>
                       <p className="text-gray-500">Issuing Country</p>
                       <p className="font-semibold">
@@ -631,9 +626,9 @@ export default function UserDetailsModal({
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500">ID Document number</p>
-                      <p className="font-semibold">
-                        {user.documents?.[0]?.documentNumber || "—"}
+                      <p className="text-gray-500">Document Type</p>
+                      <p className="font-semibold uppercase">
+                        {user.documents?.[0]?.type || "—"}
                       </p>
                     </div>
                   </div>
