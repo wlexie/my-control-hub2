@@ -632,6 +632,7 @@ export default function UserDetailsModal({
                       </p>
                     </div>
                   </div>
+
                   <div>
                     <p className="text-gray-500 mt-6">Onfido ID</p>
                     <p className="font-semibold">
@@ -663,7 +664,18 @@ export default function UserDetailsModal({
                               </span>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-y-4 text-sm">
+                            <div>
+                              <p className="text-gray-500 text-sm ">
+                                Name on Document
+                              </p>
+                              <p className="font-semibold ">
+                                {[doc.firstName, doc.lastName]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                              </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-y-4 text-sm mt-2">
                               <div>
                                 <p className="text-gray-500">Document Number</p>
                                 <p className="font-semibold">
