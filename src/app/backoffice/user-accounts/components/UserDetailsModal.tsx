@@ -516,9 +516,12 @@ export default function UserDetailsModal({
                 )}
 
                 {user.accountStatus === "Declined" && (
-                  <div className="text-sm text-gray-600 italic">
-                    This account has been declined
-                  </div>
+                  <button
+                    onClick={handleApproveUser}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+                  >
+                    Approve User
+                  </button>
                 )}
               </div>
 
