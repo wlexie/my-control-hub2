@@ -453,9 +453,7 @@ const TransactionsPage = () => {
   };
 
   const prepareExportData = async () => {
-    const exportData: ExportTransaction[] = [];
-
-    for (const transaction of filteredTransactions) {
+    const fetchDetails = async (transaction: Transaction) => {
       try {
         const res = await fetch(
           `https://api.tuma-app.com/api/transfer/transaction-details?transactionId=${transaction.transactionId}`
@@ -463,7 +461,7 @@ const TransactionsPage = () => {
         if (!res.ok) throw new Error("Failed to fetch transaction details");
         const fullDetails = await res.json();
 
-        exportData.push({
+        return {
           "Transaction ID": fullDetails.transactionId,
           "Transaction Key": fullDetails.transactionKey,
           "Transaction Reference": fullDetails.transactionReference,
@@ -494,14 +492,59 @@ const TransactionsPage = () => {
           "Fraud Reference": fullDetails.fraudReference,
           "Payment Purpose": fullDetails.paymentPurpose,
           "Source of Funds": fullDetails.fundsSource,
-        });
+        } as ExportTransaction;
       } catch (error) {
-        console.error("Error fetching details for export:", error);
-        toast.error("Failed to fetch all transaction details for export");
+        console.error(
+          `❌ Error fetching details for transaction ${transaction.transactionId}:`,
+          error
+        );
+        // Return minimal info so the export still completes
+        return {
+          "Transaction ID": Number(transaction.transactionId) || 0,
+          "Transaction Key": transaction.transactionKey || "N/A",
+          "Transaction Reference": transaction.transactionReference || "N/A",
+          "User ID": Number(transaction.userId) || 0,
+          "Sender Name": transaction.senderName || "N/A",
+          "Sender's Number": transaction.senderPhone || "N/A",
+          "Sender's Email": transaction.senderEmail || "N/A",
+          "Recipient Name": transaction.receiverName || "N/A",
+          "Recipient's Number": transaction.receiverPhone || "N/A",
+          "Account Number": String(transaction.accountNumber || "N/A"),
+          "Sender Amount": Number(transaction.senderAmount) || 0,
+          "Recipient Amount": Number(transaction.recipientAmount) || 0,
+          "Sender Currency": transaction.currencyIso3a || "N/A",
+          "Destination Currency": transaction.receiverCurrencyIso3a || "N/A",
+          Destination: transaction.receiverAddress || "N/A",
+          "Exchange Rate": Number(transaction.exchangeRate) || 1,
+          "Transaction Type": transaction.transactionType || "N/A",
+          "Payment Description": "N/A",
+          "Card Issuer": "N/A",
+          "Masked Card Number": "N/A",
+          "Settlement Reference": transaction.settlementReference || "N/A",
+          "MPESA Reference": transaction.mpesaReference || "N/A",
+          "Trust Payment Reference": transaction.tpReference || "N/A",
+          "Bank Name": transaction.bankName || "N/A",
+          Status: transaction.status || "N/A",
+          "Error Message": transaction.errorMessage || "N/A",
+          "Date & Time (GMT)": formatDateTime(transaction.date),
+          "Fraud Reference": transaction.fraudReference || "N/A",
+          "Payment Purpose": transaction.paymentPurpose || "N/A",
+          "Source of Funds": transaction.fundsSource || "N/A",
+        } as ExportTransaction;
       }
+    };
+
+    // Run fetches in parallel batches to avoid API overload
+    const concurrency = 100; // number of requests at once
+    const results: ExportTransaction[] = [];
+
+    for (let i = 0; i < filteredTransactions.length; i += concurrency) {
+      const batch = filteredTransactions.slice(i, i + concurrency);
+      const batchResults = await Promise.all(batch.map(fetchDetails));
+      results.push(...batchResults);
     }
 
-    return exportData;
+    return results;
   };
 
   const formatDateTime = (dateString: string): string => {

@@ -22,6 +22,7 @@ const allModulesData = [
       "Get complete visibility into every transaction across the Tuma ecosystem. Track, monitor, and audit with confidence in a secure and intuitive interface.",
     path: "/backoffice/dashboard/",
     roles: ["ADMIN", "OMNISUPPORT", "BACKOFFICE", "DASHBOARD", "COMPLIANCE"],
+
   },
   {
     name: "OmniSupport",
@@ -229,7 +230,7 @@ const DashboardPage = () => {
       id: "logout",
       label: "Logout",
       icon: MdOutlineLogout,
-      onClick: handleLogout, 
+      onClick: handleLogout,
       hoverColor: "hover:text-red-600",
       activeColor: "text-red-600",
       activeBg: "bg-red-100",

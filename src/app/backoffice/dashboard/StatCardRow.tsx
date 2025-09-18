@@ -34,7 +34,6 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Format dates to YYYY-MM-DD (without time) for API
   const formatDateForAPI = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -49,17 +48,11 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
     const fetchStats = async () => {
       setLoading(true);
       try {
-        // Reset data when dates change to avoid showing stale data
         setData(null);
-
         const res = await fetch(
           `https://api.tuma-app.com/api/analytics/transaction-type-summary?currency=GBP&startDate=${formattedStart}&endDate=${formattedEnd}`
         );
-
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const json = await res.json();
         setData(json);
       } catch (err) {
@@ -69,33 +62,26 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
         setLoading(false);
       }
     };
-
     fetchStats();
   }, [formattedStart, formattedEnd]);
 
   const getAmount = (type: string) => {
-    if (!data || !data.analyticsByTransactionType) return 0;
-
+    if (!data?.analyticsByTransactionType) return 0;
     const item = data.analyticsByTransactionType.find(
       (d) => d.transactionType === type
     );
     if (!item) return 0;
-
     if (currency === "GBP") return item.totalSenderAmount || 0;
-
     const receiverAmount = item.receiverBreakdown[currency];
     return receiverAmount || 0;
   };
 
-  // Get percentage change from API if available
   const getPercentageChange = (type: string) => {
-    if (!data || !data.analyticsByTransactionType) return null;
-
-    const item = data.analyticsByTransactionType.find(
-      (d) => d.transactionType === type
+    if (!data?.analyticsByTransactionType) return null;
+    return (
+      data.analyticsByTransactionType.find((d) => d.transactionType === type)
+        ?.percentageChange ?? null
     );
-
-    return item?.percentageChange || null;
   };
 
   const formatAmount = (amount: number) => {
@@ -106,13 +92,12 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
     })}`;
   };
 
-  // Define card configurations
   const cards = [
     {
       type: "CARD_TO_MPESA",
       label: "Card-to-MPESA",
       icon: (
-        <span className="bg-orange-100 rounded-lg p-3 mb-2 flex items-center justify-center">
+        <span className="bg-orange-100 dark:bg-orange-900/40 rounded-lg p-3 mb-2 flex items-center justify-center">
           <FaSimCard className="text-orange-400 text-xl" />
         </span>
       ),
@@ -121,8 +106,8 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
       type: "CARD_TO_PAYBILL",
       label: "Card-to-Paybill",
       icon: (
-        <span className="bg-blue-100 rounded-lg p-3 mb-2">
-          <FaReceipt className="text-blue-700 text-xl" />
+        <span className="bg-blue-100 dark:bg-blue-900/40 rounded-lg p-3 mb-2">
+          <FaReceipt className="text-blue-500 text-xl" />
         </span>
       ),
     },
@@ -130,8 +115,8 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
       type: "CARD_TO_BANK",
       label: "Card-to-Bank",
       icon: (
-        <span className="bg-green-100 rounded-lg p-3 mb-2">
-          <FaBuildingColumns className="text-green-700 text-xl" />
+        <span className="bg-green-100 dark:bg-green-900/40 rounded-lg p-3 mb-2">
+          <FaBuildingColumns className="text-green-500 text-xl" />
         </span>
       ),
     },
@@ -139,8 +124,8 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
       type: "CARD_TO_CARD",
       label: "Card-to-Card",
       icon: (
-        <span className="bg-blue-100 rounded-lg p-3 mb-2 ">
-          <FaWallet className="text-blue-700 text-xl" />
+        <span className="bg-blue-100 dark:bg-blue-900/40 rounded-lg p-3 mb-2">
+          <FaWallet className="text-blue-500 text-xl" />
         </span>
       ),
     },
@@ -148,8 +133,8 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
       type: "CARD_TO_NETWORK",
       label: "Card-to-Networks",
       icon: (
-        <span className="bg-purple-100 rounded-lg p-3 mb-2">
-          <FaPhone className="text-purple-700 text-xl" />
+        <span className="bg-purple-100 dark:bg-purple-900/40 rounded-lg p-3 mb-2">
+          <FaPhone className="text-purple-500 text-xl" />
         </span>
       ),
     },
@@ -161,11 +146,11 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
         {cards.map((_, i) => (
           <div
             key={i}
-            className="bg-white p-10 rounded-xl shadow-sm flex flex-col justify-between animate-pulse"
+            className="bg-white dark:bg-gray-800 p-10 rounded-xl shadow-sm flex flex-col justify-between animate-pulse"
           >
-            <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-full"></div>
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
           </div>
         ))}
       </div>
@@ -173,54 +158,35 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
   }
 
   if (error) {
-    return <div className="text-center p-4 text-red-500">Error: {error}</div>;
+    return (
+      <div className="text-center p-4 text-red-500 dark:text-red-400">
+        Error: {error}
+      </div>
+    );
   }
 
   const getComparisonLabel = (startDate: Date, endDate: Date): string => {
     const isSameDay = startDate.toDateString() === endDate.toDateString();
-
-    if (isSameDay) {
-      return "vs Yesterday";
-    }
-
-    // Check if the range is selected as weekly
+    if (isSameDay) return "vs Yesterday";
     const diffInDays =
       Math.round(
         (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
       ) + 1;
-
-    if (diffInDays === 7) {
-      return "vs Last Week";
-    }
-
-    // Checking if it is a full month
-    const startMonth = startDate.getMonth();
-    const endMonth = endDate.getMonth();
-    const startYear = startDate.getFullYear();
-    const endYear = endDate.getFullYear();
-
+    if (diffInDays === 7) return "vs Last Week";
     const isFullMonth =
       startDate.getDate() === 1 &&
-      new Date(endYear, endMonth + 1, 0).getDate() === endDate.getDate() &&
-      startMonth === endMonth &&
-      startYear === endYear;
-
-    if (isFullMonth) {
-      return "vs Last Month";
-    }
-
-    // Checking if it is a full year
+      new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0).getDate() ===
+        endDate.getDate() &&
+      startDate.getMonth() === endDate.getMonth() &&
+      startDate.getFullYear() === endDate.getFullYear();
+    if (isFullMonth) return "vs Last Month";
     const isFullYear =
       startDate.getMonth() === 0 &&
       startDate.getDate() === 1 &&
       endDate.getMonth() === 11 &&
       endDate.getDate() === 31 &&
-      startYear === endYear;
-
-    if (isFullYear) {
-      return "vs Last Year";
-    }
-
+      startDate.getFullYear() === endDate.getFullYear();
+    if (isFullYear) return "vs Last Year";
     return "vs Previous Period";
   };
 
@@ -230,26 +196,26 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
         const amount = getAmount(card.type);
         const percentageChange = getPercentageChange(card.type);
         const hasChangeData = percentageChange !== null;
-        const isPositive = hasChangeData ? percentageChange >= 0 : true;
+        const isPositive = hasChangeData ? percentageChange! >= 0 : true;
         const changeText = hasChangeData
-          ? `${isPositive ? "+" : ""}${percentageChange.toFixed(0)}%`
+          ? `${isPositive ? "+" : ""}${percentageChange!.toFixed(0)}%`
           : "N/A";
 
         return (
           <div
             key={i}
-            className="bg-white p-10 rounded-xl shadow-sm flex flex-col justify-between"
+            className="bg-white dark:bg-gray-800 p-10 rounded-xl shadow-sm flex flex-col justify-between transition-colors"
           >
             <div className="flex items-center gap-3 mb-2">
               <div className="w-8 h-8 rounded-full flex items-center justify-center">
                 {card.icon}
               </div>
-              <div className="text-gray-700 text-base font-medium ml-4">
+              <div className="text-gray-700 dark:text-gray-200 text-base font-medium ml-4">
                 {card.label}
               </div>
             </div>
 
-            <div className="text-2xl font-semibold text-gray-800">
+            <div className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
               {formatAmount(amount)}
             </div>
             <div className="mt-2 text-md flex items-center space-x-2">
@@ -257,7 +223,9 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
                 <>
                   <div
                     className={`rounded-full p-1 ${
-                      isPositive ? "bg-green-100" : "bg-red-100"
+                      isPositive
+                        ? "bg-green-100 dark:bg-green-900/40"
+                        : "bg-red-100 dark:bg-red-900/40"
                     }`}
                   >
                     {isPositive ? (
@@ -273,7 +241,7 @@ export default function StatCardsRow({ currency, startDate, endDate }: Props) {
                   </span>
                 </>
               )}
-              <span className="text-gray-400 text-sm">
+              <span className="text-gray-400 dark:text-gray-500 text-sm">
                 {hasChangeData
                   ? getComparisonLabel(startDate, endDate)
                   : "No comparison data"}

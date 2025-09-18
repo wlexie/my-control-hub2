@@ -213,45 +213,44 @@ export default function UserAccounts() {
     try {
       const extendedData: ExportedUserRow[] = [];
 
-      for (const u of filteredUsers) {
+      const fetchUserProfile = async (u: User) => {
         try {
           const res = await fetch(
             `https://api.tuma-app.com/api/account/client-profile?userId=${u.accountId}`
           );
+          if (!res.ok) throw new Error("Failed to fetch user profile");
           const user = await res.json();
 
           const doc = user.documents?.[0] ?? {};
           const risk = user.riskScore ?? {};
           const riskScores = risk.scores ?? {};
-
           const tx = user.transaction ?? {};
           const fullName = `${user.firstName} ${user.lastName}`;
           const totalTx =
-            tx.totalTransactions?.successfulTransactions +
-              tx.totalTransactions?.failedTransactions || 0;
+            (tx.totalTransactions?.successfulTransactions ?? 0) +
+            (tx.totalTransactions?.failedTransactions ?? 0);
 
-          extendedData.push({
-            "User ID": u.accountId,
+          return {
+            "User ID": Number(u.accountId) || 0,
             "Full Name": fullName,
-            Email: user.email,
-            Phone: user.phone,
+            Email: user.email || "—",
+            Phone: user.phone || "—",
             Country: user.country || "—",
-            "Account Status": user.accountStatus,
-            "Verification Status": user.kycStatus,
-            "KYC Status": user.step,
-            "Account Key": user.accountKey,
+            "Account Status": user.accountStatus || "—",
+            "Verification Status": user.kycStatus || "—",
+            "KYC Status": user.step || "—",
+            "Account Key": user.accountKey || "—",
             "Onfido Applicant ID": user.onfidoApplicantId || "—",
-            "Date of Registration": new Date(user.createdAt).toLocaleString(
-              "en-GB",
-              {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              }
-            ),
+            "Date of Registration": user.createdAt
+              ? new Date(user.createdAt).toLocaleString("en-GB", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                })
+              : "—",
 
             // Document fields
             Gender: doc.gender || "—",
@@ -276,41 +275,64 @@ export default function UserAccounts() {
               : "—",
             "Total Transactions": totalTx,
             "Successful Transactions":
-              tx.totalTransactions?.successfulTransactions ?? "—",
+              tx.totalTransactions?.successfulTransactions ?? 0,
             "Failed Transactions":
-              tx.totalTransactions?.failedTransactions ?? "—",
+              tx.totalTransactions?.failedTransactions ?? 0,
             "Total Transaction Value (KES)":
               tx.totalTransactionsValue?.toFixed(2) ?? "—",
             "Risk Score Level": risk.riskLevel ?? "—",
-            "Total Score": risk.totalScore ?? "—",
-            "Country Score": riskScores.countryScore ?? "—",
-            "Transaction Score": riskScores.transactionsScore ?? "—",
-            "Transactions Value Score":
-              riskScores.transactionsValueScore ?? "—",
-            "Account Status Score": riskScores.accountStatusScore ?? "—",
-          });
+            "Total Score": risk.totalScore ?? 0,
+            "Country Score": riskScores.countryScore ?? 0,
+            "Transaction Score": riskScores.transactionsScore ?? 0,
+            "Transactions Value Score": riskScores.transactionsValueScore ?? 0,
+            "Account Status Score": riskScores.accountStatusScore ?? 0,
+          } as ExportedUserRow;
         } catch (err) {
           console.error(
-            "Failed to fetch user profile for export",
+            "❌ Failed to fetch user profile for export:",
             u.accountId,
             err
           );
+
+          // Safe fallback
+          return {
+            "User ID": Number(u.accountId) || 0,
+            "Full Name": `${u.firstName} ${u.lastName}`,
+            Email: u.email || "—",
+            Phone: u.phone || "—",
+            Country: u.country || "—",
+            "Account Status": u.accountStatus || "—",
+            "Verification Status": u.kycStatus || "—",
+            "KYC Status": u.step || "—",
+            "Onfido Applicant ID": u.onfidoApplicantId || "—",
+            "Date of Registration": new Date(
+              u.registrationDate
+            ).toLocaleDateString("en-GB"),
+          } as ExportedUserRow;
         }
+      };
+
+      // Parallel batching (10 requests at a time)
+      const concurrency = 50;
+      for (let i = 0; i < filteredUsers.length; i += concurrency) {
+        const batch = filteredUsers.slice(i, i + concurrency);
+        const batchResults = await Promise.all(batch.map(fetchUserProfile));
+        extendedData.push(...batchResults);
       }
 
+      // File naming
       let fileName = "User Accounts";
-
       if (searchQuery.trim()) {
         const safeQuery = searchQuery.trim().replace(/\s+/g, "_");
         fileName += `_search_${safeQuery}`;
       }
-
       if (dateRange.startDate && dateRange.endDate) {
         const start = dateRange.startDate.toISOString().split("T")[0];
         const end = dateRange.endDate.toISOString().split("T")[0];
         fileName += `_from_${start}_to_${end}`;
       }
 
+      // Export to Excel
       const worksheet = XLSX.utils.json_to_sheet(extendedData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Users");

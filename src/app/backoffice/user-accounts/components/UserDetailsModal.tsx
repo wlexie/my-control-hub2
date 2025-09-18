@@ -14,8 +14,6 @@ import {
 import type { CardDetails, User } from "@/app/backoffice/user-accounts/types";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { useSelector } from 'react-redux';
-import type { RootState } from '../../../../store/store'; 
 
 interface Props {
   userId: number;
@@ -67,8 +65,6 @@ export default function UserDetailsModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [, setUserMap] = useState<Record<string, string>>({});
- const userRoles = useSelector((state: RootState) => state.auth.user?.roles);
-  const isAdmin = userRoles?.includes("ADMIN");
 
   const sectionRefs = {
     overview: React.useRef<HTMLDivElement>(null),
@@ -470,8 +466,8 @@ export default function UserDetailsModal({
                 </button>
               </div>
 
-                <div className="flex gap-2">
-                {user.accountStatus !== "Declined" && isAdmin && ( 
+              <div className="flex gap-2">
+                {user.accountStatus !== "Declined" && (
                   <>
                     {user.step === "KYC_IN_PROGRESS" && (
                       <button
@@ -520,9 +516,12 @@ export default function UserDetailsModal({
                 )}
 
                 {user.accountStatus === "Declined" && (
-                  <div className="text-sm text-gray-600 italic">
-                    This account has been declined
-                  </div>
+                  <button
+                    onClick={handleApproveUser}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+                  >
+                    Approve User
+                  </button>
                 )}
               </div>
 
@@ -622,12 +621,7 @@ export default function UserDetailsModal({
                         })}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-gray-500">Date of Birth</p>
-                      <p className="font-semibold">
-                        {user.documents?.[0]?.dateOfBirth || "—"}
-                      </p>
-                    </div>
+
                     <div>
                       <p className="text-gray-500">Issuing Country</p>
                       <p className="font-semibold">
@@ -635,12 +629,13 @@ export default function UserDetailsModal({
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500">ID Document number</p>
-                      <p className="font-semibold">
-                        {user.documents?.[0]?.documentNumber || "—"}
+                      <p className="text-gray-500">Document Type</p>
+                      <p className="font-semibold uppercase">
+                        {user.documents?.[0]?.type || "—"}
                       </p>
                     </div>
                   </div>
+
                   <div>
                     <p className="text-gray-500 mt-6">Onfido ID</p>
                     <p className="font-semibold">
@@ -672,7 +667,18 @@ export default function UserDetailsModal({
                               </span>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-y-4 text-sm">
+                            <div>
+                              <p className="text-gray-500 text-sm ">
+                                Name on Document
+                              </p>
+                              <p className="font-semibold ">
+                                {[doc.firstName, doc.lastName]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                              </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-y-4 text-sm mt-2">
                               <div>
                                 <p className="text-gray-500">Document Number</p>
                                 <p className="font-semibold">
@@ -998,31 +1004,36 @@ export default function UserDetailsModal({
                     </div>
                   ) : comments.length > 0 ? (
                     <div className="space-y-3 text-sm">
-                      {comments.map((comment) => (
-                        <div
-                          key={comment.id}
-                          className="bg-gray-50 p-3 rounded-xl"
-                        >
-                          <p className="text-xs text-gray-500 font-semibold">
-                            {comment.commentBy} •{" "}
-                            {new Date(comment.createdAt).toLocaleString(
-                              "en-GB",
-                              {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: false,
-                                timeZone: "GMT",
-                              }
-                            )}{" "}
-                            GMT
-                          </p>
-
-                          <p className="mt-1">{comment.text}</p>
-                        </div>
-                      ))}
+                      {[...comments]
+                        .sort(
+                          (a, b) =>
+                            new Date(b.createdAt).getTime() -
+                            new Date(a.createdAt).getTime()
+                        )
+                        .map((comment) => (
+                          <div
+                            key={comment.id}
+                            className="bg-gray-50 p-3 rounded-xl"
+                          >
+                            <p className="text-xs text-gray-500 font-semibold">
+                              {comment.commentBy} •{" "}
+                              {new Date(comment.createdAt).toLocaleString(
+                                "en-GB",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                                  timeZone: "GMT",
+                                }
+                              )}{" "}
+                              GMT
+                            </p>
+                            <p className="mt-1">{comment.text}</p>
+                          </div>
+                        ))}
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500 italic">
