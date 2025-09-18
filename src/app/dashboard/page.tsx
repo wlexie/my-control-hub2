@@ -21,7 +21,7 @@ const allModulesData = [
     description:
       "Get complete visibility into every transaction across the Tuma ecosystem. Track, monitor, and audit with confidence in a secure and intuitive interface.",
     path: "/backoffice/dashboard/",
-    roles: ["ADMIN", "OMNISUPPORT", "BACKOFFICE", "DASHBOARD"],
+    roles: ["ADMIN", "OMNISUPPORT", "BACKOFFICE", "DASHBOARD", "COMPLIANCE"],
   },
   {
     name: "OmniSupport",
