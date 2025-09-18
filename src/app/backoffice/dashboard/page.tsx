@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import CustomerSegmentation from "./CustomerSegmentation";
 import Header from "./Header";
 import LatestTransactions from "./LatestTransactions";
