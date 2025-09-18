@@ -20,17 +20,6 @@ export default function Dashboard() {
   const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
   const [dateLabel, setDateLabel] = useState("All Time");
 
-  // 🌙 theme toggle state
-  const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
-
   const handleDateChange = (start: Date, end: Date) => {
     setStartDate(start);
     setEndDate(end);
