@@ -10,7 +10,7 @@ import { ChevronDown, Check, Search } from "lucide-react"; // Import Search icon
 // --- A. Definitions and Custom Hook ---
 const useClickOutside = (ref, handler) => {
   useEffect(() => {
-    const listener = (event) => {
+    const listener = (event) => {z
       if (!ref.current || ref.current.contains(event.target)) {
         return;
       }
@@ -256,11 +256,12 @@ const Section = () => {
         </div>
       </div>
 
+    
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <RateCard icon="/fx/svgs/paybill.svg" label="Paybill" rate={rates.paybill} color="#27AAE1" />
-        <RateCard icon="/fx/svgs/mpesa.svg" label="MPESA" rate={rates.mpesa} color="#3CA8A4" />
-        <RateCard icon="/fx/svgs/Bank.svg" label="Bank" rate={rates.bank} color="#276EF1" />
-        <RateCard icon="/fx/svgs/card.svg" label="Card" rate={rates.card} color="#F9CB38" />
+        <RateCard icon="/fx/svgs/paybill.svg" label="Paybill" rate={rates.paybill} color="#27AAE1" selectedPair={selectedPair} />
+        <RateCard icon="/fx/svgs/mpesa.svg" label="MPESA" rate={rates.mpesa} color="#3CA8A4" selectedPair={selectedPair} />
+        <RateCard icon="/fx/svgs/Bank.svg" label="Bank" rate={rates.bank} color="#276EF1" selectedPair={selectedPair} />
+        <RateCard icon="/fx/svgs/card.svg" label="Card" rate={rates.card} color="#F9CB38" selectedPair={selectedPair} />
       </div>
 
       {/* 4. Render the Modals */}
@@ -271,7 +272,7 @@ const Section = () => {
 };
 
 // --- E. RateCard Component (remains unchanged) ---
-const RateCard = ({ icon, label, rate, color }) => (
+const RateCard = ({ icon, label, rate, color, selectedPair }) => (
   <div className="flex items-center md:p-3 p-1 bg-white border border-gray-200 rounded-xl">
     <Image
       src={icon}
@@ -284,8 +285,7 @@ const RateCard = ({ icon, label, rate, color }) => (
     />
     <span className="flex flex-col">
       <h1 className="font-semibold md:text-base text-[12px] text-[#101820]">
-        {rate != null ? `KES ${Number(rate).toFixed(2)}` : "Loading..."}
-      </h1>
+ {rate != null ? (selectedPair ? `${selectedPair.target} ${Number(rate).toFixed(2)}` : `${Number(rate).toFixed(2)}`) : "Loading..."}      </h1>
       <p
         className="mt-1 text-xs w-fit px-2 rounded-md font-medium"
         style={{ color: color, backgroundColor: `${color}1A` }}
