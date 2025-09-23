@@ -9,7 +9,7 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../../../store/authSlice"; // Make sure this path is correct
 import { jwtDecode } from "jwt-decode";
-import Cookies from "js-cookie"; // The required import for handling cookies
+import Cookies from "js-cookie"; 
 
 interface DecodedToken {
   exp: number;
