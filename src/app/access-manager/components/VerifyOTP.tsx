@@ -118,8 +118,6 @@ const VerifyOTPContent = () => {
         // ---- START: THE CORRECTED COOKIE-SETTING LOGIC ----
 
         // 1. SET THE COOKIE WITH A ROOT PATH
-        // This makes the authentication state available to the server-side middleware
-        // on all pages, not just the page it was set on.
         Cookies.set("accessToken", response.data.accessToken, {
           expires: 1, // Expires in 1 day
           secure: process.env.NODE_ENV === "production", // Use secure cookies on HTTPS

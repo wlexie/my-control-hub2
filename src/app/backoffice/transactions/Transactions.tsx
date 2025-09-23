@@ -11,7 +11,7 @@ import TransactionModal from "../components/TransactionModal";
 import FraudModal from "../compliance-security/components/FraudModal";
 import { Transaction } from "../types/transactions";
 import * as XLSX from "xlsx";
-import useApi from "../../../hooks/useApi"; 
+import useApi from "../../../hooks/useApi"; // Corrected import path for useApi
 import { useSearchParams } from "next/navigation";
 import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
@@ -59,6 +59,9 @@ type RawTransaction = Partial<{
   status: string;
   exchangeRate: number;
   transactionType: string;
+  paymentTypeDescription: string;
+  issuer: string;
+  maskedPan: string;
   receiverPhone: string;
   senderPhone: string;
   transactionKey: string;
@@ -505,9 +508,9 @@ const TransactionsPage = () => {
           Destination: fullDetails.receiverAddress || "N/A",
           "Exchange Rate": Number(fullDetails.exchangeRate) || 1,
           "Transaction Type": fullDetails.transactionType || "N/A",
-          //"Payment Description": fullDetails.paymentTypeDescription || "N/A",
-          //"Card Issuer": fullDetails.issuer || "N/A",
-         // "Masked Card Number": fullDetails.maskedPan || "N/A",
+          "Payment Description": fullDetails.paymentTypeDescription || "N/A",
+          "Card Issuer": fullDetails.issuer || "N/A",
+          "Masked Card Number": fullDetails.maskedPan || "N/A",
           "Settlement Reference": fullDetails.settlementReference || "N/A",
           "MPESA Reference": fullDetails.mpesaReference || "N/A",
           "Trust Payment Reference": fullDetails.tpReference || "N/A",
