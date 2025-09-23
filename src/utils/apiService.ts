@@ -4,7 +4,7 @@ import axios, {
     InternalAxiosRequestConfig,
     AxiosError,
     AxiosResponse,
-    AxiosRequestHeaders, // Add this import
+    AxiosRequestHeaders, 
   } from 'axios';
   import { clearCredentials } from '../store/authSlice';
   import type { Store } from 'redux';
@@ -19,7 +19,7 @@ import axios, {
     baseURL: API_BASE_URL,
     headers: {
       'Content-Type': 'application/json',
-    } as AxiosRequestHeaders, // Add type assertion here
+    } as AxiosRequestHeaders, 
   });
   
   // Store reference

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import axios from "axios";
+import api from "../../../utils/apiAuth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,11 +21,13 @@ const Login = () => {
     
     try {
       const response = await axios.post(
-        `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(email)}`
+         `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(email)}`
+       // `${process.env.API_AUTH_URL}auth/send-otp/${encodeURIComponent(email)}`
       );
   
       if (response.status === 200) {
         setNotification("An OTP has been sent to your email. Please verify.");
+        console.log(process.env.API_AUTH_URL)
         router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
       } else {
         setError("Failed to send OTP. Please try again.");

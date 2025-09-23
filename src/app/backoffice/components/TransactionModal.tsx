@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { authFetch } from "@/utils/authFetch";
 import { useSelector } from "react-redux";
-import type { RootState } from "@/store/store";
+import type { RootState } from "../../../store/store";
 
 type TransactionModalProps = {
   isOpen: boolean;
@@ -705,7 +705,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   {transaction.transactionId}
                 </h2>
                 <div className="flex items-center gap-4">
-                  {transaction.status === "PENDING" && (
+                  {transaction.status === "PENDING" && isAdmin && (
                     <button
                       onClick={handleRetryPayment}
                       disabled={isRetrying || !transaction.transactionReference}

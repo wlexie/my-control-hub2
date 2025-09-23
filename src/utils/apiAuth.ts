@@ -4,13 +4,13 @@ import axios, {
     InternalAxiosRequestConfig,
     AxiosError,
     AxiosResponse,
-    AxiosRequestHeaders, // Add this import
+    AxiosRequestHeaders, 
   } from 'axios';
   import { clearCredentials } from '../store/authSlice';
   import type { Store } from 'redux';
   import type { RootState } from '../store/store';
   
-  // API base URL
+//  // API base URL
   const API_BASE_URL = 'https://auth.tuma-app.com/api';
   
   // Create Axios instance
@@ -18,7 +18,7 @@ import axios, {
     baseURL: API_BASE_URL,
     headers: {
       'Content-Type': 'application/json',
-    } as AxiosRequestHeaders, // Add type assertion here
+    } as AxiosRequestHeaders,
   });
   
   // Store reference
