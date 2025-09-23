@@ -705,7 +705,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   {transaction.transactionId}
                 </h2>
                 <div className="flex items-center gap-4">
-                  {transaction.status === "PENDING" && (
+                  {transaction.status === "PENDING" && isAdmin && (
                     <button
                       onClick={handleRetryPayment}
                       disabled={isRetrying || !transaction.transactionReference}
