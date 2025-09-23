@@ -288,28 +288,45 @@ export default function UserDetailsModal({
     }
 
     try {
-      toast.loading("Approving user...");
+      const loadingId = toast.loading("Approving user...");
+
       const result = await authFetch(
         `/account/document-recheck?applicantId=${user.userId}`,
         { method: "POST" }
       );
-      toast.dismiss();
 
-      toast.success(result.status || "User approved successfully");
+      toast.dismiss(loadingId);
 
-      setUser((prev) =>
-        prev ? { ...prev, step: "KYC_COMPLETED", accountStatus: "Basic" } : prev
-      );
+      // Handle response based on API's status
+      if (result.status === "success") {
+        toast.success(result.message || "User approved successfully");
 
-      onUserUpdated(user.userId ?? userId, {
-        accountStatus: "Basic",
-      });
+        setUser((prev) =>
+          prev
+            ? { ...prev, step: "KYC_COMPLETED", accountStatus: "Basic" }
+            : prev
+        );
+
+        onUserUpdated(user.userId ?? userId, {
+          accountStatus: "Basic",
+        });
+      } else if (result.status === "warning") {
+        toast(result.message || "Something to review", {
+          icon: "⚠️",
+        });
+      } else if (result.status === "error") {
+        toast.error(result.message || "Approval failed");
+      } else {
+        toast(result.message || "Unknown response from server", {
+          icon: "ℹ️",
+        });
+      }
     } catch (error: unknown) {
       toast.dismiss();
 
       if (error instanceof Error) {
         if (error.message.includes("Session expired")) {
-          // authFetch already logged out and redirected
+          // authFetch already handled logout & redirect
           return;
         }
         toast.error(error.message || "Approval failed");
@@ -335,18 +352,23 @@ export default function UserDetailsModal({
       );
       toast.dismiss();
 
-      toast.success(result.status || "User reinstated successfully");
+      // ✅ Handle based on API response
+      if (result.status === "success") {
+        toast.success(result.message || "User reinstated successfully");
 
-      setUser((prev) => (prev ? { ...prev, accountStatus: "Active" } : prev));
-
-      onUserUpdated(user.userId ?? userId, {
-        accountStatus: "Active",
-      });
+        setUser((prev) => (prev ? { ...prev, accountStatus: "Active" } : prev));
+        onUserUpdated(user.userId ?? userId, { accountStatus: "Active" });
+      } else if (result.status === "warning") {
+        toast(result.message || "Warning during reinstatement", { icon: "⚠️" });
+      } else if (result.status === "error") {
+        toast.error(result.message || "Failed to reinstate user");
+      } else {
+        toast.error("Unexpected response from server.");
+      }
     } catch (error: unknown) {
       toast.dismiss();
-
       if (error instanceof Error) {
-        if (error.message.includes("Session expired")) return; // handled by authFetch
+        if (error.message.includes("Session expired")) return;
         toast.error(error.message || "Reinstate failed");
         console.error("Reinstate error:", error.message);
       } else {
@@ -370,18 +392,24 @@ export default function UserDetailsModal({
       );
       toast.dismiss();
 
-      toast.success(result.status || "User declined successfully");
+      if (result.status === "success") {
+        toast.success(result.message || "User declined successfully");
 
-      setUser((prev) => (prev ? { ...prev, accountStatus: "Declined" } : prev));
-
-      onUserUpdated(user.userId ?? userId, {
-        accountStatus: "Declined",
-      });
+        setUser((prev) =>
+          prev ? { ...prev, accountStatus: "Declined" } : prev
+        );
+        onUserUpdated(user.userId ?? userId, { accountStatus: "Declined" });
+      } else if (result.status === "warning") {
+        toast(result.message || "Warning during decline", { icon: "⚠️" });
+      } else if (result.status === "error") {
+        toast.error(result.message || "Failed to decline user");
+      } else {
+        toast.error("Unexpected response from server.");
+      }
     } catch (error: unknown) {
       toast.dismiss();
-
       if (error instanceof Error) {
-        if (error.message.includes("Session expired")) return; // handled by authFetch
+        if (error.message.includes("Session expired")) return;
         toast.error(error.message || "Decline failed");
         console.error("Decline error:", error.message);
       } else {
@@ -405,18 +433,24 @@ export default function UserDetailsModal({
       );
       toast.dismiss();
 
-      toast.success(result.status || "User suspended successfully");
+      if (result.status === "success") {
+        toast.success(result.message || "User suspended successfully");
 
-      setUser((prev) =>
-        prev ? { ...prev, accountStatus: "Temporary_Blocked" } : prev
-      );
-
-      onUserUpdated(user.userId ?? userId, {
-        accountStatus: "Temporary_Blocked",
-      });
+        setUser((prev) =>
+          prev ? { ...prev, accountStatus: "Temporary_Blocked" } : prev
+        );
+        onUserUpdated(user.userId ?? userId, {
+          accountStatus: "Temporary_Blocked",
+        });
+      } else if (result.status === "warning") {
+        toast(result.message || "Warning during suspension", { icon: "⚠️" });
+      } else if (result.status === "error") {
+        toast.error(result.message || "Failed to suspend user");
+      } else {
+        toast.error("Unexpected response from server.");
+      }
     } catch (error: unknown) {
       toast.dismiss();
-
       if (error instanceof Error) {
         if (error.message.includes("Session expired")) return;
         toast.error(error.message || "Suspend failed");
