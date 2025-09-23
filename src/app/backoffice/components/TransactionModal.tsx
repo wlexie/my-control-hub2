@@ -7,7 +7,7 @@ import { generateReceiptPDF } from "./generateReceipt";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { authFetch } from "@/utils/authFetch";
-import { useSelector, UseSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 
 type TransactionModalProps = {
