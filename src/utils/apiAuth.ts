@@ -11,11 +11,11 @@ import axios, {
   import type { RootState } from '../store/store';
   
 //  // API base URL
-  const API_BASE_URL = 'https://auth.tuma-app.com/api';
+  //const API_BASE_URL = 'https://auth.tuma-app.com/api';
   
   // Create Axios instance
   const api: AxiosInstance = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: process.env.NEXT_PUBLIC_API_AUTH_URL,
     headers: {
       'Content-Type': 'application/json',
     } as AxiosRequestHeaders,

@@ -16,7 +16,7 @@ import axios, {
   
   // Create Axios instance
   const api: AxiosInstance = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
     headers: {
       'Content-Type': 'application/json',
     } as AxiosRequestHeaders, 

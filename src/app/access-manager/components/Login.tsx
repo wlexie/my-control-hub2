@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import axios from "axios";
-import api from "../../../utils/apiAuth";
+//import api from "../../../utils/apiAuth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -21,8 +21,8 @@ const Login = () => {
     
     try {
       const response = await axios.post(
-         `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(email)}`
-       // `${process.env.API_AUTH_URL}auth/send-otp/${encodeURIComponent(email)}`
+       //  `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(email)}`
+       `${process.env.NEXT_PUBLIC_API_AUTH_URL}/auth/send-otp/${encodeURIComponent(email)}`
       );
   
       if (response.status === 200) {

@@ -109,7 +109,7 @@ const VerifyOTPContent = () => {
 
     try {
       const response = await axios.post(
-        "https://auth.tuma-app.com/api/auth/email",
+        `${process.env.NEXT_PUBLIC_API_AUTH_URL}/auth/email`,
         { email, verificationCode },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -173,7 +173,7 @@ const VerifyOTPContent = () => {
     setIsLoading(true);
     try {
       await axios.post(
-        `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(
+        `${process.env.NEXT_PUBLIC_API_AUTH_URL}/auth/send-otp/${encodeURIComponent(
           email
         )}`
       );
