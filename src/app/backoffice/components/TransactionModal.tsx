@@ -7,6 +7,8 @@ import { generateReceiptPDF } from "./generateReceipt";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { authFetch } from "@/utils/authFetch";
+import { useSelector, UseSelector } from "react-redux";
+import type { RootState } from "@/store/store";
 
 type TransactionModalProps = {
   isOpen: boolean;
@@ -148,6 +150,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [userMap, setUserMap] = useState<Record<string, string>>({});
+  const userRoles = useSelector((state: RootState) => state.auth.user?.roles);
+  const isAdmin = userRoles?.includes("ADMIN");
 
   const getAuthToken = () => {
     return Cookies.get("accessToken");
@@ -441,7 +445,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   {transaction.transactionId}
                 </h2>
                 <div className="flex items-center gap-2">
-                  {transaction.status === "PENDING" && (
+                  {transaction.status === "PENDING" && isAdmin && (
                     <button
                       onClick={handleRetryPayment}
                       disabled={isRetrying || !transaction.transactionReference}
