@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
 import { Search } from "lucide-react";
@@ -11,7 +11,7 @@ import TransactionModal from "../components/TransactionModal";
 import FraudModal from "../compliance-security/components/FraudModal";
 import { Transaction } from "../types/transactions";
 import * as XLSX from "xlsx";
-import api from "../../../hooks/useApi";
+import useApi from "../../../hooks/useApi"; 
 import { useSearchParams } from "next/navigation";
 import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
@@ -82,7 +82,7 @@ type RawTransaction = Partial<{
 const rowsPerPage = 10;
 
 const TransactionsPage = () => {
-  const { get } = api();
+  const { get } = useApi(); // Use the useApi hook
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
@@ -109,7 +109,7 @@ const TransactionsPage = () => {
   });
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const [loadedPages, setLoadedPages] = useState(new Set([1]));
+  const [loadedPages, setLoadedPages] = useState(new Set([1])); // Keep track of loaded pages
   const dateFilterRef = useRef<HTMLDivElement>(null);
   const [showFraudModal, setShowFraudModal] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
@@ -236,20 +236,79 @@ const TransactionsPage = () => {
     };
   }, []);
 
+  const mapApiTransactionToTransaction = useCallback((tx: RawTransaction): Transaction => ({
+    transactionId: tx.transactionId || "N/A",
+    senderName: tx.senderName || "Unknown Sender",
+    receiverName: tx.receiverName || "Unknown Recipient",
+    senderAmount: tx.senderAmount || 0,
+    currencyIso3a: tx.currencyIso3a || "USD",
+    date: tx.date || new Date().toISOString(),
+    status: formatTransactionStatus(tx.status),
+    exchangeRate: tx.exchangeRate || 1,
+    transactionType: tx.transactionType || "Unknown",
+    receiverPhone: tx.receiverPhone || "N/A",
+    senderPhone: tx.senderPhone || "N/A",
+    transactionKey: tx.transactionKey || "N/A",
+    accountNumber: Number(tx.accountNumber) || 0,
+    settlementReference: tx.settlementReference || "N/A",
+    recipientAmount: tx.recipientAmount || 0,
+    senderEmail: tx.senderEmail || "N/A",
+    receiverCurrencyIso3a: tx.receiverCurrencyIso3a || "",
+    mpesaReference: tx.mpesaReference || "N/A",
+    tpReference: tx.tpReference || "N/A",
+    errorMessage: tx.errorMessage || "N/A",
+    userId:
+      tx.userId !== undefined && tx.userId !== null && !isNaN(Number(tx.userId))
+        ? Number(tx.userId)
+        : null,
+    bankName: tx.bankName || "N/A",
+    transactionReference: tx.transactionReference || "N/A",
+    receiverAddress: tx.receiverAddress || "N/A",
+    fraudReference: tx.fraudReference || "N/A",
+    paymentPurpose: tx.paymentPurpose || "N/A",
+    fundsSource: tx.fundsSource || "N/A",
+  }), []); // Empty dependency array as it only depends on `formatTransactionStatus`
+
+  const formatTransactionStatus = (status: string | undefined): string => {
+    if (!status) return "Unknown";
+    switch (status.toUpperCase()) {
+      case "SUCCESS":
+        return "Success";
+      case "PENDING":
+        return "Pending";
+      case "FAILED":
+      case "ERROR":
+        return "Failed";
+      case "REJECTED":
+        return "Rejected";
+      case "UNDER_REVIEW":
+        return "Under Review";
+      case "REVERSED":
+        return "Reversed";
+      case "REFUNDED":
+        return "Refunded";
+      case "ESCALATED":
+        return "Escalated";
+      default:
+        return "Unknown";
+    }
+  };
+
   useEffect(() => {
     const fetchInitialPage = async () => {
       try {
         setLoading(true);
         const url = userIdFromQuery
-          ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
-          : `https://api.tuma-app.com/api/transfer/all-transactions?page=1&size=${rowsPerPage}`;
+          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
+          : `/transfer/all-transactions?page=1&size=${rowsPerPage}`;
 
         const res = await get<RawTransaction[]>(url);
         const formatted = res.map(mapApiTransactionToTransaction);
 
         setAllTransactions(formatted);
         setFilteredTransactions(formatted);
-      } catch {
+      } catch (err) {
+        console.error("Failed to fetch initial transactions:", err);
         setError("Failed to fetch transactions");
       } finally {
         setLoading(false);
@@ -257,22 +316,25 @@ const TransactionsPage = () => {
     };
 
     fetchInitialPage();
-  }, []);
+  }, [userIdFromQuery, get, mapApiTransactionToTransaction]); // Added dependencies
 
   useEffect(() => {
     const fetchAllPagesRecursively = async () => {
       const batchSize = 50;
-      let currentBatch = 2;
+      let currentBatch = 2; // Start from page 2 as page 1 is fetched initially
 
       const fetchPage = async (page: number) => {
         if (loadedPages.has(page)) return null;
 
         const url = userIdFromQuery
-          ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
-          : `https://api.tuma-app.com/api/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
+          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
+          : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
         try {
           const res = await get<RawTransaction[]>(url);
-          setLoadedPages((prev) => new Set(prev).add(page));
+          // Only add to loadedPages if data was actually returned
+          if (res.length > 0) {
+            setLoadedPages((prev) => new Set(prev).add(page));
+          }
           return res.length > 0 ? res : null;
         } catch (err) {
           console.error(`Failed to load page ${page}:`, err);
@@ -285,7 +347,12 @@ const TransactionsPage = () => {
           { length: batchSize },
           (_, i) => currentBatch + i
         );
-        const results = await Promise.all(batchPages.map(fetchPage));
+        // Filter out pages that are already loaded
+        const pagesToFetch = batchPages.filter(page => !loadedPages.has(page));
+
+        if (pagesToFetch.length === 0) return; // No new pages to fetch
+
+        const results = await Promise.all(pagesToFetch.map(fetchPage));
 
         const validResults = results.filter(Boolean) as RawTransaction[][];
         const flattened = validResults.flat();
@@ -301,17 +368,24 @@ const TransactionsPage = () => {
 
         currentBatch += batchSize;
 
+        // If any batch returned data, continue fetching more
         if (validResults.length > 0) {
-          await new Promise((res) => setTimeout(res, 100));
+          await new Promise((res) => setTimeout(res, 100)); // Small delay to prevent hammering the API
           await fetchInBatches();
         }
       };
 
-      await fetchInBatches();
+      // Ensure we only run this after the initial page is loaded and processed
+      if (!loading && allTransactions.length > 0) {
+         await fetchInBatches();
+      }
     };
 
-    fetchAllPagesRecursively();
-  }, [loadedPages]);
+    // Only run if not loading and initial data is present
+    if (!loading && allTransactions.length > 0) {
+        fetchAllPagesRecursively();
+    }
+  }, [loadedPages, userIdFromQuery, get, mapApiTransactionToTransaction, loading, allTransactions.length]); // Added dependencies
 
   useEffect(() => {
     let filtered = [...allTransactions];
@@ -345,73 +419,21 @@ const TransactionsPage = () => {
     if (dateRange.startDate && dateRange.endDate) {
       filtered = filtered.filter((t) => {
         const txDate = new Date(t.date).getTime();
+        // Ensure endDate is inclusive by setting time to end of day
+        const endOfDay = new Date(dateRange.endDate!);
+        endOfDay.setHours(23, 59, 59, 999);
+
         return (
           txDate >= dateRange.startDate!.getTime() &&
-          txDate <= dateRange.endDate!.getTime()
+          txDate <= endOfDay.getTime()
         );
       });
     }
 
     setFilteredTransactions(filtered);
-  }, [searchQuery, statusFilter, dateRange, allTransactions, selectedCountry]);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [searchQuery, statusFilter, dateRange, allTransactions, selectedCountry, availableCountries]);
 
-  const mapApiTransactionToTransaction = (tx: RawTransaction): Transaction => ({
-    transactionId: tx.transactionId || "N/A",
-    senderName: tx.senderName || "Unknown Sender",
-    receiverName: tx.receiverName || "Unknown Recipient",
-    senderAmount: tx.senderAmount || 0,
-    currencyIso3a: tx.currencyIso3a || "USD",
-    date: tx.date || new Date().toISOString(),
-    status: formatTransactionStatus(tx.status),
-    exchangeRate: tx.exchangeRate || 1,
-    transactionType: tx.transactionType || "Unknown",
-    receiverPhone: tx.receiverPhone || "N/A",
-    senderPhone: tx.senderPhone || "N/A",
-    transactionKey: tx.transactionKey || "N/A",
-    accountNumber: Number(tx.accountNumber) || 0,
-    settlementReference: tx.settlementReference || "N/A",
-    recipientAmount: tx.recipientAmount || 0,
-    senderEmail: tx.senderEmail || "N/A",
-    receiverCurrencyIso3a: tx.receiverCurrencyIso3a || "",
-    mpesaReference: tx.mpesaReference || "N/A",
-    tpReference: tx.tpReference || "N/A",
-    errorMessage: tx.errorMessage || "N/A",
-    userId:
-      tx.userId !== undefined && tx.userId !== null && !isNaN(Number(tx.userId))
-        ? Number(tx.userId)
-        : null,
-    bankName: tx.bankName || "N/A",
-    transactionReference: tx.transactionReference || "N/A",
-    receiverAddress: tx.receiverAddress || "N/A",
-    fraudReference: tx.fraudReference || "N/A",
-    paymentPurpose: tx.paymentPurpose || "N/A",
-    fundsSource: tx.fundsSource || "N/A",
-  });
-
-  const formatTransactionStatus = (status: string | undefined): string => {
-    if (!status) return "Unknown";
-    switch (status.toUpperCase()) {
-      case "SUCCESS":
-        return "Success";
-      case "PENDING":
-        return "Pending";
-      case "FAILED":
-      case "ERROR":
-        return "Failed";
-      case "REJECTED":
-        return "Rejected";
-      case "UNDER_REVIEW":
-        return "Under Review";
-      case "REVERSED":
-        return "Reversed";
-      case "REFUNDED":
-        return "Refunded";
-      case "ESCALATED":
-        return "Escalated";
-      default:
-        return "Unknown";
-    }
-  };
 
   const handleOpenModal = (transactionId: string) => {
     setSelectedTransactionKey(transactionId);
@@ -443,7 +465,12 @@ const TransactionsPage = () => {
       fileName += `_search_${searchQuery.trim().replace(/ /g, "_")}`;
     if (statusFilter !== "All")
       fileName += `_status_${statusFilter.toLowerCase()}`;
-    if (filteredTransactions !== allTransactions) fileName += "_filtered";
+    // Only add _filtered if there are actual filters applied beyond just search
+    if (searchQuery.trim() || statusFilter !== "All" || selectedCountry || (dateRange.startDate && dateRange.endDate)) {
+        if (filteredTransactions.length !== allTransactions.length) { // Check if filtering actually reduced results
+            fileName += "_filtered";
+        }
+    }
     if (dateRange.startDate && dateRange.endDate) {
       const start = dateRange.startDate.toISOString().split("T")[0];
       const end = dateRange.endDate.toISOString().split("T")[0];
@@ -455,43 +482,42 @@ const TransactionsPage = () => {
   const prepareExportData = async () => {
     const fetchDetails = async (transaction: Transaction) => {
       try {
-        const res = await fetch(
-          `https://api.tuma-app.com/api/transfer/transaction-details?transactionId=${transaction.transactionId}`
+        // Use useApi().get for consistency and middleware benefits
+        const fullDetails = await get<RawTransaction>(
+          `/transfer/transaction-details?transactionId=${transaction.transactionId}`
         );
-        if (!res.ok) throw new Error("Failed to fetch transaction details");
-        const fullDetails = await res.json();
 
         return {
-          "Transaction ID": fullDetails.transactionId,
-          "Transaction Key": fullDetails.transactionKey,
-          "Transaction Reference": fullDetails.transactionReference,
-          "User ID": fullDetails.userId,
-          "Sender Name": fullDetails.senderName,
-          "Sender's Number": fullDetails.senderPhone,
-          "Sender's Email": fullDetails.senderEmail,
-          "Recipient Name": fullDetails.receiverName,
-          "Recipient's Number": fullDetails.receiverPhone,
-          "Account Number": fullDetails.accountNumber,
-          "Sender Amount": fullDetails.senderAmount,
-          "Recipient Amount": fullDetails.recipientAmount,
-          "Sender Currency": fullDetails.currencyIso3a,
-          "Destination Currency": fullDetails.receiverCurrencyIso3a,
-          Destination: fullDetails.receiverAddress,
-          "Exchange Rate": fullDetails.exchangeRate,
-          "Transaction Type": fullDetails.transactionType,
-          "Payment Description": fullDetails.paymentTypeDescription || "N/A",
-          "Card Issuer": fullDetails.issuer || "N/A",
-          "Masked Card Number": fullDetails.maskedPan || "N/A",
-          "Settlement Reference": fullDetails.settlementReference,
-          "MPESA Reference": fullDetails.mpesaReference,
-          "Trust Payment Reference": fullDetails.tpReference,
+          "Transaction ID": Number(fullDetails.transactionId) || 0,
+          "Transaction Key": fullDetails.transactionKey || "N/A",
+          "Transaction Reference": fullDetails.transactionReference || "N/A",
+          "User ID": Number(fullDetails.userId) || 0,
+          "Sender Name": fullDetails.senderName || "N/A",
+          "Sender's Number": fullDetails.senderPhone || "N/A",
+          "Sender's Email": fullDetails.senderEmail || "N/A",
+          "Recipient Name": fullDetails.receiverName || "N/A",
+          "Recipient's Number": fullDetails.receiverPhone || "N/A",
+          "Account Number": String(fullDetails.accountNumber || "N/A"),
+          "Sender Amount": Number(fullDetails.senderAmount) || 0,
+          "Recipient Amount": Number(fullDetails.recipientAmount) || 0,
+          "Sender Currency": fullDetails.currencyIso3a || "N/A",
+          "Destination Currency": fullDetails.receiverCurrencyIso3a || "N/A",
+          Destination: fullDetails.receiverAddress || "N/A",
+          "Exchange Rate": Number(fullDetails.exchangeRate) || 1,
+          "Transaction Type": fullDetails.transactionType || "N/A",
+          //"Payment Description": fullDetails.paymentTypeDescription || "N/A",
+          //"Card Issuer": fullDetails.issuer || "N/A",
+         // "Masked Card Number": fullDetails.maskedPan || "N/A",
+          "Settlement Reference": fullDetails.settlementReference || "N/A",
+          "MPESA Reference": fullDetails.mpesaReference || "N/A",
+          "Trust Payment Reference": fullDetails.tpReference || "N/A",
           "Bank Name": fullDetails.bankName || "N/A",
-          Status: fullDetails.status,
+          Status: formatTransactionStatus(fullDetails.status),
           "Error Message": fullDetails.errorMessage || "N/A",
-          "Date & Time (GMT)": formatDateTime(fullDetails.date),
-          "Fraud Reference": fullDetails.fraudReference,
-          "Payment Purpose": fullDetails.paymentPurpose,
-          "Source of Funds": fullDetails.fundsSource,
+          "Date & Time (GMT)": formatDateTime(fullDetails.date || ""),
+          "Fraud Reference": fullDetails.fraudReference || "N/A",
+          "Payment Purpose": fullDetails.paymentPurpose || "N/A",
+          "Source of Funds": fullDetails.fundsSource || "N/A",
         } as ExportTransaction;
       } catch (error) {
         console.error(
@@ -535,26 +561,36 @@ const TransactionsPage = () => {
     };
 
     // Run fetches in parallel batches to avoid API overload
-    const concurrency = 100; // number of requests at once
+    const concurrency = 10; // Reduced concurrency for safety, adjust as needed
     const results: ExportTransaction[] = [];
 
     for (let i = 0; i < filteredTransactions.length; i += concurrency) {
       const batch = filteredTransactions.slice(i, i + concurrency);
       const batchResults = await Promise.all(batch.map(fetchDetails));
       results.push(...batchResults);
+      // Optional: Add a small delay between batches if the API is sensitive
+      if (i + concurrency < filteredTransactions.length) {
+          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+      }
     }
 
     return results;
   };
 
   const formatDateTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    } catch (e) {
+      console.error("Invalid date string for formatting:", dateString, e);
+      return dateString; // Return original if parsing fails
+    }
   };
 
   const handleRetrySuccess = (updatedTransaction: Transaction) => {

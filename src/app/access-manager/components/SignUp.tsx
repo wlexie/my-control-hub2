@@ -92,7 +92,7 @@ export default function ControlHub() {
       };
   
       const response = await axios.post(
-        "https://auth.tuma-app.com/api/account/save-system-user",
+        `${process.env.NEXT_PUBLIC_API_AUTH_URL}/account/save-system-user`,
         null,
         {
           params: requestData
