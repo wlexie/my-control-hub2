@@ -22,7 +22,6 @@ const allModulesData = [
       "Get complete visibility into every transaction across the Tuma ecosystem. Track, monitor, and audit with confidence in a secure and intuitive interface.",
     path: "/backoffice/dashboard/",
     roles: ["ADMIN", "OMNISUPPORT", "BACKOFFICE", "DASHBOARD", "COMPLIANCE"],
-
   },
   {
     name: "OmniSupport",
@@ -48,7 +47,7 @@ const allModulesData = [
     title: "Turn ideas into impact.",
     description:
       "Create, launch, and manage in-app campaigns that connect with your customers. From promos to referral boosts — Campaign Manager helps you market like a pro.",
-    path: "/campaign-manager",
+    path: "/campaign-manager/usage-tracking",
     roles: ["ADMIN"],
   },
 
