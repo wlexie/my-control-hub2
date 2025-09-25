@@ -125,7 +125,7 @@ export default function Header({
         {(() => {
           return (
             <h2 className="text-2xl md:text-3xl leading-snug">
-              <span className="font-light text-white">Welcome back, </span>
+              <span className="font-light text-white">Welcome back,</span>
               <span className="font-semibold text-white">
                 {user ? `${user.firstName} ${user.lastName}` : "User"}
               </span>
