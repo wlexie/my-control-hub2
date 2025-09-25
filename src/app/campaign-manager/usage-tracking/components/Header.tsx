@@ -36,12 +36,13 @@ export default function Header({
   const pathname = usePathname();
 
   const pageTitles: Record<string, string> = {
+    "/backoffice/dashboard": "Welcome back",
     "/campaign-manager/usage-tracking": "Welcome back",
     "/campaign-manager/influencer-attribution": "Influencer Attribution",
-    "/campaign-manager/create-camapign": "Create Campaign",
+    "/campaign-manager/create-campaign": "Create Campaign",
   };
 
-  const currentTitle = pageTitles[pathname] || "Dashboard";
+  //   const currentTitle = pageTitles[pathname] || "Dashboard";
 
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -81,7 +82,7 @@ export default function Header({
   }, []);
 
   return (
-    <div className="relative bg-gradient-to-br to-[#15449d] from-[#0162ff] text-white pb-8 ">
+    <div className="relative bg-gradient-to-br to-[#163F8B] from-[#276EF1] text-white pb-8 ">
       <TopNav user={user} />
       <HeroSection currency={currency} onCurrencyChange={onCurrencyChange} />
 
@@ -122,16 +123,12 @@ export default function Header({
 
       <div className="px-4 md:px-12 mt-6">
         {(() => {
-          const [first, ...rest] =
-            pathname === "/backoffice/dashboard"
-              ? [`${currentTitle},`, userName || "User."]
-              : currentTitle.split(" ");
-          console.log(userName);
-
           return (
             <h2 className="text-2xl md:text-3xl leading-snug">
-              <span className="font-light text-white">{first} </span>
-              <span className="font-semibold text-white">{rest.join(" ")}</span>
+              <span className="font-light text-white">Welcome back, </span>
+              <span className="font-semibold text-white">
+                {user ? `${user.firstName} ${user.lastName}` : "User"}
+              </span>
             </h2>
           );
         })()}

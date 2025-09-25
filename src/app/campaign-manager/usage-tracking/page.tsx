@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Header from "./components/Header";
 import DateFilter from "@/app/backoffice/components/DateFilter";
+import StatCardsRow from "./components/StatcardRow";
+import TableGraph from "./components/TableGraph";
 
 export default function Dashboard() {
   const [currency, setCurrency] = useState("GBP");
@@ -43,15 +45,15 @@ export default function Dashboard() {
         dateLabel={dateLabel}
       />
 
-      {/* Dark mode toggle button */}
-      {/* <div className="px-4 py-2">
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-sm"
-        >
-          {darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-        </button>
-      </div> */}
+      <div className="px-4 sm:px-6 md:px-12 relative z-10 space-y-8">
+        <StatCardsRow />
+
+        <div className="flex flex-col space-y-8">
+          <div className="bg-white p-4 rounded-2xl mt-5">
+            <TableGraph />
+          </div>
+        </div>
+      </div>
 
       {isDateFilterOpen && (
         <div className="fixed inset-0 bg-black/30 z-50 flex justify-center items-start pt-10">

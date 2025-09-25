@@ -60,9 +60,7 @@ export default function Header({
 
     // If user's role is 'BACKOFFICE', only show the 'Transactions' link.
     if (user.roles.includes("BACKOFFICE")) {
-      return sidebarMenuItems.filter(
-        (item) => item.label === "Transactions"
-      );
+      return sidebarMenuItems.filter((item) => item.label === "Transactions");
     }
 
     // For all other logged-in users, show all menu items.
@@ -85,7 +83,7 @@ export default function Header({
   }, []);
 
   return (
-    <div className="relative bg-gradient-to-br to-[#15449d] from-[#0162ff] text-white pb-8 ">
+    <div className="relative bg-gradient-to-br to-[#163F8B] from-[#276EF1] text-white pb-8 ">
       <TopNav user={user} />
       <HeroSection currency={currency} onCurrencyChange={onCurrencyChange} />
 
@@ -116,9 +114,9 @@ export default function Header({
             ))}
             {/* <-- ADDED: Show a message if there are no items to display --> */}
             {visibleMenuItems.length === 0 && (
-                <div className="px-4 py-2 text-md text-gray-400">
-                    No items available
-                </div>
+              <div className="px-4 py-2 text-md text-gray-400">
+                No items available
+              </div>
             )}
           </div>
         )}
