@@ -5,6 +5,9 @@ import Header from "./components/Header";
 import DateFilter from "@/app/backoffice/components/DateFilter";
 import StatCardsRow from "./components/StatcardRow";
 import TableGraph from "./components/TableGraph";
+import ROTs from "./components/ROTs";
+import TopInfluencers from "./components/TopInfluencers";
+import CodeType from "./components/CodeType";
 
 export default function Dashboard() {
   const [currency, setCurrency] = useState("GBP");
@@ -46,11 +49,22 @@ export default function Dashboard() {
       />
 
       <div className="px-4 sm:px-6 md:px-12 relative z-10 space-y-8">
-        <StatCardsRow />
-
+        <div className="mt-3">
+          <StatCardsRow />
+        </div>
         <div className="flex flex-col space-y-8">
-          <div className="bg-white p-4 rounded-2xl mt-5">
+          <div className="bg-white p-4 rounded-2xl ">
             <TableGraph />
+          </div>
+
+          <ROTs />
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div className="md:col-span-3 bg-white dark:bg-gray-800 p-4 rounded-2xl">
+              <TopInfluencers />
+            </div>
+            <div className="md:col-span-2 bg-white dark:bg-gray-800 p-4 rounded-2xl">
+              <CodeType />
+            </div>
           </div>
         </div>
       </div>

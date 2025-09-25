@@ -83,20 +83,24 @@ const mockData = [
 
 export default function CampaignTable() {
   return (
-    <div className="p-6 bg-white rounded-2xl border-0">
-      {/* Header and Controls */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
+    <div className="p-3 bg-white rounded-2xl border-0">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
         <h2 className="text-lg font-semibold">
           Campaign Usage & Expiry Tracking
         </h2>
-        <div className="flex flex-wrap gap-2 items-center">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+
+        <div className="flex flex-col md:flex-row md:flex-1 md:justify-center">
+          <div className="relative w-full md:w-[420px]">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
             <input
               placeholder="Search by Customer Name, Transaction code..."
-              className="pl-8 pr-4 py-2 border rounded-full text-sm bg-gray-50 focus:outline-none"
+              className="pl-9 pr-4 py-2 w-full border rounded-full text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
+
+        <div className="flex flex-row gap-2 md:ml-auto">
           <button className="px-3 py-1 text-sm rounded-full bg-gray-50 border">
             Export CSV
           </button>
