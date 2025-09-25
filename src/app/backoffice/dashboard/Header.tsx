@@ -4,11 +4,11 @@ import { ChevronDown } from "lucide-react";
 import HeroSection from "./HeroSection";
 import TopNav from "./TopNav";
 import { usePathname } from "next/navigation";
-import { sidebarMenuItems } from "../constants/sidebarMenuItems"; // Assuming this is the correct path
+import { sidebarMenuItems } from "../constants/sidebarMenuItems"; 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "../../../store/store"; // Assuming this is the correct path
+import { RootState } from "../../../store/store"; 
 
 interface SidebarMenuItem {
   href: string;

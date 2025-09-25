@@ -120,12 +120,11 @@ const VerifyOTPContent = () => {
         // 1. SET THE COOKIE WITH A ROOT PATH
         Cookies.set("accessToken", response.data.accessToken, {
           expires: 1, // Expires in 1 day
-          secure: process.env.NODE_ENV === "production", // Use secure cookies on HTTPS
+          secure: process.env.NODE_ENV === "production", 
           path: "/", // <-- This is the important addition
         });
 
         // 2. UPDATE REDUX (This remains unchanged)
-        // This updates your client-side UI state immediately.
         const decodedToken = jwtDecode<DecodedToken>(response.data.accessToken);
         const tokenExpiry = decodedToken.exp * 1000;
 

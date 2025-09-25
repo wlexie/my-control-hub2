@@ -15,6 +15,8 @@ import useApi from "../../../hooks/useApi"; // Corrected import path for useApi
 import { useSearchParams } from "next/navigation";
 import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+
 
 interface ExportTransaction {
   "Transaction ID": number;
@@ -31,7 +33,7 @@ interface ExportTransaction {
   "Recipient Amount": number;
   "Sender Currency": string;
   "Destination Currency": string;
-  Destination: string;
+  "Destination": string;
   "Exchange Rate": number;
   "Transaction Type": string;
   "Payment Description": string;
@@ -41,7 +43,7 @@ interface ExportTransaction {
   "MPESA Reference": string;
   "Trust Payment Reference": string;
   "Bank Name": string;
-  Status: string;
+  "Status": string;
   "Error Message": string;
   "Date & Time (GMT)": string;
   "Fraud Reference": string;
@@ -85,7 +87,8 @@ type RawTransaction = Partial<{
 const rowsPerPage = 10;
 
 const TransactionsPage = () => {
-  const { get } = useApi(); // Use the useApi hook
+  const { get } = useApi(); 
+  const router = useRouter();
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
@@ -339,9 +342,15 @@ const TransactionsPage = () => {
             setLoadedPages((prev) => new Set(prev).add(page));
           }
           return res.length > 0 ? res : null;
-        } catch (err) {
-          console.error(`Failed to load page ${page}:`, err);
-          return null;
+        } catch (err: any) {
+        if (err?.response?.status === 401) {
+          // Redirect to login page
+          router.push("/login");
+        } else {
+          console.error("Failed to fetch initial transactions:", err);
+          setError("Failed to fetch transactions");
+        }          
+        return null;
         }
       };
 
@@ -373,7 +382,7 @@ const TransactionsPage = () => {
 
         // If any batch returned data, continue fetching more
         if (validResults.length > 0) {
-          await new Promise((res) => setTimeout(res, 100)); // Small delay to prevent hammering the API
+          await new Promise((res) => setTimeout(res, 100)); 
           await fetchInBatches();
         }
       };
