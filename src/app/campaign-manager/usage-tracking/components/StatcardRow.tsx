@@ -30,7 +30,7 @@ const cards = [
   },
   {
     label: "Total Redemptions",
-    amount: "1,023",
+    amount: "1,079",
     change: "+17%",
     positive: true,
     icon: (
