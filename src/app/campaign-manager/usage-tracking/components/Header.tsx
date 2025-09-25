@@ -3,7 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import HeroSection from "./HeroSection";
 import TopNav from "./TopNav";
-import { usePathname } from "next/navigation";
+// import { usePathname } from "next/navigation";
 import { sidebarMenuItems } from "@/app/backoffice/constants/sidebarMenuItems"; // Assuming this is the correct path
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
@@ -33,14 +33,14 @@ export default function Header({
   onDateFilterOpen,
   dateLabel,
 }: HeaderProps) {
-  const pathname = usePathname();
+  //   const pathname = usePathname();
 
-  const pageTitles: Record<string, string> = {
-    "/backoffice/dashboard": "Welcome back",
-    "/campaign-manager/usage-tracking": "Welcome back",
-    "/campaign-manager/influencer-attribution": "Influencer Attribution",
-    "/campaign-manager/create-campaign": "Create Campaign",
-  };
+  //   const pageTitles: Record<string, string> = {
+  //     "/backoffice/dashboard": "Welcome back",
+  //     "/campaign-manager/usage-tracking": "Welcome back",
+  //     "/campaign-manager/influencer-attribution": "Influencer Attribution",
+  //     "/campaign-manager/create-campaign": "Create Campaign",
+  //   };
 
   //   const currentTitle = pageTitles[pathname] || "Dashboard";
 
@@ -48,7 +48,7 @@ export default function Header({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const user = useSelector((state: RootState) => state.auth.user);
-  const userName = user ? `${user.firstName} ${user.lastName}` : null;
+  //   const userName = user ? `${user.firstName} ${user.lastName}` : null;
 
   // <-- 1. ADD LOGIC TO FILTER MENU ITEMS -->
   const getVisibleMenuItems = () => {
