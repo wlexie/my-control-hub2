@@ -17,7 +17,6 @@ import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
-
 interface ExportTransaction {
   "Transaction ID": number;
   "Transaction Key": string;
@@ -33,7 +32,7 @@ interface ExportTransaction {
   "Recipient Amount": number;
   "Sender Currency": string;
   "Destination Currency": string;
-  "Destination": string;
+  Destination: string;
   "Exchange Rate": number;
   "Transaction Type": string;
   "Payment Description": string;
@@ -43,7 +42,7 @@ interface ExportTransaction {
   "MPESA Reference": string;
   "Trust Payment Reference": string;
   "Bank Name": string;
-  "Status": string;
+  Status: string;
   "Error Message": string;
   "Date & Time (GMT)": string;
   "Fraud Reference": string;
@@ -87,7 +86,7 @@ type RawTransaction = Partial<{
 const rowsPerPage = 10;
 
 const TransactionsPage = () => {
-  const { get } = useApi(); 
+  const { get } = useApi();
   const router = useRouter();
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const searchParams = useSearchParams();
@@ -242,38 +241,43 @@ const TransactionsPage = () => {
     };
   }, []);
 
-  const mapApiTransactionToTransaction = useCallback((tx: RawTransaction): Transaction => ({
-    transactionId: tx.transactionId || "N/A",
-    senderName: tx.senderName || "Unknown Sender",
-    receiverName: tx.receiverName || "Unknown Recipient",
-    senderAmount: tx.senderAmount || 0,
-    currencyIso3a: tx.currencyIso3a || "USD",
-    date: tx.date || new Date().toISOString(),
-    status: formatTransactionStatus(tx.status),
-    exchangeRate: tx.exchangeRate || 1,
-    transactionType: tx.transactionType || "Unknown",
-    receiverPhone: tx.receiverPhone || "N/A",
-    senderPhone: tx.senderPhone || "N/A",
-    transactionKey: tx.transactionKey || "N/A",
-    accountNumber: Number(tx.accountNumber) || 0,
-    settlementReference: tx.settlementReference || "N/A",
-    recipientAmount: tx.recipientAmount || 0,
-    senderEmail: tx.senderEmail || "N/A",
-    receiverCurrencyIso3a: tx.receiverCurrencyIso3a || "",
-    mpesaReference: tx.mpesaReference || "N/A",
-    tpReference: tx.tpReference || "N/A",
-    errorMessage: tx.errorMessage || "N/A",
-    userId:
-      tx.userId !== undefined && tx.userId !== null && !isNaN(Number(tx.userId))
-        ? Number(tx.userId)
-        : null,
-    bankName: tx.bankName || "N/A",
-    transactionReference: tx.transactionReference || "N/A",
-    receiverAddress: tx.receiverAddress || "N/A",
-    fraudReference: tx.fraudReference || "N/A",
-    paymentPurpose: tx.paymentPurpose || "N/A",
-    fundsSource: tx.fundsSource || "N/A",
-  }), []); // Empty dependency array as it only depends on `formatTransactionStatus`
+  const mapApiTransactionToTransaction = useCallback(
+    (tx: RawTransaction): Transaction => ({
+      transactionId: tx.transactionId || "N/A",
+      senderName: tx.senderName || "Unknown Sender",
+      receiverName: tx.receiverName || "Unknown Recipient",
+      senderAmount: tx.senderAmount || 0,
+      currencyIso3a: tx.currencyIso3a || "USD",
+      date: tx.date || new Date().toISOString(),
+      status: formatTransactionStatus(tx.status),
+      exchangeRate: tx.exchangeRate || 1,
+      transactionType: tx.transactionType || "Unknown",
+      receiverPhone: tx.receiverPhone || "N/A",
+      senderPhone: tx.senderPhone || "N/A",
+      transactionKey: tx.transactionKey || "N/A",
+      accountNumber: Number(tx.accountNumber) || 0,
+      settlementReference: tx.settlementReference || "N/A",
+      recipientAmount: tx.recipientAmount || 0,
+      senderEmail: tx.senderEmail || "N/A",
+      receiverCurrencyIso3a: tx.receiverCurrencyIso3a || "",
+      mpesaReference: tx.mpesaReference || "N/A",
+      tpReference: tx.tpReference || "N/A",
+      errorMessage: tx.errorMessage || "N/A",
+      userId:
+        tx.userId !== undefined &&
+        tx.userId !== null &&
+        !isNaN(Number(tx.userId))
+          ? Number(tx.userId)
+          : null,
+      bankName: tx.bankName || "N/A",
+      transactionReference: tx.transactionReference || "N/A",
+      receiverAddress: tx.receiverAddress || "N/A",
+      fraudReference: tx.fraudReference || "N/A",
+      paymentPurpose: tx.paymentPurpose || "N/A",
+      fundsSource: tx.fundsSource || "N/A",
+    }),
+    []
+  ); // Empty dependency array as it only depends on `formatTransactionStatus`
 
   const formatTransactionStatus = (status: string | undefined): string => {
     if (!status) return "Unknown";
@@ -307,7 +311,6 @@ const TransactionsPage = () => {
         const url = userIdFromQuery
           ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
           : `https://api.tuma-app.com/api/transfer/all-transactions?page=1&size=${rowsPerPage}`;
- 
 
         const res = await get<RawTransaction[]>(url);
         const formatted = res.map(mapApiTransactionToTransaction);
@@ -344,15 +347,21 @@ const TransactionsPage = () => {
             setLoadedPages((prev) => new Set(prev).add(page));
           }
           return res.length > 0 ? res : null;
-        } catch (err: any) {
-        if (err?.response?.status === 401) {
-          // Redirect to login page
-          router.push("/login");
-        } else {
-          console.error("Failed to fetch initial transactions:", err);
-          setError("Failed to fetch transactions");
-        }          
-        return null;
+        } catch (err: unknown) {
+          if (err && typeof err === "object" && "response" in err) {
+            const axiosErr = err as { response?: { status?: number } };
+            if (axiosErr.response?.status === 401) {
+              // Redirect to login page
+              router.push("/login");
+            } else {
+              console.error("Failed to fetch initial transactions:", err);
+              setError("Failed to fetch transactions");
+            }
+          } else {
+            console.error("Unexpected error:", err);
+            setError("Failed to fetch transactions");
+          }
+          return null;
         }
       };
 
@@ -362,7 +371,9 @@ const TransactionsPage = () => {
           (_, i) => currentBatch + i
         );
         // Filter out pages that are already loaded
-        const pagesToFetch = batchPages.filter(page => !loadedPages.has(page));
+        const pagesToFetch = batchPages.filter(
+          (page) => !loadedPages.has(page)
+        );
 
         if (pagesToFetch.length === 0) return; // No new pages to fetch
 
@@ -384,22 +395,29 @@ const TransactionsPage = () => {
 
         // If any batch returned data, continue fetching more
         if (validResults.length > 0) {
-          await new Promise((res) => setTimeout(res, 100)); 
+          await new Promise((res) => setTimeout(res, 100));
           await fetchInBatches();
         }
       };
 
       // Ensure we only run this after the initial page is loaded and processed
       if (!loading && allTransactions.length > 0) {
-         await fetchInBatches();
+        await fetchInBatches();
       }
     };
 
     // Only run if not loading and initial data is present
     if (!loading && allTransactions.length > 0) {
-        fetchAllPagesRecursively();
+      fetchAllPagesRecursively();
     }
-  }, [loadedPages, userIdFromQuery, get, mapApiTransactionToTransaction, loading, allTransactions.length]); // Added dependencies
+  }, [
+    loadedPages,
+    userIdFromQuery,
+    get,
+    mapApiTransactionToTransaction,
+    loading,
+    allTransactions.length,
+  ]); // Added dependencies
 
   useEffect(() => {
     let filtered = [...allTransactions];
@@ -446,8 +464,14 @@ const TransactionsPage = () => {
 
     setFilteredTransactions(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchQuery, statusFilter, dateRange, allTransactions, selectedCountry, availableCountries]);
-
+  }, [
+    searchQuery,
+    statusFilter,
+    dateRange,
+    allTransactions,
+    selectedCountry,
+    availableCountries,
+  ]);
 
   const handleOpenModal = (transactionId: string) => {
     setSelectedTransactionKey(transactionId);
@@ -480,10 +504,16 @@ const TransactionsPage = () => {
     if (statusFilter !== "All")
       fileName += `_status_${statusFilter.toLowerCase()}`;
     // Only add _filtered if there are actual filters applied beyond just search
-    if (searchQuery.trim() || statusFilter !== "All" || selectedCountry || (dateRange.startDate && dateRange.endDate)) {
-        if (filteredTransactions.length !== allTransactions.length) { // Check if filtering actually reduced results
-            fileName += "_filtered";
-        }
+    if (
+      searchQuery.trim() ||
+      statusFilter !== "All" ||
+      selectedCountry ||
+      (dateRange.startDate && dateRange.endDate)
+    ) {
+      if (filteredTransactions.length !== allTransactions.length) {
+        // Check if filtering actually reduced results
+        fileName += "_filtered";
+      }
     }
     if (dateRange.startDate && dateRange.endDate) {
       const start = dateRange.startDate.toISOString().split("T")[0];
@@ -584,7 +614,7 @@ const TransactionsPage = () => {
       results.push(...batchResults);
       // Optional: Add a small delay between batches if the API is sensitive
       if (i + concurrency < filteredTransactions.length) {
-          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+        await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
       }
     }
 
