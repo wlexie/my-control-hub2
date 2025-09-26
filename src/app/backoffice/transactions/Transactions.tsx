@@ -307,6 +307,7 @@ const TransactionsPage = () => {
         const url = userIdFromQuery
           ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
           : `/transfer/all-transactions?page=1&size=${rowsPerPage}`;
+ 
 
         const res = await get<RawTransaction[]>(url);
         const formatted = res.map(mapApiTransactionToTransaction);
@@ -335,6 +336,7 @@ const TransactionsPage = () => {
         const url = userIdFromQuery
           ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
           : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
+
         try {
           const res = await get<RawTransaction[]>(url);
           // Only add to loadedPages if data was actually returned

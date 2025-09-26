@@ -3,12 +3,12 @@
 import { ChevronDown } from "lucide-react";
 import HeroSection from "./HeroSection";
 import TopNav from "./TopNav";
-import { usePathname } from "next/navigation";
-import { sidebarMenuItems } from "../constants/sidebarMenuItems"; 
+// import { usePathname } from "next/navigation";
+import { sidebarMenuItems } from "@/app/backoffice/constants/sidebarMenuItems"; // Assuming this is the correct path
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "../../../store/store"; 
+import { RootState } from "../../../../store/store"; // Assuming this is the correct path
 
 interface SidebarMenuItem {
   href: string;
@@ -33,23 +33,22 @@ export default function Header({
   onDateFilterOpen,
   dateLabel,
 }: HeaderProps) {
-  const pathname = usePathname();
+  //   const pathname = usePathname();
 
-  const pageTitles: Record<string, string> = {
-    "/backoffice/dashboard": "Welcome back",
-    "/backoffice/financial-metrics": "Financial Metrics & Revenue Performance",
-    "/backoffice/customer-analytics": "Customer Analytics",
-    "/backoffice/compliance-risk": "Compliance & Risk Management",
-    "/backoffice/operational-efficiency": "Operational Efficiency",
-  };
+  //   const pageTitles: Record<string, string> = {
+  //     "/backoffice/dashboard": "Welcome back",
+  //     "/campaign-manager/usage-tracking": "Welcome back",
+  //     "/campaign-manager/influencer-attribution": "Influencer Attribution",
+  //     "/campaign-manager/create-campaign": "Create Campaign",
+  //   };
 
-  const currentTitle = pageTitles[pathname] || "Dashboard";
+  //   const currentTitle = pageTitles[pathname] || "Dashboard";
 
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const user = useSelector((state: RootState) => state.auth.user);
-  const userName = user ? `${user.firstName} ${user.lastName}` : null;
+  //   const userName = user ? `${user.firstName} ${user.lastName}` : null;
 
   // <-- 1. ADD LOGIC TO FILTER MENU ITEMS -->
   const getVisibleMenuItems = () => {
@@ -124,15 +123,12 @@ export default function Header({
 
       <div className="px-4 md:px-12 mt-6">
         {(() => {
-          const [first, ...rest] =
-            pathname === "/backoffice/dashboard"
-              ? [`${currentTitle},`, userName || "User."]
-              : currentTitle.split(" ");
-
           return (
             <h2 className="text-2xl md:text-3xl leading-snug">
-              <span className="font-light text-white">{first} </span>
-              <span className="font-semibold text-white">{rest.join(" ")}</span>
+              <span className="font-light text-white">Welcome back, </span>
+              <span className="font-semibold text-white">
+                {user ? `${user.firstName} ${user.lastName}` : "User"}
+              </span>
             </h2>
           );
         })()}

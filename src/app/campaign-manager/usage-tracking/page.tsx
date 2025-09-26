@@ -1,18 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import Header from "../dashboard/Header";
-import { CountrySegmentationCard } from "./components/CountrySegmentation";
-import CustomerLifetimeValueChart from "./components/CustomerLifetimeValueChart";
-import { CustomerSegmentationChart } from "./components/CustomerSegmentation";
+import Header from "./components/Header";
+import DateFilter from "@/app/backoffice/components/DateFilter";
 import StatCardsRow from "./components/StatcardRow";
 import TableGraph from "./components/TableGraph";
-import TotalCustomers from "./components/TotalCustomers";
-import DateFilter from "@/app/backoffice/components/DateFilter";
+import ROTs from "./components/ROTs";
+import TopInfluencers from "./components/TopInfluencers";
+import CodeType from "./components/CodeType";
 
 export default function Dashboard() {
   const [currency, setCurrency] = useState("GBP");
-  const [startDate, setStartDate] = useState<Date>(new Date(2024, 10, 20)); // 20 Nov 2024
+  const [startDate, setStartDate] = useState<Date>(new Date(2024, 10, 20));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
   const [dateLabel, setDateLabel] = useState("All Time");
@@ -38,7 +37,8 @@ export default function Dashboard() {
   };
 
   return (
-    <main className="bg-[#F5F7FA] font-poppins min-h-screen overflow-x-hidden overflow-y-auto">
+    <main className="bg-[#F5F7FA] dark:bg-gray-900 font-poppins min-h-screen overflow-x-hidden overflow-y-auto text-gray-900 dark:text-gray-100">
+      {/* Header */}
       <Header
         currency={currency}
         onCurrencyChange={setCurrency}
@@ -48,25 +48,24 @@ export default function Dashboard() {
         dateLabel={dateLabel}
       />
 
-      <div className="px-6 md:px-12 relative z-10">
-        <StatCardsRow />
-
+      <div className="px-4 sm:px-6 md:px-12 relative z-10 space-y-8">
+        <div className="mt-3">
+          <StatCardsRow />
+        </div>
         <div className="flex flex-col space-y-8">
-          <div className="bg-white p-4 rounded-2xl mt-5">
+          <div className="bg-white p-4 rounded-2xl ">
             <TableGraph />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch justify-center mt-5">
-            <div className="bg-white p-4 rounded-2xl md:col-span-3">
-              <CustomerSegmentationChart />
+          <ROTs />
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div className="md:col-span-3 bg-white dark:bg-gray-800 p-4 rounded-2xl">
+              <TopInfluencers />
             </div>
-            <div className="bg-white p-4 rounded-2xl text-2xl md:col-span-2">
-              <CountrySegmentationCard />
+            <div className="md:col-span-2 bg-white dark:bg-gray-800 p-4 rounded-2xl">
+              <CodeType />
             </div>
           </div>
-
-          <CustomerLifetimeValueChart />
-          <TotalCustomers />
         </div>
       </div>
 
