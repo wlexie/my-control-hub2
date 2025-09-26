@@ -305,8 +305,8 @@ const TransactionsPage = () => {
       try {
         setLoading(true);
         const url = userIdFromQuery
-          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
-          : `/transfer/all-transactions?page=1&size=${rowsPerPage}`;
+          ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
+          : `https://api.tuma-app.com/api/transfer/all-transactions?page=1&size=${rowsPerPage}`;
  
 
         const res = await get<RawTransaction[]>(url);
@@ -334,8 +334,8 @@ const TransactionsPage = () => {
         if (loadedPages.has(page)) return null;
 
         const url = userIdFromQuery
-          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
-          : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
+          ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
+          : `https://api.tuma-app.com/api/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
 
         try {
           const res = await get<RawTransaction[]>(url);
