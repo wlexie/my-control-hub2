@@ -21,8 +21,8 @@ const Login = () => {
     
     try {
       const response = await axios.post(
-       //  `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(email)}`
-       `${process.env.NEXT_PUBLIC_API_AUTH_URL}/auth/send-otp/${encodeURIComponent(email)}`
+        `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(email)}`
+      // `${process.env.NEXT_PUBLIC_API_AUTH_URL}/auth/send-otp/${encodeURIComponent(email)}`
       );
   
       if (response.status === 200) {

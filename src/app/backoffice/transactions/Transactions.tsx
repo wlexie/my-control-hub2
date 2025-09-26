@@ -323,7 +323,7 @@ const TransactionsPage = () => {
     };
 
     fetchInitialPage();
-  }, [userIdFromQuery, get, mapApiTransactionToTransaction]); // Added dependencies
+  }, []); // Added dependencies
 
   useEffect(() => {
     const fetchAllPagesRecursively = async () => {
