@@ -454,37 +454,45 @@ const TransactionsPage = () => {
     return mapToExportFormat(fullDetails);
   };
 
-  const mapToExportFormat = (fullDetails: any): ExportTransaction => ({
-    "Transaction ID": fullDetails.transactionId,
-    "Transaction Key": fullDetails.transactionKey,
-    "Transaction Reference": fullDetails.transactionReference,
-    "User ID": fullDetails.userId,
-    "Sender Name": fullDetails.senderName,
-    "Sender's Number": fullDetails.senderPhone,
-    "Sender's Email": fullDetails.senderEmail,
-    "Recipient Name": fullDetails.receiverName,
-    "Recipient's Number": fullDetails.receiverPhone,
-    "Account Number": fullDetails.accountNumber,
-    "Sender Amount": fullDetails.senderAmount,
-    "Recipient Amount": fullDetails.recipientAmount,
-    "Sender Currency": fullDetails.currencyIso3a,
-    "Destination Currency": fullDetails.receiverCurrencyIso3a,
-    Destination: fullDetails.receiverAddress,
-    "Exchange Rate": fullDetails.exchangeRate,
-    "Transaction Type": fullDetails.transactionType,
+  const mapToExportFormat = (
+    fullDetails: RawTransaction & {
+      paymentTypeDescription?: string;
+      issuer?: string;
+      maskedPan?: string;
+    }
+  ): ExportTransaction => ({
+    "Transaction ID": Number(fullDetails.transactionId) || 0,
+    "Transaction Key": fullDetails.transactionKey || "N/A",
+    "Transaction Reference": fullDetails.transactionReference || "N/A",
+    "User ID": Number(fullDetails.userId) || 0,
+    "Sender Name": fullDetails.senderName || "N/A",
+    "Sender's Number": fullDetails.senderPhone || "N/A",
+    "Sender's Email": fullDetails.senderEmail || "N/A",
+    "Recipient Name": fullDetails.receiverName || "N/A",
+    "Recipient's Number": fullDetails.receiverPhone || "N/A",
+    "Account Number": String(fullDetails.accountNumber || "N/A"),
+    "Sender Amount": Number(fullDetails.senderAmount) || 0,
+    "Recipient Amount": Number(fullDetails.recipientAmount) || 0,
+    "Sender Currency": fullDetails.currencyIso3a || "N/A",
+    "Destination Currency": fullDetails.receiverCurrencyIso3a || "N/A",
+    Destination: fullDetails.receiverAddress || "N/A",
+    "Exchange Rate": Number(fullDetails.exchangeRate) || 1,
+    "Transaction Type": fullDetails.transactionType || "N/A",
     "Payment Description": fullDetails.paymentTypeDescription || "N/A",
     "Card Issuer": fullDetails.issuer || "N/A",
     "Masked Card Number": fullDetails.maskedPan || "N/A",
-    "Settlement Reference": fullDetails.settlementReference,
-    "MPESA Reference": fullDetails.mpesaReference,
-    "Trust Payment Reference": fullDetails.tpReference,
+    "Settlement Reference": fullDetails.settlementReference || "N/A",
+    "MPESA Reference": fullDetails.mpesaReference || "N/A",
+    "Trust Payment Reference": fullDetails.tpReference || "N/A",
     "Bank Name": fullDetails.bankName || "N/A",
-    Status: fullDetails.status,
+    Status: fullDetails.status || "N/A",
     "Error Message": fullDetails.errorMessage || "N/A",
-    "Date & Time (GMT)": formatDateTime(fullDetails.date),
-    "Fraud Reference": fullDetails.fraudReference,
-    "Payment Purpose": fullDetails.paymentPurpose,
-    "Source of Funds": fullDetails.fundsSource,
+    "Date & Time (GMT)": formatDateTime(
+      fullDetails.date || new Date().toISOString()
+    ),
+    "Fraud Reference": fullDetails.fraudReference || "N/A",
+    "Payment Purpose": fullDetails.paymentPurpose || "N/A",
+    "Source of Funds": fullDetails.fundsSource || "N/A",
   });
 
   const createFallbackExportData = (
