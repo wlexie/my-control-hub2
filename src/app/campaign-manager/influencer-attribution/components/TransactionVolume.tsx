@@ -13,6 +13,7 @@ import {
 import { FaCrown } from "react-icons/fa";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { TrendingUp } from "lucide-react";
+import { TooltipProps } from "recharts";
 
 // Sample Data
 const data = [
@@ -27,13 +28,19 @@ const data = [
   { date: "30 Oct", value: 4200 },
 ];
 
-// ✅ Custom Tooltip Component
-const CustomTooltip = ({ active, payload, label }: any) => {
+//  Custom Tooltip Component
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-[#f59e0b] text-white px-3 py-2 rounded-lg text-center shadow-md">
         <p className="text-xs font-medium">{label}</p>
-        <p className="text-md font-bold">{payload[0].value.toLocaleString()}</p>
+        <p className="text-md font-bold">
+          {payload[0].value?.toLocaleString()}
+        </p>
       </div>
     );
   }
