@@ -338,7 +338,8 @@ const TransactionsPage = () => {
           t.senderName?.toLowerCase().includes(query) ||
           t.receiverName?.toLowerCase().includes(query) ||
           t.currencyIso3a?.toLowerCase().includes(query) ||
-          t.senderAmount?.toString().includes(query)
+          t.senderAmount?.toString().includes(query) ||
+          t.transactionReference?.toLowerCase().includes(query)
       );
     }
 

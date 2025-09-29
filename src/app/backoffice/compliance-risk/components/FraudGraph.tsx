@@ -39,7 +39,9 @@ export default function FraudGraph() {
       </div>
 
       <div className="flex items-center gap-2 mb-6 px-2 md:px-0">
-        <p className="text-sm text-gray-600 whitespace-nowrap">Total No. of Reported Cases:</p>
+        <p className="text-sm text-gray-600 whitespace-nowrap">
+          Total No. of Reported Cases:
+        </p>
         <p className="font-bold text-sm text-black">180</p>
         <span className="flex items-center gap-1 text-xs text-red-500 bg-red-100 px-2 py-0.5 rounded-full">
           <TrendingDown className="w-3 h-3" />
@@ -80,7 +82,7 @@ export default function FraudGraph() {
               }}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="cases"
               stroke="#ef4444"
               strokeWidth={2}

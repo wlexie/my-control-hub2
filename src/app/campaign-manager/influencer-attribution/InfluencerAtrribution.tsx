@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import Header from "../usage-tracking/components/Header";
 import DateFilter from "@/app/backoffice/components/DateFilter";
+import FiltersBar from "./components/FiltersBar";
+import StatCardsRow from "../usage-tracking/components/StatcardRow";
+import RedemptionsPerInfluencer from "./components/RedemptionsPerInfluencer";
+import TransactionVolumeChart from "./components/TransactionVolume";
+import TopInfluencers from "../usage-tracking/components/TopInfluencers";
+import CodeType from "../usage-tracking/components/CodeType";
 
-export default function CampaignSuccess() {
+export default function InfluencerAttribution() {
   const [currency, setCurrency] = useState("GBP");
   const [startDate, setStartDate] = useState<Date>(new Date(2024, 10, 20));
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -44,40 +48,28 @@ export default function CampaignSuccess() {
         onDateFilterOpen={() => setIsDateFilterOpen(true)}
         dateLabel={dateLabel}
       />
-
-      <div className="px-4 sm:px-6 md:px-12 relative z-10 flex justify-center mt-10">
-        <div className="bg-white rounded-2xl shadow-sm p-8 md:p-12 max-w-2xl w-full text-center">
-          <div className="flex justify-center mb-6">
-            <Image
-              src="/campaigns/success.png"
-              alt="Campaign Success"
-              width={400}
-              height={400}
-              className="object-contain"
-            />
+      <div className="px-4 sm:px-6 md:px-12 relative z-10 space-y-8">
+        <div className="mt-3">
+          <FiltersBar />
+        </div>
+        <div className="mt-3">
+          <StatCardsRow />
+        </div>
+        <div className="flex flex-col space-y-8">
+          <div className="bg-white p-4 rounded-2xl ">
+            <RedemptionsPerInfluencer />
+          </div>
+          <div className="bg-white p-4 rounded-2xl ">
+            <TransactionVolumeChart />
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            🎉 Campaign Launched Successfully
-          </h1>
-
-          <p className="text-gray-500 text-sm md:text-base max-w-md mx-auto mb-8">
-            Your campaign is now active and assigned to the selected
-            influencer(s). You can track performance and redemptions in the
-            Campaign Dashboard.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/dashboard">
-              <button className="px-6 py-3 rounded-lg bg-blue-100 text-blue-600 font-medium hover:bg-blue-200 transition w-full sm:w-auto">
-                Back to Dashboard
-              </button>
-            </Link>
-            <Link href="/campaign-manager/create-campaign">
-              <button className="px-6 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition w-full sm:w-auto">
-                Launch Another Campaign
-              </button>
-            </Link>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-4">
+            <div className="md:col-span-3 bg-white dark:bg-gray-800 p-4 rounded-2xl">
+              <TopInfluencers />
+            </div>
+            <div className="md:col-span-2 bg-white dark:bg-gray-800 p-4 rounded-2xl ">
+              <CodeType />
+            </div>
           </div>
         </div>
       </div>
