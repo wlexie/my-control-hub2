@@ -3,6 +3,12 @@
 import { useState } from "react";
 import Header from "../usage-tracking/components/Header";
 import DateFilter from "@/app/backoffice/components/DateFilter";
+import FiltersBar from "./components/FiltersBar";
+import StatCardsRow from "../usage-tracking/components/StatcardRow";
+import RedemptionsPerInfluencer from "./components/RedemptionsPerInfluencer";
+import TransactionVolumeChart from "./components/TransactionVolume";
+import TopInfluencers from "../usage-tracking/components/TopInfluencers";
+import CodeType from "../usage-tracking/components/CodeType";
 
 export default function InfluencerAttribution() {
   const [currency, setCurrency] = useState("GBP");
@@ -42,16 +48,31 @@ export default function InfluencerAttribution() {
         onDateFilterOpen={() => setIsDateFilterOpen(true)}
         dateLabel={dateLabel}
       />
+      <div className="px-4 sm:px-6 md:px-12 relative z-10 space-y-8">
+        <div className="mt-3">
+          <FiltersBar />
+        </div>
+        <div className="mt-3">
+          <StatCardsRow />
+        </div>
+        <div className="flex flex-col space-y-8">
+          <div className="bg-white p-4 rounded-2xl ">
+            <RedemptionsPerInfluencer />
+          </div>
+          <div className="bg-white p-4 rounded-2xl ">
+            <TransactionVolumeChart />
+          </div>
 
-      {/* Dark mode toggle button */}
-      {/* <div className="px-4 py-2">
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-sm"
-        >
-          {darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-        </button>
-      </div> */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-4">
+            <div className="md:col-span-3 bg-white dark:bg-gray-800 p-4 rounded-2xl">
+              <TopInfluencers />
+            </div>
+            <div className="md:col-span-2 bg-white dark:bg-gray-800 p-4 rounded-2xl ">
+              <CodeType />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {isDateFilterOpen && (
         <div className="fixed inset-0 bg-black/30 z-50 flex justify-center items-start pt-10">

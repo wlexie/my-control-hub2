@@ -712,8 +712,6 @@ const TransactionsPage = () => {
                       onClear={() =>
                         setDateRange({ startDate: null, endDate: null })
                       }
-                      initialStartDate={dateRange.startDate}
-                      initialEndDate={dateRange.endDate}
                       isOpen={showDateFilter}
                       onClose={() => setShowDateFilter(false)}
                     />
