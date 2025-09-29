@@ -108,7 +108,7 @@ export default function TransactionVolumeChart() {
                 tick={{ fontSize: 12, fill: "#666" }}
                 tickFormatter={(val) => `${val / 1000}k`}
               />
-              {/* 👇 Use Custom Tooltip */}
+
               <Tooltip content={<CustomTooltip />} />
 
               <Line

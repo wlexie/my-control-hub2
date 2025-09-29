@@ -84,7 +84,10 @@ function TopNav({ user }: TopNavProps) {
         {/* Center - Desktop Nav */}
         <ul className="hidden md:flex items-center space-x-6 text-md text-white/80 text-sm">
           {navItems.map((item, idx) => {
-            const isActive = pathname === item.href;
+            const isActive =
+              pathname === item.href ||
+              (item.href === "/campaign-manager/create-campaign" &&
+                pathname === "/campaign-manager/create-campaign/success");
             return (
               <li key={idx}>
                 <Link href={item.href}>

@@ -7,6 +7,7 @@ const pathMap: Record<string, string> = {
   "/campaign-manager/usage-tracking": "Code Expiry & Usage Tracking",
   "/campaign-manager/influencer-attribution": "Influencer Attribution",
   "/campaign-manager/create-campaign": "Create Campaign",
+  "/campaign-manager/create-campaign/success": "Create Campaign",
 };
 
 interface HeroSectionProps {
