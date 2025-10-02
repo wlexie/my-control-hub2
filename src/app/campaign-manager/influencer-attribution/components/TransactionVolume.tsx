@@ -53,7 +53,9 @@ export default function TransactionVolumeChart() {
   return (
     <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl w-full">
       {/* Header Section */}
-      <h2 className="text-lg font-bold mb-2">Redemptions per Influencer</h2>
+      <h2 className="text-lg font-bold mb-2">
+        Transaction Volume per Influencer
+      </h2>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
         <div className="flex flex-wrap items-center gap-4">
           {/* Influencer Dropdown */}
