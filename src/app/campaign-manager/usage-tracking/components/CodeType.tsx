@@ -4,7 +4,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 const data = [
   { name: "One-time Use", value: 600, color: "#6366F1" }, // Indigo
-  { name: "Total campaign", value: 300, color: "#22C55E" }, // Green
   { name: "No Expiry", value: 100, color: "#F59E0B" }, // Amber
 ];
 

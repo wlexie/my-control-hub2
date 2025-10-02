@@ -217,8 +217,7 @@ export default function CampaignForm() {
             className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
           >
             <option value="">Select reward type</option>
-            <option value="percentage">Percentage of transaction value</option>
-            <option value="fixed">Fixed amount</option>
+            <option value="discount">Discount on exchange rate</option>
           </select>
           <MdKeyboardArrowDown className="absolute right-2 top-9 text-gray-400 w-5 h-5 pointer-events-none" />
         </div>
