@@ -82,7 +82,7 @@ function TopNav({ user }: TopNavProps) {
         </div>
 
         {/* Center - Desktop Nav */}
-        <ul className="hidden md:flex items-center space-x-6 text-md text-white/80 text-sm">
+        <ul className="hidden md:flex items-center space-x-6 text-md text-white/80 text-md">
           {navItems.map((item, idx) => {
             // Special rule only for Create Campaign
             const isCreateCampaignActive =
