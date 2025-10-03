@@ -14,7 +14,7 @@ export default function CodeType() {
     <div className="w-full h-full flex flex-col">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
-        <h2 className="text-lg font-bold">
+        <h2 className="text-xl font-bold">
           Redemption Distribution by Code Type
         </h2>
         <button className="px-3 py-1 text-sm rounded-md bg-blue-50 text-blue-600 border">
@@ -52,7 +52,7 @@ export default function CodeType() {
                 backgroundColor: "#fff",
                 border: "1px solid #ddd",
                 borderRadius: "8px",
-                fontSize: "12px",
+                fontSize: "16px",
               }}
             />
           </PieChart>
@@ -63,12 +63,12 @@ export default function CodeType() {
           <span className="block text-2xl font-bold">
             {total.toLocaleString()}
           </span>
-          <span className="text-gray-500 text-sm">Total Codes</span>
+          <span className="text-gray-500 text-md">Total Codes</span>
         </div>
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap justify-center gap-6 mt-6 text-sm">
+      <div className="flex flex-wrap justify-center gap-6 mt-6 text-md">
         {data.map((d, i) => (
           <div key={i} className="flex items-center gap-2">
             <span

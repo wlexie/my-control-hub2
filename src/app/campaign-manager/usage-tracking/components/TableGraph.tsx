@@ -86,7 +86,7 @@ export default function CampaignTable() {
     <div className="p-3 bg-white rounded-2xl border-0">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-        <h2 className="text-lg font-semibold">
+        <h2 className="text-xl font-semibold">
           Campaign Usage & Expiry Tracking
         </h2>
 
@@ -112,7 +112,7 @@ export default function CampaignTable() {
 
       {/* Scrollable Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-[1000px] w-full text-sm">
+        <table className="min-w-[1000px] w-full text-md">
           <thead className="text-gray-500 text-left">
             <tr className="border-b">
               <th className="py-2">Influencer ID</th>
@@ -136,7 +136,7 @@ export default function CampaignTable() {
                   />
                   <div>
                     <div className="font-medium">{r.influencer.name}</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-sm text-gray-500">
                       {r.influencer.handle}
                     </div>
                   </div>
@@ -146,7 +146,7 @@ export default function CampaignTable() {
                 <td className="whitespace-nowrap">£{r.amount}</td>
                 <td className="whitespace-nowrap">
                   <span
-                    className={`px-3 py-1 text-xs rounded-full ${r.reward.color}`}
+                    className={`px-3 py-1 text-sm rounded-full ${r.reward.color}`}
                   >
                     {r.reward.label}
                   </span>
@@ -163,11 +163,11 @@ export default function CampaignTable() {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
+      <div className="flex justify-between items-center mt-4 text-md text-gray-600">
         <span>Showing 1 to 06 of 20</span>
         <div className="flex items-center gap-2">
           <ChevronLeft className="w-4 h-4 cursor-pointer" />
-          <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-center text-xs leading-6">
+          <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-center text-sm leading-6">
             1
           </div>
           <ChevronRight className="w-4 h-4 cursor-pointer" />

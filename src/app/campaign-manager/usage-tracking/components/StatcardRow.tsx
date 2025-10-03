@@ -75,7 +75,7 @@ export default function StatCardsRow() {
             <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-4">
               {card.icon}
             </div>
-            <span className="text-gray-700 text-lg font-medium">
+            <span className="text-gray-700 text-xl font-medium">
               {card.label}
             </span>
           </div>

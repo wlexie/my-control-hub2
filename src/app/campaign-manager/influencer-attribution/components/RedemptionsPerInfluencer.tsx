@@ -34,7 +34,7 @@ export default function RedemptionsPerInfluencer() {
 
   return (
     <div className="p-4 bg-white rounded-2xl w-full">
-      <h2 className="text-lg font-bold mb-2">Redemptions per Influencer</h2>
+      <h2 className="text-xl font-bold mb-2">Redemptions per Influencer</h2>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
         {/* Left: Dropdown + Stats */}
         <div className="flex flex-wrap items-center gap-4">
@@ -43,7 +43,7 @@ export default function RedemptionsPerInfluencer() {
             <select
               value={influencer}
               onChange={(e) => setInfluencer(e.target.value)}
-              className="h-12 w-56 pl-9 pr-8 text-sm border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+              className="h-12 w-56 pl-9 pr-8 text-md border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
             >
               <option value="Azziad Nasenya">Azziad Nasenya</option>
               <option value="Khaligraph Jones">Khaligraph Jones</option>
@@ -54,19 +54,19 @@ export default function RedemptionsPerInfluencer() {
           </div>
 
           {/* Stats aligned after dropdown */}
-          <div className="flex items-center gap-3 text-sm text-gray-700 font-normal">
+          <div className="flex items-center gap-3 text-md text-gray-700 font-normal">
             <span className="text-gray-600">Total No. of Redemptions</span>
             <span className="font-bold">120</span>
             <span className="flex items-center bg-green-100 text-green-600 px-2 py-0.5 rounded-full text-xs font-medium gap-1">
               <TrendingUp className="w-3 h-3" />
               56%
             </span>
-            <span className="text-gray-400 text-xs">Compared to Last Year</span>
+            <span className="text-gray-400 text-sm">Compared to Last Year</span>
           </div>
         </div>
 
         {/* Right: Yearly Button */}
-        <button className="px-3 py-1 text-sm rounded-md bg-blue-50 text-blue-600 border flex items-center gap-1">
+        <button className="px-3 py-1 text-md rounded-md bg-blue-50 text-blue-600 border flex items-center gap-1">
           Yearly <MdKeyboardArrowDown className="w-4 h-4" />
         </button>
       </div>
@@ -89,7 +89,7 @@ export default function RedemptionsPerInfluencer() {
                   backgroundColor: "#fff",
                   border: "1px solid #ddd",
                   borderRadius: "6px",
-                  fontSize: "12px",
+                  fontSize: "16px",
                 }}
                 formatter={(value) => [`${value} Redemptions`, ""]}
               />

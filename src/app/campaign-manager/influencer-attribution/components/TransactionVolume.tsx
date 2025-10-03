@@ -37,8 +37,8 @@ const CustomTooltip = ({
   if (active && payload && payload.length) {
     return (
       <div className="bg-[#f59e0b] text-white px-3 py-2 rounded-lg text-center shadow-md">
-        <p className="text-xs font-medium">{label}</p>
-        <p className="text-md font-bold">
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-lg font-bold">
           {payload[0].value?.toLocaleString()}
         </p>
       </div>
@@ -53,7 +53,7 @@ export default function TransactionVolumeChart() {
   return (
     <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl w-full">
       {/* Header Section */}
-      <h2 className="text-lg font-bold mb-2">
+      <h2 className="text-xl font-bold mb-2">
         Transaction Volume per Influencer
       </h2>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
@@ -63,7 +63,7 @@ export default function TransactionVolumeChart() {
             <select
               value={selectedInfluencer}
               onChange={(e) => setSelectedInfluencer(e.target.value)}
-              className="h-12 w-56 pl-9 pr-8 text-sm border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+              className="h-12 w-56 pl-9 pr-8 text-md border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
             >
               <option value="Rue Baby">Rue Baby</option>
               <option value="Azziad Nasenya">Azziad Nasenya</option>
@@ -75,14 +75,14 @@ export default function TransactionVolumeChart() {
           </div>
 
           {/* Stats aligned after dropdown */}
-          <div className="flex items-center gap-3 text-sm text-gray-700 font-normal">
+          <div className="flex items-center gap-3 text-md text-gray-700 font-normal">
             <span className="text-gray-600">Total No. of Redemptions</span>
             <span className="font-bold">120</span>
             <span className="flex items-center bg-green-100 text-green-600 px-2 py-0.5 rounded-full text-xs font-medium gap-1">
               <TrendingUp className="w-3 h-3" />
               56%
             </span>
-            <span className="text-gray-400 text-xs">Compared to Last Year</span>
+            <span className="text-gray-400 text-sm">Compared to Last Year</span>
           </div>
         </div>
 

@@ -46,22 +46,22 @@ export default function CampaignSuccess() {
       />
 
       <div className="px-4 sm:px-6 md:px-12 relative z-10 flex justify-center mt-10">
-        <div className="bg-white rounded-2xl shadow-sm p-8 md:p-12 max-w-2xl w-full text-center">
+        <div className="bg-white rounded-2xl shadow-sm p-8 md:p-12 max-w-4xl w-full text-center">
           <div className="flex justify-center mb-6">
             <Image
               src="/campaigns/success.png"
               alt="Campaign Success"
-              width={400}
-              height={400}
+              width={500}
+              height={500}
               className="object-contain"
             />
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             🎉 Campaign Launched Successfully
           </h1>
 
-          <p className="text-gray-500 text-sm md:text-base max-w-md mx-auto mb-8">
+          <p className="text-gray-500 text-lg md:text-base max-w-md mx-auto mb-8">
             Your campaign is now active and assigned to the selected
             influencer(s). You can track performance and redemptions in the
             Campaign Dashboard.
@@ -69,12 +69,12 @@ export default function CampaignSuccess() {
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/dashboard">
-              <button className="px-6 py-3 rounded-lg bg-blue-100 text-blue-600 font-medium hover:bg-blue-200 transition w-full sm:w-auto">
+              <button className="px-6 py-3 rounded-lg text-xl bg-blue-100 text-blue-600 font-medium hover:bg-blue-200 transition w-full sm:w-auto">
                 Back to Dashboard
               </button>
             </Link>
             <Link href="/campaign-manager/create-campaign">
-              <button className="px-6 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition w-full sm:w-auto">
+              <button className="px-6 py-3 rounded-lg bg-blue-600 text-xl text-white font-medium hover:bg-blue-700 transition w-full sm:w-auto">
                 Launch Another Campaign
               </button>
             </Link>

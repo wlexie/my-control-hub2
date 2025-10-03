@@ -46,27 +46,27 @@ export default function CampaignForm() {
       onSubmit={handleSubmit}
       className="w-full bg-white max-w-7xl mx-auto dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-md"
     >
-      <h2 className="text-lg font-semibold mb-4">Campaign Basics</h2>
+      <h2 className="text-xl font-semibold mb-4">Campaign Basics</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
         <div>
-          <label className="block text-sm font-medium mb-1 text-gray-500">
+          <label className="block text-md font-medium mb-1 text-gray-500">
             Campaign Name <span className="text-red-500">*</span>
           </label>
           <input
             value={campaignName}
             onChange={(e) => setCampaignName(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter campaign name"
           />
         </div>
         <div className="relative">
-          <label className="block text-sm font-medium mb-1 text-gray-500">
+          <label className="block text-md font-medium mb-1 text-gray-500">
             Campaign Type <span className="text-red-500">*</span>
           </label>
           <select
             value={campaignType}
             onChange={(e) => setCampaignType(e.target.value)}
-            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
           >
             <option value="">Select campaign type</option>
             <option value="discount">Discount campaign</option>
@@ -79,25 +79,25 @@ export default function CampaignForm() {
 
       {/* Short Description */}
       <div className="mb-6">
-        <label className="block text-sm font-medium mb-1 text-gray-500">
+        <label className="block text-md font-medium mb-1 text-gray-500">
           Short Description
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Enter campaign description"
         />
       </div>
 
       {/* Timeframe */}
-      <h2 className="text-lg font-semibold mb-4">Timeframe and Validity</h2>
+      <h2 className="text-xl font-semibold mb-4">Timeframe and Validity</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center mb-6">
         {/* Start Date */}
         <div className="relative">
           <label
-            className={`block text-sm font-medium mb-1 ${
+            className={`block text-md font-medium mb-1 ${
               noExpiry ? "text-gray-400" : "text-gray-700"
             }`}
           >
@@ -110,7 +110,7 @@ export default function CampaignForm() {
             }
             onClick={() => !noExpiry && setShowStartPicker(true)}
             placeholder="Select start date"
-            className={`w-full h-12 border rounded-lg px-3 pr-9 text-sm cursor-pointer 
+            className={`w-full h-12 border rounded-lg px-3 pr-9 text-md cursor-pointer 
       ${noExpiry ? "bg-gray-100 cursor-not-allowed text-gray-500" : "bg-gray-100 text-gray-800"}`}
             disabled={noExpiry}
           />
@@ -137,7 +137,7 @@ export default function CampaignForm() {
         {/* End Date */}
         <div className="relative">
           <label
-            className={`block text-sm font-medium mb-1 ${
+            className={`block text-md font-medium mb-1 ${
               noExpiry ? "text-gray-400" : "text-gray-700"
             }`}
           >
@@ -148,7 +148,7 @@ export default function CampaignForm() {
             value={endDate ? endDate.toLocaleDateString() : "Select end date"}
             onClick={() => !noExpiry && setShowEndPicker(true)}
             placeholder="Select end date"
-            className={`w-full h-12 border rounded-lg px-3 pr-9 text-sm cursor-pointer 
+            className={`w-full h-12 border rounded-lg px-3 pr-9 text-md cursor-pointer 
       ${noExpiry ? "bg-gray-100 cursor-not-allowed text-gray-500" : "bg-gray-100 text-gray-800"}`}
             disabled={noExpiry}
           />
@@ -175,7 +175,7 @@ export default function CampaignForm() {
 
       {/* No Expiry Toggle */}
       <div className="flex justify-end items-center gap-2 mb-6">
-        <label className="text-sm font-medium">No Expiry</label>
+        <label className="text-md font-medium">No Expiry</label>
         <button
           type="button"
           onClick={() => setNoExpiry(!noExpiry)}
@@ -192,29 +192,29 @@ export default function CampaignForm() {
       </div>
 
       {/* Code Settings */}
-      <h2 className="text-lg font-semibold mb-4">Code Settings</h2>
+      <h2 className="text-xl font-semibold mb-4">Code Settings</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Code Name */}
         <div>
-          <label className="block text-sm font-medium mb-1 text-gray-500">
+          <label className="block text-md font-medium mb-1 text-gray-500">
             Code Name <span className="text-red-500">*</span>
           </label>
           <input
             value={codeName}
             onChange={(e) => setCodeName(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter code name"
           />
         </div>
         {/* Reward Type */}
         <div className="relative">
-          <label className="block text-sm font-medium mb-1 text-gray-500">
+          <label className="block text-md font-medium mb-1 text-gray-500">
             Reward Type <span className="text-red-500">*</span>
           </label>
           <select
             value={rewardType}
             onChange={(e) => setRewardType(e.target.value)}
-            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
           >
             <option value="">Select reward type</option>
             <option value="discount">Discount on exchange rate</option>
@@ -223,13 +223,13 @@ export default function CampaignForm() {
         </div>
         {/* Code Type */}
         <div className="relative">
-          <label className="block text-sm font-medium mb-1 text-gray-500">
+          <label className="block text-md font-medium mb-1 text-gray-500">
             Code Type <span className="text-red-500">*</span>
           </label>
           <select
             value={codeType}
             onChange={(e) => setCodeType(e.target.value)}
-            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
           >
             <option value="">Select code type</option>
             <option value="one-time">One-time per customer</option>
@@ -239,13 +239,13 @@ export default function CampaignForm() {
         </div>
         {/* Influencer */}
         <div className="relative">
-          <label className="block text-sm font-medium mb-1 text-gray-500">
+          <label className="block text-md font-medium mb-1 text-gray-500">
             Influencer Assignment <span className="text-red-500">*</span>
           </label>
           <select
             value={influencer}
             onChange={(e) => setInfluencer(e.target.value)}
-            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-md text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
           >
             <option value="">Choose influencer</option>
             <option value="azziad">Azziad Nasenya</option>

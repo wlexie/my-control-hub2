@@ -29,19 +29,19 @@ export default function RedemptionsChart() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
         <div>
-          <h2 className="text-lg font-bold">Redemptions Over Time (R.O.Ts)</h2>
-          <p className="text-gray-500 text-md font-semibold">October</p>
-          <div className="flex items-center gap-3 mt-1 text-sm text-gray-700 font-semibold">
+          <h2 className="text-xl font-bold">Redemptions Over Time (R.O.Ts)</h2>
+          <p className="text-gray-500 text-lg font-semibold">October</p>
+          <div className="flex items-center gap-3 mt-1 text-md text-gray-700 font-semibold">
             <span className="text-gray-600">
               Total No. of Redemptions Over Time:
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
             <span className="font-semibold text-blue-600">180</span>
-            <span className="flex items-center bg-green-100 text-green-600 px-2 py-0.5 rounded-full text-xs font-medium gap-1">
+            <span className="flex items-center bg-green-100 text-green-600 px-2 py-0.5 rounded-full text-md font-medium gap-1">
               <TrendingUp className="w-3 h-3" />
               56%
             </span>
-            <span className="text-gray-400 text-xs">Compared to Last Year</span>
+            <span className="text-gray-400 text-sm">Compared to Last Year</span>
           </div>
         </div>
         <button className="px-3 py-1 text-md rounded-md bg-blue-50 text-blue-600 border">
@@ -69,7 +69,7 @@ export default function RedemptionsChart() {
                   backgroundColor: "#fff",
                   border: "1px solid #ddd",
                   borderRadius: "8px",
-                  fontSize: "12px",
+                  fontSize: "16px",
                 }}
                 formatter={(value) => [`${value} R.O.Ts`, ""]}
                 labelFormatter={(label) => `${label}`}

@@ -65,21 +65,21 @@ export default function InfluencersTable() {
       {/* Header */}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-        <h2 className="text-lg font-bold">Top Influencers</h2>
+        <h2 className="text-xl font-bold">Top Influencers</h2>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:flex-1 sm:justify-center">
           <input
             type="text"
             placeholder="Search by Influencer name or @tag_name"
-            className="px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-96"
+            className="px-3 py-2 text-md border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-96"
           />
         </div>
 
         <div className="flex flex-row gap-2 sm:items-center sm:ml-auto">
-          <button className="px-3 py-2 border rounded-lg text-sm bg-gray-50 hover:bg-gray-100">
+          <button className="px-3 py-2 border rounded-lg text-md bg-gray-50 hover:bg-gray-100">
             Export PDF
           </button>
-          <button className="px-3 py-2 border rounded-lg text-sm bg-blue-50 text-blue-600 hover:bg-blue-100">
+          <button className="px-3 py-2 border rounded-lg text-md bg-blue-50 text-blue-600 hover:bg-blue-100">
             Monthly
           </button>
         </div>
@@ -87,7 +87,7 @@ export default function InfluencersTable() {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
+        <table className="w-full text-md border-collapse">
           <thead>
             <tr className="text-left text-gray-500 bg-gray-50">
               <th className="px-4 py-3">Name</th>
@@ -112,7 +112,7 @@ export default function InfluencersTable() {
                   />
                   <div>
                     <p className="font-medium">{inf.name}</p>
-                    <p className="text-gray-400 text-xs">{inf.handle}</p>
+                    <p className="text-gray-400 text-sm">{inf.handle}</p>
                   </div>
                 </td>
                 <td className="px-4 py-3 font-medium">{inf.redemptions}</td>
@@ -124,7 +124,7 @@ export default function InfluencersTable() {
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
                       inf.status === "Active"
                         ? "bg-green-100 text-green-600"
                         : "bg-red-100 text-red-600"
