@@ -4,6 +4,7 @@
 import SideNav from '../components/SideNav';
 import Section from './components/Section';
 import AuditTrail from './components/AuditTrail';
+import Terrapay from './components/Terrapay'
 
 export default function Home() {
   return (
@@ -18,6 +19,9 @@ export default function Home() {
         <main className="flex-1 p-6 md:p-10">
           <div>
             <Section />
+          </div>
+          <div>
+            <Terrapay />
           </div>
           <div className="mt-8">
             <AuditTrail />
