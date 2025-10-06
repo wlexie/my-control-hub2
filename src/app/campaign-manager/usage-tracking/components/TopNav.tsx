@@ -18,11 +18,11 @@ interface TopNavProps {
 
 const navItems = [
   {
-    label: "Code Expiry & Usage Tracking",
+    label: "Campaign Dashboard",
     href: "/campaign-manager/usage-tracking",
   },
   {
-    label: "Influencer Attribution",
+    label: "Influencer Performance",
     href: "/campaign-manager/influencer-attribution",
   },
   { label: "Create Campaign", href: "/campaign-manager/create-campaign" },

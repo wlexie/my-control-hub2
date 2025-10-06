@@ -4,8 +4,8 @@ import { usePathname } from "next/navigation";
 import CurrencyDropdown from "./CurrencyDropdown";
 
 const pathMap: Record<string, string> = {
-  "/campaign-manager/usage-tracking": "Code Expiry & Usage Tracking",
-  "/campaign-manager/influencer-attribution": "Influencer Attribution",
+  "/campaign-manager/usage-tracking": "Campaign Dashboard",
+  "/campaign-manager/influencer-attribution": "Influencer Performance",
   "/campaign-manager/create-campaign": "Create Campaign",
   "/campaign-manager/create-campaign/success": "Create Campaign",
 };
