@@ -43,7 +43,7 @@ export default function RedemptionsPerInfluencer() {
             <select
               value={influencer}
               onChange={(e) => setInfluencer(e.target.value)}
-              className="h-12 w-56 pl-9 pr-8 text-md border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+              className="h-12 w-64 pl-9 pr-8 text-md border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
             >
               <option value="Azziad Nasenya">Azziad Nasenya</option>
               <option value="Khaligraph Jones">Khaligraph Jones</option>

@@ -86,41 +86,6 @@ export default function Header({
       <TopNav user={user} />
       <HeroSection currency={currency} onCurrencyChange={onCurrencyChange} />
 
-      <div className="absolute -bottom-4 left-6 z-50" ref={dropdownRef}>
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="bg-white text-blue-600 p-2 rounded-full shadow-md focus:outline-none"
-        >
-          <img
-            src="/backoffice/grid-icon.png"
-            alt="Menu Icon"
-            className="w-6 h-6"
-          />
-        </button>
-
-        {menuOpen && (
-          <div className="absolute left-6 mt-2 w-64 bg-white shadow-xl rounded-lg py-2 z-50">
-            {/* <-- 2. RENDER THE FILTERED LIST --> */}
-            {visibleMenuItems.map((item: SidebarMenuItem) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="block px-4 py-2 text-md text-gray-700 hover:bg-blue-100"
-                onClick={() => setMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
-            {/* <-- ADDED: Show a message if there are no items to display --> */}
-            {visibleMenuItems.length === 0 && (
-              <div className="px-4 py-2 text-md text-gray-400">
-                No items available
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
       <div className="px-4 md:px-12 mt-6">
         {(() => {
           return (

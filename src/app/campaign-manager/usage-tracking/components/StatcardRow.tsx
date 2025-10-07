@@ -3,8 +3,9 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { FaTags } from "react-icons/fa";
 import { RiPassExpiredFill } from "react-icons/ri";
 import { GrSync } from "react-icons/gr";
-import { FaCrown } from "react-icons/fa";
 import { PiTrayArrowDownFill } from "react-icons/pi";
+import { BsPersonHearts } from "react-icons/bs";
+
 const cards = [
   {
     label: "Active Codes",
@@ -29,7 +30,18 @@ const cards = [
     ),
   },
   {
-    label: "Total Redemptions",
+    label: "Pending Redemptions",
+    amount: "298",
+    change: "-10%",
+    positive: false,
+    icon: (
+      <span className="bg-red-100 rounded-lg p-3 mb-2">
+        <GrSync className="text-red-700 text-xl font-extrabold" />
+      </span>
+    ),
+  },
+  {
+    label: "Successful Redemptions",
     amount: "1,079",
     change: "+17%",
     positive: true,
@@ -46,7 +58,7 @@ const cards = [
     positive: false,
     icon: (
       <span className="bg-purple-100 rounded-lg p-3 mb-2">
-        <FaCrown className="text-purple-700 text-xl" />
+        <BsPersonHearts className="text-purple-700 text-xl" />
       </span>
     ),
   },
@@ -65,7 +77,7 @@ const cards = [
 
 export default function StatCardsRow() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 ">
+    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 ">
       {cards.map((card, i) => (
         <div
           key={i}
