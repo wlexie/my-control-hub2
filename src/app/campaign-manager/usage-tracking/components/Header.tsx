@@ -3,18 +3,8 @@
 import { ChevronDown } from "lucide-react";
 import HeroSection from "./HeroSection";
 import TopNav from "./TopNav";
-// import { usePathname } from "next/navigation";
-import { sidebarMenuItems } from "@/app/backoffice/constants/sidebarMenuItems"; // Assuming this is the correct path
-import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "../../../../store/store"; // Assuming this is the correct path
-
-interface SidebarMenuItem {
-  href: string;
-  label: string;
-  icon?: React.ReactNode;
-}
+import { RootState } from "../../../../store/store";
 
 interface HeaderProps {
   currency: string;
@@ -33,53 +23,7 @@ export default function Header({
   onDateFilterOpen,
   dateLabel,
 }: HeaderProps) {
-  //   const pathname = usePathname();
-
-  //   const pageTitles: Record<string, string> = {
-  //     "/backoffice/dashboard": "Welcome back",
-  //     "/campaign-manager/usage-tracking": "Welcome back",
-  //     "/campaign-manager/influencer-attribution": "Influencer Attribution",
-  //     "/campaign-manager/create-campaign": "Create Campaign",
-  //   };
-
-  //   const currentTitle = pageTitles[pathname] || "Dashboard";
-
-  const [menuOpen, setMenuOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
   const user = useSelector((state: RootState) => state.auth.user);
-  //   const userName = user ? `${user.firstName} ${user.lastName}` : null;
-
-  // <-- 1. ADD LOGIC TO FILTER MENU ITEMS -->
-  const getVisibleMenuItems = () => {
-    // If the user is not logged in, show no menu items.
-    if (!user) {
-      return [];
-    }
-
-    // If user's role is 'BACKOFFICE', only show the 'Transactions' link.
-    if (user.roles.includes("BACKOFFICE")) {
-      return sidebarMenuItems.filter((item) => item.label === "Transactions");
-    }
-
-    // For all other logged-in users, show all menu items.
-    return sidebarMenuItems;
-  };
-
-  const visibleMenuItems = getVisibleMenuItems();
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   return (
     <div className="relative bg-gradient-to-br to-[#163F8B] from-[#276EF1] text-white pb-8 ">
