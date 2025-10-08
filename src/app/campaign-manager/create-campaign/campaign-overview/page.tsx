@@ -5,8 +5,18 @@ import CampaignOverview from "./CampaignOverview";
 import Header from "@/app/campaign-manager/usage-tracking/components/Header";
 import DateFilter from "@/app/backoffice/components/DateFilter";
 
+export interface CampaignData {
+  campaignName: string;
+  objective: string;
+  targetAudience: string;
+  budget: number;
+  startDate: string;
+  endDate: string;
+  description: string;
+}
+
 export default function CampaignOverviewPage() {
-  const [campaignData, setCampaignData] = useState<any>(null);
+  const [campaignData, setCampaignData] = useState<CampaignData | null>(null);
   const [currency, setCurrency] = useState("GBP");
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());
