@@ -11,6 +11,7 @@ const pathMap: Record<string, string> = {
   "/campaign-manager/influencer-attribution/influencer-profiles":
     "Influencer Profiles",
   "/campaign-manager/create-campaign": "Create Campaign",
+  "/campaign-manager/create-campaign/campaign-overview": "Campaign Overview",
   "/campaign-manager/create-campaign/success": "Create Campaign",
 };
 
@@ -26,7 +27,7 @@ function HeroSection({ currency, onCurrencyChange }: HeroSectionProps) {
   return (
     <div className="px-4 md:px-12 mt-4">
       <div className="flex justify-between items-center">
-        <p className="text-sm text-white/70">
+        <p className=" text-sm md:text-md  text-white/70">
           Campaign Manager / <span className="text-white">{currentTitle}</span>
         </p>
         <div className="text-white/70">

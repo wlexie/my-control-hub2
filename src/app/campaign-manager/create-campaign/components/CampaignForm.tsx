@@ -19,9 +19,67 @@ export default function CampaignForm() {
   const [noExpiry, setNoExpiry] = useState(false);
 
   const [codeName, setCodeName] = useState("");
+  const [uniqueCode, setUniqueCode] = useState("");
   const [rewardType, setRewardType] = useState("");
   const [codeType, setCodeType] = useState("");
-  const [influencer, setInfluencer] = useState("");
+
+  const [selectedInfluencers, setSelectedInfluencers] = useState<string[]>([]);
+
+  const influencers = [
+    {
+      id: "1",
+      name: "Khaligraph Jones",
+      username: "@khaligraph_jones",
+      avatar:
+        "https://www.svgrepo.com/show/384674/account-avatar-profile-user-11.svg",
+    },
+    {
+      id: "2",
+      name: "Azziad Nasenya",
+      username: "@azziadnasenya",
+      avatar:
+        "https://www.svgrepo.com/show/384674/account-avatar-profile-user-11.svg",
+    },
+    {
+      id: "3",
+      name: "Kabii wa Jesus",
+      username: "@kabiiwajesus",
+      avatar:
+        "https://www.svgrepo.com/show/384674/account-avatar-profile-user-11.svg",
+    },
+    {
+      id: "4",
+      name: "Ombachi Dennis",
+      username: "@mr_ombachi",
+      avatar:
+        "https://www.svgrepo.com/show/384674/account-avatar-profile-user-11.svg",
+    },
+    {
+      id: "5",
+      name: "Baby Rue",
+      username: "@rue.baby",
+      avatar:
+        "https://www.svgrepo.com/show/384674/account-avatar-profile-user-11.svg",
+    },
+    {
+      id: "6",
+      name: "Joy Kendi",
+      username: "@joykendi",
+      avatar:
+        "https://www.svgrepo.com/show/384674/account-avatar-profile-user-11.svg",
+    },
+  ];
+
+  const handleGenerateCode = () => {
+    const randomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+    setUniqueCode(randomCode);
+  };
+
+  const handleInfluencerSelect = (id: string) => {
+    setSelectedInfluencers((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const handleClearForm = () => {
     setCampaignName("");
@@ -31,63 +89,81 @@ export default function CampaignForm() {
     setEndDate(null);
     setNoExpiry(false);
     setCodeName("");
+    setUniqueCode("");
     setRewardType("");
     setCodeType("");
-    setInfluencer("");
+    setSelectedInfluencers([]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/campaign-manager/create-campaign/success");
+
+    const campaignData = {
+      campaignName,
+      campaignType,
+      description,
+      startDate: startDate?.toLocaleDateString(),
+      endDate: endDate?.toLocaleDateString(),
+      noExpiry,
+      codeName,
+      uniqueCode,
+      rewardType,
+      codeType,
+      influencers: selectedInfluencers,
+    };
+
+    // Save form data in sessionStorage (so we can read it in the overview page)
+    sessionStorage.setItem("campaignData", JSON.stringify(campaignData));
+
+    // Navigate to the overview page
+    router.push("/campaign-manager/create-campaign/campaign-overview");
   };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full bg-white max-w-7xl mx-auto dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-md"
+      className="w-full bg-white max-w-8xl mx-auto p-8 rounded-2xl shadow-md"
     >
+      {/* Campaign Basics */}
       <h2 className="text-xl font-semibold mb-4">Campaign Basics</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
         <div>
-          <label className="block text-md font-medium mb-1 text-gray-500">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Campaign Name <span className="text-red-500">*</span>
           </label>
           <input
             value={campaignName}
             onChange={(e) => setCampaignName(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter campaign name"
+            className="w-full border rounded-lg px-3 py-2 bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="relative">
-          <label className="block text-md font-medium mb-1 text-gray-500">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Campaign Type <span className="text-red-500">*</span>
           </label>
           <select
             value={campaignType}
             onChange={(e) => setCampaignType(e.target.value)}
-            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
           >
             <option value="">Select campaign type</option>
-            <option value="discount">Discount campaign</option>
-            <option value="gift">Gift vouchers</option>
-            <option value="cashback">Cashback</option>
+            <option value="Discount Campaign">Discount Campaign</option>
+            <option value="Gift Vouchers">Gift Vouchers</option>
           </select>
-          <MdKeyboardArrowDown className="absolute right-2 top-9 text-gray-400 w-5 h-5 pointer-events-none" />
+          <MdKeyboardArrowDown className="absolute right-3 top-9 text-gray-400" />
         </div>
       </div>
 
       {/* Short Description */}
       <div className="mb-6">
-        <label className="block text-md font-medium mb-1 text-gray-500">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           Short Description
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Enter campaign description"
+          className="w-full border rounded-lg px-3 py-2 bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
@@ -193,83 +269,109 @@ export default function CampaignForm() {
 
       {/* Code Settings */}
       <h2 className="text-xl font-semibold mb-4">Code Settings</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {/* Code Name */}
-        <div>
-          <label className="block text-md font-medium mb-1 text-gray-500">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="md:col-span-1">
+          <label className="block text-sm font-medium mb-1">
             Code Name <span className="text-red-500">*</span>
           </label>
           <input
             value={codeName}
             onChange={(e) => setCodeName(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter code name"
+            className="w-full border rounded-lg px-3 py-2 bg-gray-100"
           />
         </div>
-        {/* Reward Type */}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Unique Code ID
+          </label>
+          <input
+            value={uniqueCode}
+            readOnly
+            className="w-full border rounded-lg px-3 py-2 bg-gray-100"
+          />
+        </div>
+        <div className="flex items-end">
+          <button
+            type="button"
+            onClick={handleGenerateCode}
+            className="w-full h-10 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200"
+          >
+            Generate Code
+          </button>
+        </div>
         <div className="relative">
-          <label className="block text-md font-medium mb-1 text-gray-500">
+          <label className="block text-sm font-medium mb-1">
             Reward Type <span className="text-red-500">*</span>
           </label>
           <select
             value={rewardType}
             onChange={(e) => setRewardType(e.target.value)}
-            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 appearance-none"
           >
             <option value="">Select reward type</option>
-            <option value="discount">Discount on exchange rate</option>
+            <option value="Percentage of transaction value">
+              Percentage of transaction value
+            </option>
           </select>
-          <MdKeyboardArrowDown className="absolute right-2 top-9 text-gray-400 w-5 h-5 pointer-events-none" />
-        </div>
-        {/* Code Type */}
-        <div className="relative">
-          <label className="block text-md font-medium mb-1 text-gray-500">
-            Code Type <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={codeType}
-            onChange={(e) => setCodeType(e.target.value)}
-            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-gray-800 text-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-          >
-            <option value="">Select code type</option>
-            <option value="one-time">One-time per customer</option>
-            <option value="multi">Multi-use</option>
-          </select>
-          <MdKeyboardArrowDown className="absolute right-2 top-9 text-gray-400 w-5 h-5 pointer-events-none" />
-        </div>
-        {/* Influencer */}
-        <div className="relative">
-          <label className="block text-md font-medium mb-1 text-gray-500">
-            Influencer Assignment <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={influencer}
-            onChange={(e) => setInfluencer(e.target.value)}
-            className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 text-md text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-          >
-            <option value="">Choose influencer</option>
-            <option value="azziad">Azziad Nasenya</option>
-            <option value="khaligraph">Khaligraph Jones</option>
-          </select>
-          <MdKeyboardArrowDown className="absolute right-2 top-9 text-gray-400 w-5 h-5 pointer-events-none" />
+          <MdKeyboardArrowDown className="absolute right-3 top-9 text-gray-400" />
         </div>
       </div>
 
+      <div className="relative mb-6">
+        <label className="block text-sm font-medium mb-1">
+          Code Type <span className="text-red-500">*</span>
+        </label>
+        <select
+          value={codeType}
+          onChange={(e) => setCodeType(e.target.value)}
+          className="w-full h-10 px-3 pr-8 border rounded-lg bg-gray-100 appearance-none"
+        >
+          <option value="">Select code type</option>
+          <option value="One-time per customer">One-time per customer</option>
+        </select>
+        <MdKeyboardArrowDown className="absolute right-3 top-9 text-gray-400" />
+      </div>
+
+      {/* Influencer Assignment */}
+      <h2 className="text-xl font-semibold mb-4">Influencer Assignment</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+        {influencers.map((inf) => (
+          <div
+            key={inf.id}
+            onClick={() => handleInfluencerSelect(inf.id)}
+            className={`flex items-center gap-3 border rounded-xl p-3 cursor-pointer transition ${
+              selectedInfluencers.includes(inf.id)
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-200 hover:border-blue-300"
+            }`}
+          >
+            <img
+              src={inf.avatar}
+              alt={inf.name}
+              className="w-10 h-10 rounded-full"
+            />
+            <div>
+              <p className="font-medium text-gray-800">{inf.name}</p>
+              <p className="text-sm text-gray-500">{inf.username}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Buttons */}
-      <div className="flex flex-col sm:flex-row justify-end gap-3">
+      <div className="flex justify-end gap-3">
         <button
           type="button"
           onClick={handleClearForm}
-          className="h-12 px-6 rounded-lg bg-red-100 text-red-600 font-medium hover:bg-red-200"
+          className="h-12 px-6 rounded-lg bg-red-100 text-red-600 font-medium hover:bg-red-200 transition w-full sm:w-auto"
         >
           Clear Form
         </button>
         <button
           type="submit"
-          className="h-12 px-6 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 flex items-center justify-center gap-2"
+          className="h-12 px-6 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition w-full sm:w-auto"
         >
-          Launch Campaign
-          <span>🚀</span>
+          Submit Campaign
         </button>
       </div>
     </form>
