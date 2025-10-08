@@ -171,7 +171,7 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
             }
         } catch (err) {
             console.error("Failed to fetch conversations;", err);
-            setError(err.message || "Failed to load conversations");
+            setError(err.message || "Failed to loa conversations");
         } finally {
             if (isInitialLoad.current) { setLoading(false); isInitialLoad.current = false; }
         }
