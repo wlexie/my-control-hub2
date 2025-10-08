@@ -8,7 +8,6 @@ const API_BASE_URL = "https://api.tuma-app.com/api/webhook";
 const OPENED_IDS_STORAGE_KEY = 'tuma-openedUnreadIds';
 
 const parseMessageContent = (contentString) => {
-    // ... (this function remains unchanged)
     if (!contentString || contentString === "{}") return { type: 'empty', content: 'No message content' };
     try {
         const parsed = JSON.parse(contentString);
@@ -23,7 +22,6 @@ const parseMessageContent = (contentString) => {
     }
 };
 
-// Add onCountsChange to the list of props
 export default function ChatManager({ activeTab, searchTerm, onSelectChat, activeChat, setActiveTab, onCountsChange }) {
     const [unreadConversations, setUnreadConversations] = useState([]);
     const [inProgressConversations, setInProgressConversations] = useState([]);
@@ -42,9 +40,9 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
     const [error, setError] = useState(null);
     const isInitialLoad = useRef(true);
 
-    // --- NEW: useEffect to report counts to the parent component ---
     useEffect(() => {
         if (onCountsChange) {
+            // Pass the counts of the *original* (unfiltered) conversations
             onCountsChange({
                 unread: unreadConversations.length,
                 inProgress: inProgressConversations.length,
@@ -63,16 +61,16 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
     }, [openedUnreadIds]);
 
     const fetchAndProcessConversations = useCallback(async () => {
-        // ... (This function remains unchanged)
         if (isInitialLoad.current) setLoading(true);
         setError(null);
         try {
             const convosResponse = await axios.get(`${API_BASE_URL}/conversations`);
 
-            // --- MODIFICATION START: Filter out the blocked number ---
+          // console.log("✅ Fetched Conversations from API:", convosResponse.data);
+
+
             const BLOCKED_NUMBER = "254704313261";
             const allConversations = (convosResponse.data || []).filter(c => c.msisdn !== BLOCKED_NUMBER);
-            // --- MODIFICATION END ---
 
             const openList = allConversations.filter(c => c.isClosed !== true);
             const closedList = allConversations.filter(c => c.isClosed === true);
@@ -87,7 +85,6 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
                     timestamp: conv.lastReceivedAt,
                     messageType: parsed.type,
                     isClosed: true,
-                    messages: [{ from: { name: conv.contactName, phoneNumber: conv.msisdn } }]
                 };
             });
             const filteredClosed = processedClosed.filter(conv => !['empty', 'interactive', 'template'].includes(conv.messageType));
@@ -97,31 +94,65 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
                 const messagePromises = openList.map(async (conv) => {
                     try {
                         const messagesResponse = await axios.get(`${API_BASE_URL}/messages/${conv.id}?page=0&size=50`);
-                        return { conversation: conv, messages: messagesResponse.data || [], hasSentMessage: (messagesResponse.data || []).some(msg => msg.direction === 'sent') };
+                        
+                        // --- MODIFICATION START ---
+                        // Filter out invalid messages BEFORE processing
+                        const validMessages = (messagesResponse.data || []).filter(msg => 
+                            msg.id && msg.content && msg.direction // Ensure basic fields are present
+                        );
+
+                        // Determine hasSentMessage from valid messages
+                        const hasSentMessage = validMessages.some(msg => msg.direction === 'sent');
+                        
+                        // Find the latest valid message
+                        const latestValidMessage = validMessages.length > 0
+                            ? [...validMessages].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
+                            : null; // No valid messages
+
+                        return { 
+                            conversation: conv, 
+                            messages: validMessages, // Pass valid messages
+                            latestMessage: latestValidMessage, // Pass the latest valid message
+                            hasSentMessage: hasSentMessage 
+                        };
+                        // --- MODIFICATION END ---
+
                     } catch (err) {
-                        return { conversation: conv, messages: [], hasSentMessage: false };
+                        console.error(`Error fetching messages for conversation ${conv.id}:`, err);
+                        return { conversation: conv, messages: [], latestMessage: null, hasSentMessage: false };
                     }
                 });
                 const messageResults = await Promise.all(messagePromises);
                 const processedOpenConvos = messageResults.map(result => {
-                    const { conversation, messages, hasSentMessage } = result;
-                    const lastMessage = messages.length > 0
-                        ? [...messages].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
-                        : { content: conversation.lastMessage, createdAt: conversation.lastReceivedAt, direction: 'received' };
-                    const parsed = parseMessageContent(lastMessage.content);
+                    const { conversation, messages, latestMessage, hasSentMessage } = result; // Use latestMessage
+                    
+                    // If no valid message found from API, fall back to conversation.lastMessage
+                    const actualLastMessage = latestMessage || 
+                                              (conversation.lastMessage ? { 
+                                                  content: conversation.lastMessage, 
+                                                  createdAt: conversation.lastReceivedAt, 
+                                                  direction: 'received' // Assume received if from lastMessage and no actual messages
+                                              } : null);
+
+                    // Skip conversations that effectively have no valid last message
+                    if (!actualLastMessage || !actualLastMessage.content || !actualLastMessage.direction) {
+                         return null; // This conversation will be filtered out later
+                    }
+                    
+                    const parsed = parseMessageContent(actualLastMessage.content);
                     return {
                         id: conversation.id,
                         contactName: conversation.contactName,
                         msisdn: conversation.msisdn,
                         content: parsed.content,
-                        timestamp: lastMessage.createdAt,
+                        timestamp: actualLastMessage.createdAt,
                         hasSentMessage: hasSentMessage,
-                        hasNewMessage: lastMessage.direction === 'received',
+                        hasNewMessage: actualLastMessage.direction === 'received',
                         messageType: parsed.type,
                         isClosed: false,
-                        messages: [{ from: { name: conversation.contactName, phoneNumber: conversation.msisdn } }]
                     };
-                });
+                }).filter(Boolean); // Filter out nulls (conversations without valid messages)
+
                 const filteredOpenConvos = processedOpenConvos.filter(conv => !['empty', 'interactive', 'template'].includes(conv.messageType));
                 const newUnread = [];
                 const newInProgress = [];
@@ -139,21 +170,20 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
                 setInProgressConversations([]);
             }
         } catch (err) {
-            console.error("Failed to fetch conversations:", err);
-            setError(err.message || "Failed to load conversations");
+            console.error("Failed to fetch conversations;", err);
+            setError(err.message || "Failed to loa conversations");
         } finally {
             if (isInitialLoad.current) { setLoading(false); isInitialLoad.current = false; }
         }
-    }, [openedUnreadIds]);
+    }, [openedUnreadIds]); 
 
     useEffect(() => {
         fetchAndProcessConversations();
-        const interval = setInterval(fetchAndProcessConversations, 15000);
-        return () => clearInterval(interval);
+     const interval = setInterval(fetchAndProcessConversations, 15000);
+        return () => clearInterval(interval); 
     }, [fetchAndProcessConversations]);
 
     const handleLocalSelectChat = (selectedConversation) => {
-        // ... (This function remains unchanged)
         onSelectChat(selectedConversation);
         const isCurrentlyUnread = unreadConversations.some(c => c.id === selectedConversation.id);
         if (isCurrentlyUnread) {
@@ -170,11 +200,24 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
     if (loading) return <div className="p-4 text-center text-gray-500">Loading conversations...</div>;
     if (error) return <div className="p-4 text-center text-red-500">{error}</div>;
 
+    // Apply search filter here
+    const filterChats = (chats) => {
+        if (!searchTerm) return chats;
+        return chats.filter(chat =>
+            chat.msisdn?.toString().includes(searchTerm) ||
+            chat.contactName?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    };
+
+    const filteredUnread = filterChats(unreadConversations);
+    const filteredInProgress = filterChats(inProgressConversations);
+    const filteredClosed = filterChats(closedConversations);
+
     return (
         <div className="mt-2">
-            {activeTab === 'Unread' && ( <UnreadMessages conversations={unreadConversations} onSelectChat={handleLocalSelectChat} searchTerm={searchTerm} /> )}
-            {activeTab === 'In-Progress' && ( <InProgressMessages conversations={inProgressConversations} onSelectChat={handleLocalSelectChat} activeChat={activeChat} searchTerm={searchTerm} /> )}
-            {activeTab === 'Closed' && ( <ClosedMessages conversations={closedConversations} onSelectChat={onSelectChat} activeChat={activeChat} searchTerm={searchTerm} /> )}
+            {activeTab === 'Unread' && ( <UnreadMessages conversations={filteredUnread} onSelectChat={handleLocalSelectChat} searchTerm={searchTerm} /> )}
+            {activeTab === 'In-Progress' && ( <InProgressMessages conversations={filteredInProgress} onSelectChat={handleLocalSelectChat} activeChat={activeChat} searchTerm={searchTerm} /> )}
+            {activeTab === 'Closed' && ( <ClosedMessages conversations={filteredClosed} onSelectChat={onSelectChat} activeChat={activeChat} searchTerm={searchTerm} /> )}
         </div>
     );
 }
