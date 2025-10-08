@@ -1,23 +1,22 @@
-// src/components/Messages.jsx
-
 import { useState } from 'react';
 import NewContact from './NewContact';
 import ChatManager from './ChatManager';
 import { Search, Plus } from 'lucide-react';
 
 export default function Messages({ onSelectChat, activeChat }) {
-  // Set the default active tab to 'In-Progress' to match the image
+  // Default active tab
   const [activeTab, setActiveTab] = useState('In-Progress');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
 
-  // State to hold the counts received from ChatManager
+  // Conversation counts from ChatManager
   const [conversationCounts, setConversationCounts] = useState({
     unread: 0,
     inProgress: 0,
     closed: 0,
   });
 
+  // When a contact is selected
   const handleSelectContact = (contact) => {
     const newConversation = {
       id: contact.contactId || contact.msisdn,
@@ -32,7 +31,7 @@ export default function Messages({ onSelectChat, activeChat }) {
     setModalOpen(false);
   };
 
-  // Data structure for tabs to make rendering cleaner
+  // Tabs data
   const tabs = [
     { name: 'Unread', count: conversationCounts.unread, color: 'red' },
     { name: 'In-Progress', count: conversationCounts.inProgress, color: 'yellow' },
@@ -48,7 +47,7 @@ export default function Messages({ onSelectChat, activeChat }) {
   return (
     <div className="bg-white pt-5 flex flex-col shadow-lg h-full">
       <div className="px-4 mb-4">
-        {/* Row 1: Title and New Button */}
+        {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-lg font-semibold text-gray-600">
             Active tickets
@@ -62,12 +61,15 @@ export default function Messages({ onSelectChat, activeChat }) {
           </button>
         </div>
 
-        {/* Row 2: Search Bar */}
+        {/* Search by Contact Number */}
         <div className="relative w-full">
-          <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search
+            size={20}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+          />
           <input
             type="text"
-            placeholder="Search tickets..."
+            placeholder="Search by contact number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
@@ -75,8 +77,8 @@ export default function Messages({ onSelectChat, activeChat }) {
         </div>
       </div>
 
-      {/* --- UPDATED TABS SECTION --- */}
-      <div className="flex border-b justify-between px-4  mt-2">
+      {/* Tabs */}
+      <div className="flex border-b justify-between px-4 mt-2">
         {tabs.map((tab) => (
           <button
             key={tab.name}
@@ -90,26 +92,26 @@ export default function Messages({ onSelectChat, activeChat }) {
             >
               {tab.count}
             </span>
-            {/* The blue underline for the active tab */}
             {activeTab === tab.name && (
               <div className="absolute bottom-[-1px] left-0 w-full h-1 bg-blue-600 rounded-t-full"></div>
             )}
           </button>
         ))}
       </div>
-      
+
+      {/* Chats */}
       <div className="flex-1 overflow-y-auto">
         <ChatManager
           activeTab={activeTab}
-          searchTerm={searchTerm}
+          searchTerm={searchTerm}  // still passes the term
           onSelectChat={onSelectChat}
           activeChat={activeChat}
           setActiveTab={setActiveTab}
-          // Pass the state setter function as a callback to receive counts
           onCountsChange={setConversationCounts}
         />
       </div>
 
+      {/* Modal for new contact */}
       <NewContact
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
