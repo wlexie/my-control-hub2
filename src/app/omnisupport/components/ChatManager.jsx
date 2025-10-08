@@ -66,7 +66,7 @@ export default function ChatManager({ activeTab, searchTerm, onSelectChat, activ
         try {
             const convosResponse = await axios.get(`${API_BASE_URL}/conversations`);
 
-           console.log("✅ Fetched Conversations from API:", convosResponse.data);
+          // console.log("✅ Fetched Conversations from API:", convosResponse.data);
 
 
             const BLOCKED_NUMBER = "254704313261";

@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 const Page = () => {
 
-  const [selectedChat, setSelectedChat] = useState(null);
+  //const [selectedChat, setSelectedChat] = useState(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
 
   return (
