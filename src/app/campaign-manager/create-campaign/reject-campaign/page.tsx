@@ -20,7 +20,7 @@ export default function CampaignSubmittedPage() {
           </div>
 
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            ⚠️ You're about to Reject this Campaign
+            ⚠️ You&apos;re about to Reject this Campaign
           </h1>
 
           <p className="text-gray-500 text-xl md:text-base max-w-md mx-auto mb-8">

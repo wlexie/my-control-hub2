@@ -25,7 +25,7 @@ export default function CampaignSubmittedPage() {
 
           <p className="text-gray-500 text-xl md:text-base max-w-md mx-auto mb-8">
             Your campaign has been sent for review and is pending approval.
-            You'll be notified once it's approved and goes live.
+            You&apos;ll be notified once it&apos;s approved and goes live.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
