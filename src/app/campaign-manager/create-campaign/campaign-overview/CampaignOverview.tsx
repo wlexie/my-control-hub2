@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Influencer {
   id: string;
@@ -11,7 +11,7 @@ interface Influencer {
 
 export default function CampaignOverview() {
   const params = useSearchParams();
-
+  const router = useRouter();
   const campaignName = params.get("campaignName") || "New Sign Ups Promo";
   const campaignType = params.get("campaignType") || "Discount Campaign";
   const rewardType =
@@ -48,7 +48,15 @@ export default function CampaignOverview() {
       avatar: "https://cdn-icons-png.flaticon.com/512/4333/4333609.png",
     },
   ];
-
+  const handleSubmit = async () => {
+    router.push("/campaign-manager/create-campaign/campaign-submitted");
+  };
+  const handleReject = () => {
+    router.push("/campaign-manager/create-campaign/reject-campaign");
+  };
+  const handleLaunch = () => {
+    router.push("/campaign-manager/create-campaign/launch-campaign");
+  };
   return (
     <div className="w-full max-w-8xl mx-auto bg-white p-10 rounded-2xl ">
       {/* Title */}
@@ -156,11 +164,23 @@ export default function CampaignOverview() {
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row justify-end gap-4 mt-10">
-        <button className="h-12 px-8 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition w-full sm:w-auto">
+        <button
+          onClick={handleReject}
+          className="h-12 px-8 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition w-full sm:w-auto"
+        >
           Reject Campaign
         </button>
-        <button className="h-12 px-8 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition w-full sm:w-auto">
-          Approve Campaign
+        <button
+          onClick={handleSubmit}
+          className="h-12 px-8 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition w-full sm:w-auto"
+        >
+          Submit Campaign
+        </button>
+        <button
+          onClick={handleLaunch}
+          className="h-12 px-8 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition w-full sm:w-auto"
+        >
+          Launch Campaign
         </button>
       </div>
     </div>

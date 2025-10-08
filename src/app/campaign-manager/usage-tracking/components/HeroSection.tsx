@@ -12,6 +12,9 @@ const pathMap: Record<string, string> = {
     "Influencer Profiles",
   "/campaign-manager/create-campaign": "Create Campaign",
   "/campaign-manager/create-campaign/campaign-overview": "Campaign Overview",
+  "/campaign-manager/create-campaign/campaign-submitted": "Campaign Submitted",
+  "/campaign-manager/create-campaign/reject-campaign": "Reject Campaign",
+  "/campaign-manager/create-campaign/launch-campaign": "Launch Campaign",
   "/campaign-manager/create-campaign/success": "Create Campaign",
 };
 

@@ -371,7 +371,7 @@ export default function CampaignForm() {
           type="submit"
           className="h-12 px-6 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition w-full sm:w-auto"
         >
-          Submit Campaign
+          Preview Campaign
         </button>
       </div>
     </form>
