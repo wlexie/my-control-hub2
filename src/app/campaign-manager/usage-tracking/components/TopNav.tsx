@@ -21,7 +21,7 @@ const navItems = [
     href: "/campaign-manager/usage-tracking",
   },
   {
-    label: "Influencer Attribution",
+    label: "Influencer Performance",
     href: "/campaign-manager/influencer-attribution",
     subItems: [
       {

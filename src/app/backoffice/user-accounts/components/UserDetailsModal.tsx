@@ -1065,7 +1065,9 @@ export default function UserDetailsModal({
                               )}{" "}
                               GMT
                             </p>
-                            <p className="mt-1">{comment.text}</p>
+                            <p className="mt-1 whitespace-pre-line">
+                              {comment.text}
+                            </p>
                           </div>
                         ))}
                     </div>

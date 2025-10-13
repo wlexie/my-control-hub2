@@ -6,7 +6,7 @@ import CurrencyDropdown from "./CurrencyDropdown";
 const pathMap: Record<string, string> = {
   "/campaign-manager/usage-tracking": "Campaign Dashboard",
 
-  "/campaign-manager/influencer-attribution": "Influencer Metrics",
+  "/campaign-manager/influencer-attribution": "Influencer Performance",
   "/campaign-manager/influencer-attribution/add-influencer": "Add Influencer",
   "/campaign-manager/influencer-attribution/influencer-profiles":
     "Influencer Profiles",
