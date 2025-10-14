@@ -63,7 +63,6 @@ export default function InfluencersTable() {
   return (
     <div className="p-4 bg-white rounded-xl ">
       {/* Header */}
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
         <h2 className="text-xl font-bold">Top Influencers</h2>
 

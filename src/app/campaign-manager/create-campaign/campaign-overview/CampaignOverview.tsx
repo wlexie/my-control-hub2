@@ -58,7 +58,7 @@ export default function CampaignOverview() {
     router.push("/campaign-manager/create-campaign/launch-campaign");
   };
   return (
-    <div className="w-full max-w-8xl mx-auto bg-white p-10 rounded-2xl ">
+    <div className="w-full max-w-8xl mx-auto p-10 rounded-2xl ">
       {/* Title */}
       <h2 className="text-2xl font-semibold mb-10 text-gray-900">
         Campaign Overview

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
@@ -12,6 +13,7 @@ type SocialLink = {
 };
 
 const AddInfluencer = () => {
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<
@@ -81,6 +83,30 @@ const AddInfluencer = () => {
   const removeSocialLink = (index: number) => {
     const updated = socialLinks.filter((_, i) => i !== index);
     setSocialLinks(updated);
+  };
+
+  const handleCreateProfile = () => {
+    const newInfluencer = {
+      id: Math.floor(Math.random() * 100000),
+      name: "Azziad Nasenya",
+      handle: "@azziad",
+      idNumber: "2725529",
+      phone: "+254 7852413",
+      email: "azziadnasenya@gmail.com",
+      country: "Kenya",
+      status: "Active",
+      avatar: `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50)}.jpg`,
+      createdOn: new Date().toLocaleString(),
+      socials: socialLinks.filter((s) => s.platform && s.url),
+    };
+
+    const existing = JSON.parse(localStorage.getItem("influencers") || "[]");
+    localStorage.setItem(
+      "influencers",
+      JSON.stringify([...existing, newInfluencer])
+    );
+
+    router.push("/campaign-manager/influencer-attribution/influencer-profiles");
   };
 
   return (
@@ -322,7 +348,10 @@ const AddInfluencer = () => {
           <button className="border border-red-500 text-red-500 px-6 bg-red-100 py-2 rounded-xl font-medium hover:bg-red-200 hover:text-red-600">
             Clear Form
           </button>
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700">
+          <button
+            onClick={handleCreateProfile}
+            className="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700"
+          >
             Create Profile
           </button>
         </div>

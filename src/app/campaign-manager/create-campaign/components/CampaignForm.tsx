@@ -204,6 +204,7 @@ export default function CampaignForm() {
                     setShowStartPicker(false);
                   }}
                   onClear={() => setStartDate(null)}
+                  allowFutureDates={true}
                 />
               </div>
             </div>
@@ -242,6 +243,7 @@ export default function CampaignForm() {
                     setShowEndPicker(false);
                   }}
                   onClear={() => setEndDate(null)}
+                  allowFutureDates={true}
                 />
               </div>
             </div>
