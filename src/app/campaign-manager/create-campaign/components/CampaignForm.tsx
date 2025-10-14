@@ -204,6 +204,7 @@ export default function CampaignForm() {
                     setShowStartPicker(false);
                   }}
                   onClear={() => setStartDate(null)}
+                  allowFutureDates={true}
                 />
               </div>
             </div>
@@ -242,6 +243,7 @@ export default function CampaignForm() {
                     setShowEndPicker(false);
                   }}
                   onClear={() => setEndDate(null)}
+                  allowFutureDates={true}
                 />
               </div>
             </div>
@@ -371,7 +373,7 @@ export default function CampaignForm() {
           type="submit"
           className="h-12 px-6 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition w-full sm:w-auto"
         >
-          Submit Campaign
+          Preview Campaign
         </button>
       </div>
     </form>

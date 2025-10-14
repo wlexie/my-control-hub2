@@ -13,6 +13,7 @@ interface DateFilterProps {
   initialEndDate?: Date | null;
   isOpen: boolean;
   onClose: () => void;
+  allowFutureDates?: boolean;
 }
 
 const DateFilter: React.FC<DateFilterProps> = ({
@@ -22,6 +23,7 @@ const DateFilter: React.FC<DateFilterProps> = ({
   initialEndDate,
   isOpen,
   onClose,
+  allowFutureDates = false,
 }) => {
   const [selectedRange, setSelectedRange] = useState<Range>({
     startDate: initialStartDate ?? undefined,
@@ -111,8 +113,7 @@ const DateFilter: React.FC<DateFilterProps> = ({
         onChange={handleSelect}
         moveRangeOnFirstSelection={false}
         rangeColors={["#3b82f6"]}
-        // 👇 remove this if you want users to browse future months
-        maxDate={new Date()}
+        maxDate={allowFutureDates ? undefined : new Date()} // conditionally allow future dates
         className="w-full"
       />
 
