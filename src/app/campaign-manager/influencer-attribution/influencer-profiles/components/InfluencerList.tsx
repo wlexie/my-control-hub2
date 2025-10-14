@@ -12,6 +12,20 @@ import {
 } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
+type Influencer = {
+  id: number;
+  name: string;
+  handle: string;
+  idNumber: string;
+  phone: string;
+  email: string;
+  country: string;
+  status: "Active" | "Inactive";
+  avatar: string;
+  createdOn: string;
+  socials: string[];
+};
+
 const COUNTRIES = [
   "All Countries",
   "Kenya",
@@ -27,7 +41,7 @@ const COUNTRIES = [
 export default function InfluencerProfiles() {
   const router = useRouter();
   const [selectedCountry, setSelectedCountry] = useState("Kenya");
-  const [influencers, setInfluencers] = useState<any[]>([]);
+  const [influencers, setInfluencers] = useState<Influencer[]>([]);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
