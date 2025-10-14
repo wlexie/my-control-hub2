@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { FiUsers, FiSend } from 'react-icons/fi';
+import { FiSend } from 'react-icons/fi';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../store/store'; 
@@ -175,12 +175,15 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen, onClo
       // Call clearFormFields here even with partial success
       clearFormFields(); 
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
+  if (axios.isAxiosError(err)) {
     console.error('Error launching campaign:', err.response?.data || err.message);
     setSendError(err.response?.data?.message || 'Failed to launch campaign. Please try again.');
-  } finally {
-    setSendingCampaign(false);
+  } else {
+    console.error('Unexpected error launching campaign:', err);
+    setSendError('An unexpected error occurred. Please try again.');
   }
+}
 };
 
   

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IoCloseOutline } from 'react-icons/io5';
-import { FaRegFileAlt, FaLock, FaCreditCard } from 'react-icons/fa';
+import {  FaLock, FaCreditCard } from 'react-icons/fa';
 import { HiOutlineLightBulb } from 'react-icons/hi';
 
 interface SmsTemplatesModalProps {
