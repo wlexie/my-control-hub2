@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-//import { FiMenu } from "react-icons/fi";
+import { FiMenu } from "react-icons/fi";
 import SideNav from './components/SideNav';
-//import Messages from './components/Messages';
-//import Conversation from './components/Conversation';
+import Messages from './components/Messages';
+import Conversation from './components/Conversation';
 
 export default function Page() {
-  //const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedChat, setSelectedChat] = useState(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
 
   return (

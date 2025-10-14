@@ -1,13 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { FiMenu } from "react-icons/fi";
 import SideNav from './whatsapp/components/SideNav';
-import Messages from './whatsapp/components/Messages';
-import Conversation from './whatsapp/components/Conversation';
 
 export default function Page() {
-  const [selectedChat, setSelectedChat] = useState(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
 
   return (
