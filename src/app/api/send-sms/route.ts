@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import twilio from 'twilio';
+import { TwilioError } from 'twilio/lib/base/exceptions'; // Import TwilioError
 
 // Load Twilio credentials from environment variables
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -66,8 +67,14 @@ export async function POST(req: Request) {
         });
 
         results.push({ to: phoneNumber, status: 'success', sid: twilioResponse.sid });
-      } catch (smsError: any) {
-        console.error(`Error sending SMS to ${phoneNumber} using 'TUMA':`, smsError.message);
+      } catch (smsError: unknown) { // Use 'unknown' instead of 'any'
+        let errorMessage = 'An unknown error occurred';
+        if (smsError instanceof TwilioError) { // Check if it's a TwilioError
+          errorMessage = smsError.message;
+        } else if (smsError instanceof Error) { // General Error
+          errorMessage = smsError.message;
+        }
+        console.error(`Error sending SMS to ${phoneNumber} using 'TUMA':`, errorMessage);
 
         // Fallback: use your Twilio phone number if "TUMA" fails
         try {
@@ -82,12 +89,18 @@ export async function POST(req: Request) {
             status: 'success (fallback)',
             sid: fallbackResponse.sid,
           });
-        } catch (fallbackError: any) {
-          console.error(`Fallback failed for ${phoneNumber}:`, fallbackError.message);
+        } catch (fallbackError: unknown) { // Use 'unknown' instead of 'any'
+          let fallbackErrorMessage = 'An unknown fallback error occurred';
+          if (fallbackError instanceof TwilioError) { // Check if it's a TwilioError
+            fallbackErrorMessage = fallbackError.message;
+          } else if (fallbackError instanceof Error) { // General Error
+            fallbackErrorMessage = fallbackError.message;
+          }
+          console.error(`Fallback failed for ${phoneNumber}:`, fallbackErrorMessage);
           results.push({
             to: phoneNumber,
             status: 'failed',
-            error: fallbackError.message,
+            error: fallbackErrorMessage,
           });
         }
       }
@@ -112,10 +125,14 @@ export async function POST(req: Request) {
       },
       { status: 200 }
     );
-  } catch (outerError: any) {
-    console.error('API route error:', outerError);
+  } catch (outerError: unknown) { // Use 'unknown' instead of 'any'
+    let outerErrorMessage = 'An unknown internal server error occurred';
+    if (outerError instanceof Error) {
+      outerErrorMessage = outerError.message;
+    }
+    console.error('API route error:', outerErrorMessage);
     return NextResponse.json(
-      { message: 'Internal server error.', error: outerError.message },
+      { message: 'Internal server error.', error: outerErrorMessage },
       { status: 500 }
     );
   }
