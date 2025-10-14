@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 // --- Assuming your logo and user component are correctly placed ---
-import logo from '../../../../public/fx/images/logo.png'; 
-import User from '../../access-manager/components/User';
+import logo from '../../../../../public/fx/images/logo.png'; 
+import User from '../../../access-manager/components/User';
 
 // --- IMPORTING ICONS ---
 // You may need to install react-icons: npm install react-icons
@@ -18,11 +18,11 @@ import { BsChatDots } from "react-icons/bs";
 // --- NAVIGATION ITEMS DATA ---
 // This makes it easier to manage the links and their data
 const messageSources = [
-  { name: 'All Messages', href: '/omnisupport', icon: AiOutlineMessage, count: 24, active: true },
+  { name: 'All Messages', href: '/omnisupport', icon: AiOutlineMessage, count: 0, active: true },
   { name: 'WhatsApp', href: '/omnisupport/whatsapp', icon: FaWhatsapp, count: 12 },
   { name: 'In-App', href: '/omnisupport/in-app', icon: FiSmartphone, count: 8 },
   { name: 'Email', href: '/omnisupport/email', icon: FiMail, count: 3 },
-  { name: 'SMS', href: '/omnisupport/sms', icon: BsChatDots, count: 1 },
+  { name: 'SMS', href: '/omnisupport/sms', icon: BsChatDots, count: 0 },
 ];
 
 // Update component to accept an optional onClose prop for mobile view

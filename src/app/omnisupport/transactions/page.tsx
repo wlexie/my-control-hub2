@@ -1,7 +1,7 @@
 
-import Transactions from "../components/Transctions";
+import Transactions from "../whatsapp/components/Transctions";
 
-import SideNav from "../components/SideNav";
+import SideNav from "../whatsapp/components/SideNav";
 
 export default function TransactionsPage() {
     return (

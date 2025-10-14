@@ -3,6 +3,8 @@
 import React from "react";
 import SideNav from "./components/SideNav"; 
 import { useState } from 'react';
+import TopNav from "./components/TopNav";
+import Details from "./components/Details";
 
 
 const Page = () => {
@@ -33,6 +35,11 @@ const Page = () => {
           {/* Pass the function to close the nav */}
           <SideNav onClose={() => setIsNavOpen(false)} />
         </div>
+      </div>
+      <div className="w-full">
+        <TopNav/>
+        <Details/>
+
       </div>
       
     
