@@ -9,9 +9,9 @@ const nextConfig: NextConfig = {
     config.resolve.alias.encoding = false;
     return config;
   },
-/*  experimental: {
+  experimental: {
     serverComponentsExternalPackages: ['@react-pdf/renderer'],
-  }, */
+  },
 
   images: {
     domains: ['flagcdn.com'],
