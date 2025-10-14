@@ -132,7 +132,7 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen, onClo
     setSuccessMessage(null); // Clear any previous success messages
   };
 
- const handleLaunchCampaign = async () => {
+const handleLaunchCampaign = async () => {
   setSendingCampaign(true);
   setSendError(null);       // Clear previous errors
   setSuccessMessage(null);  // Clear previous success messages
@@ -147,13 +147,13 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen, onClo
 
   if (recipientsToSend.length === 0) {
     setSendError('Please add individual recipients or select a target audience category.');
-    setSendingCampaign(false);
+    setSendingCampaign(false); // <--- IMPORTANT: Reset sending state on client-side validation failure
     return;
   }
 
   if (messageContent.trim() === '') {
     setSendError('Message content cannot be empty.');
-    setSendingCampaign(false);
+    setSendingCampaign(false); // <--- IMPORTANT: Reset sending state on client-side validation failure
     return;
   }
 
@@ -161,31 +161,37 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen, onClo
     const response = await axios.post('/api/send-sms', {
       to: recipientsToSend,
       message: messageContent,
-      campaignName: campaignName,
-      purpose: purpose,
+      campaignName: campaignName, // Added for completeness, though not used in your API route directly
+      purpose: purpose,           // Added for completeness
     });
 
     console.log('Campaign launch response:', response.data);
+
+    // Always reset sendingCampaign to false after the API call completes,
+    // whether it was a success or partial success.
+    setSendingCampaign(false); // <--- CRITICAL FIX HERE
+
     if (response.status === 200) {
-      setSuccessMessage('Campaign launched successfully!'); // Set success message
-      // Call clearFormFields here to clear inputs immediately after success
-      clearFormFields(); 
+      setSuccessMessage('Campaign launched successfully!');
+      clearFormFields();
+      // Optionally, you might want to automatically close the modal here or after a short delay
+      // setTimeout(onClose, 3000);
     } else if (response.status === 207) {
-      setSuccessMessage('Campaign launched with some failures. Check console for details.'); // Set success message
-      // Call clearFormFields here even with partial success
-      clearFormFields(); 
+      setSuccessMessage('Campaign launched with some failures.');
+      clearFormFields();
+      // Even with partial success, clear the form and indicate success (with a warning)
     }
   } catch (err: unknown) {
-  if (axios.isAxiosError(err)) {
-    console.error('Error launching campaign:', err.response?.data || err.message);
-    setSendError(err.response?.data?.message || 'Failed to launch campaign. Please try again.');
-  } else {
-    console.error('Unexpected error launching campaign:', err);
-    setSendError('An unexpected error occurred. Please try again.');
+    setSendingCampaign(false); // <--- IMPORTANT: Also reset sending state on API error
+    if (axios.isAxiosError(err)) {
+      console.error('Error launching campaign:', err.response?.data || err.message);
+      setSendError(err.response?.data?.message || 'Failed to launch campaign. Please try again.');
+    } else {
+      console.error('Unexpected error launching campaign:', err);
+      setSendError('An unexpected error occurred. Please try again.');
+    }
   }
-}
 };
-
   
 
  

@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { Twilio } from 'twilio'; // ✅ Only import Twilio here
+import { Twilio } from 'twilio'; 
 
-// Define an interface that represents the structure of a Twilio API error.
-// These are common properties you might find on errors thrown by the Twilio SDK.
 interface TwilioApiError extends Error {
-  status?: number;     // HTTP status code associated with the error (e.g., 400, 401)
-  code?: number;       // Twilio-specific error code (e.g., 21211 for "Invalid phone number")
-  moreInfo?: string;   // URL to Twilio documentation about the error
+  status?: number;  
+  code?: number;     
+  moreInfo?: string;   
   details?: unknown;       
 }
 
@@ -23,8 +21,7 @@ if (!accountSid || !authToken || !twilioPhoneNumber) {
       'Please ensure TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER are defined in your .env.local file.'
     );
   }
-  // It's crucial to exit or throw an error if essential variables are missing
-  // especially in a serverless function that might not have a long-running process to check.
+
   // For this example, we'll proceed but be aware of this.
 }
 
@@ -125,7 +122,7 @@ export async function POST(req: Request) {
             to: phoneNumber,
             status: 'failed',
             error: fbErr.message,
-            errorCode: fbErr.code, // Store the error code
+            errorCode: fbErr.code,
           });
         }
       }
