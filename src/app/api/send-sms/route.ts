@@ -7,7 +7,7 @@ interface TwilioApiError extends Error {
   status?: number;     // HTTP status code associated with the error (e.g., 400, 401)
   code?: number;       // Twilio-specific error code (e.g., 21211 for "Invalid phone number")
   moreInfo?: string;   // URL to Twilio documentation about the error
-  details?: any;       // Additional details, if provided by Twilio
+  details?: unknown;       
 }
 
 // Load Twilio credentials from environment variables
