@@ -140,7 +140,7 @@ const Modal3 = ({ isOpen, onClose, templateName, selectedChannel }) => {
 
   const handleContinue = async () => {
     if (selectedContacts.length === 0) {
-      alert("Please select at least one recipient to send the message.");
+      alert("Please select at least one recipient to send the message");
       return;
     }
     if (!templateName) {
