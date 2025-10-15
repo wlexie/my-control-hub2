@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import NewContact from './NewContact';
+// import NewContact from './NewContact'; // Remove or comment out this line
+import Modal2 from './Modal2'; // Import your Modal1 component
 import ChatManager from './ChatManager';
 import { Search, Plus } from 'lucide-react';
 
@@ -16,7 +17,8 @@ export default function Messages({ onSelectChat, activeChat }) {
     closed: 0,
   });
 
-  // When a contact is selected
+  // When a contact is selected (This might not be directly relevant for Modal1,
+  // as Modal1 handles its own send logic, but keeping it for context if you adapt it)
   const handleSelectContact = (contact) => {
     const newConversation = {
       id: contact.contactId || contact.msisdn,
@@ -53,7 +55,7 @@ export default function Messages({ onSelectChat, activeChat }) {
             Active tickets
           </h1>
           <button
-            onClick={() => setModalOpen(true)}
+            onClick={() => setModalOpen(true)} // This button will now open Modal1
             className="flex items-center gap-1.5 px-4 py-1.5 border border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200"
           >
             <Plus size={18} strokeWidth={2.5} />
@@ -111,11 +113,14 @@ export default function Messages({ onSelectChat, activeChat }) {
         />
       </div>
 
-      {/* Modal for new contact */}
-      <NewContact
+      {/* Modal for new message - now using Modal1 */}
+      <Modal2
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
-        onSelectContact={handleSelectContact}
+        // The onSelectContact prop is not directly used by Modal1,
+        // as Modal1 handles its own form submission.
+        // You might integrate Modal1's 'send' logic here if needed.
+        // For now, it simply closes the modal.
       />
     </div>
   );

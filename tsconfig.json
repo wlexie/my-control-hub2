@@ -25,6 +25,6 @@
 
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/fx-navigator/rate-manager/components/CreatePairModal.jsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/fx-navigator/rate-manager/components/CreatePairModal.jsx", "src/app/omnisupport/whatsapp/components/Modal3.jsx"],
   "exclude": ["node_modules"]
 }
