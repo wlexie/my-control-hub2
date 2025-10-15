@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
-import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
+import { FaCalendarAlt, FaFileExport, FaFilter } from "react-icons/fa";
 import { Search } from "lucide-react";
 import DateFilter from "../components/DateFilter";
 import "react-date-range/dist/styles.css";
@@ -15,6 +15,7 @@ import api from "../../../hooks/useApi";
 import { useSearchParams } from "next/navigation";
 import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
+import { IoIosArrowDropdown, IoIosArrowDropdownCircle } from "react-icons/io";
 
 interface ExportTransaction {
   "Transaction ID": number;
@@ -114,6 +115,10 @@ const TransactionsPage = () => {
   const [showFraudModal, setShowFraudModal] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
 
+  // New state for filter dropdown
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
   const statusOptions = [
     "All",
     "Success",
@@ -127,7 +132,6 @@ const TransactionsPage = () => {
   ];
 
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
 
   const availableCountries = useMemo(() => {
     return [
@@ -207,19 +211,38 @@ const TransactionsPage = () => {
   }, []);
 
   const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         countryDropdownRef.current &&
         !countryDropdownRef.current.contains(event.target as Node)
       ) {
-        setShowCountryDropdown(false);
+        setActiveFilter(null);
+      }
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowFilterDropdown(false);
+      }
+      if (
+        dateFilterRef.current &&
+        !dateFilterRef.current.contains(event.target as Node)
+      ) {
+        setShowDateFilter(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
+  // Rest of your existing useEffect hooks remain the same...
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -668,136 +691,173 @@ const TransactionsPage = () => {
 
       <div className="flex-1 md:ml-80 h-full overflow-y-auto bg-white">
         <div className="p-6">
+          {/* Header Section - All in one line on desktop */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-            <h2 className="text-2xl font-semibold text-black">Transactions</h2>
-            <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-              <div className="relative w-full md:w-[450px]">
-                <input
-                  type="text"
-                  placeholder="Search by sender, recipient, ID, currency"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 pl-2 border rounded-md shadow-sm focus:ring focus:ring-gray-100"
-                />
-                <Search
-                  className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
-                  strokeWidth={2.5}
-                />
-              </div>
+            <h2 className="text-2xl font-semibold text-black md:flex-shrink-0">
+              Transactions
+            </h2>
 
-              <div className="relative" ref={dateFilterRef}>
-                <button
-                  onClick={() => setShowDateFilter(!showDateFilter)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm text-md"
-                >
-                  <FaCalendarAlt className="text-md" />
-                  {isMobile ? (
-                    <span>Date</span>
-                  ) : dateRange.startDate && dateRange.endDate ? (
-                    <span className="text-md">
-                      {dateRange.startDate.toLocaleDateString("en-GB")} -{" "}
-                      {dateRange.endDate.toLocaleDateString("en-GB")}
-                    </span>
-                  ) : (
-                    "Filter by date"
-                  )}
-                </button>
-                {showDateFilter && (
-                  <div
-                    className={`absolute z-50 ${isMobile ? "left-0" : "right-0"} top-12`}
-                  >
-                    <DateFilter
-                      onChange={(start, end) => {
-                        setDateRange({ startDate: start, endDate: end });
-                      }}
-                      onClear={() =>
-                        setDateRange({ startDate: null, endDate: null })
-                      }
-                      isOpen={showDateFilter}
-                      onClose={() => setShowDateFilter(false)}
-                    />
-                  </div>
+            {/* Search Bar - Centered in Desktop */}
+            <div className="relative w-full md:w-[450px] md:mx-auto order-3 md:order-none">
+              <input
+                type="text"
+                placeholder="Search by Sender, Recipient and ID"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-2 border rounded-md shadow-sm focus:ring focus:ring-gray-100"
+              />
+              <Search
+                className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                strokeWidth={2.5}
+              />
+            </div>
+            <div className="relative" ref={dateFilterRef}>
+              <button
+                onClick={() => setShowDateFilter(!showDateFilter)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm text-md w-full md:w-auto"
+              >
+                <FaCalendarAlt className="text-md" />
+                {isMobile ? (
+                  <span>Date</span>
+                ) : dateRange.startDate && dateRange.endDate ? (
+                  <span className="text-md">
+                    {dateRange.startDate.toLocaleDateString("en-GB")} -{" "}
+                    {dateRange.endDate.toLocaleDateString("en-GB")}
+                  </span>
+                ) : (
+                  "Filter by date"
                 )}
-              </div>
-              <div className="relative" ref={countryDropdownRef}>
+              </button>
+              {showDateFilter && (
+                <div
+                  className={`absolute z-50 ${isMobile ? "left-0" : "right-0"} top-12`}
+                >
+                  <DateFilter
+                    onChange={(start, end) => {
+                      setDateRange({ startDate: start, endDate: end });
+                    }}
+                    onClear={() =>
+                      setDateRange({ startDate: null, endDate: null })
+                    }
+                    isOpen={showDateFilter}
+                    onClose={() => setShowDateFilter(false)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Export and Filters - Right side on desktop */}
+            <div className="flex gap-2 w-full md:w-auto order-2 md:order-none">
+              {/* Consolidated Filter Button */}
+              <div className="relative" ref={filterDropdownRef}>
                 <button
-                  onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                  onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                   className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100 w-full md:w-auto"
                 >
-                  {selectedCountry ? (
-                    <>
-                      <img
-                        src={
-                          availableCountries.find(
-                            (c) => c.code === selectedCountry
-                          )?.flag
-                        }
-                        alt={`${selectedCountry} flag`}
-                        className="w-5 h-5"
-                      />
-                      <span className="text-sm">
-                        {
-                          availableCountries.find(
-                            (c) => c.code === selectedCountry
-                          )?.label
-                        }
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-md">Filter by Receiving Country</span>
-                  )}
+                  <FaFilter />
+                  Filters
                 </button>
 
-                {showCountryDropdown && (
-                  <div className="absolute z-50 mt-2 bg-white border rounded shadow w-48">
-                    {availableCountries.map((country) => (
-                      <div
-                        key={country.code}
-                        onClick={() => {
-                          setSelectedCountry(country.code);
-                          setShowCountryDropdown(false);
-                        }}
-                        className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
+                {showFilterDropdown && (
+                  <div className="absolute left-0 md:left-auto md:right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
+                    {/* Status Filter */}
+                    <div className="relative">
+                      <button
+                        onClick={() =>
+                          setActiveFilter(
+                            activeFilter === "status" ? null : "status"
+                          )
+                        }
+                        className="w-full text-left px-4 py-2 hover:bg-gray-200 flex justify-between items-center"
                       >
-                        <img
-                          src={country.flag}
-                          alt="flag"
-                          className="w-5 h-5 mr-2"
-                        />
-                        {country.label} ({country.code})
-                      </div>
-                    ))}
+                        Status
+                        <span>
+                          <IoIosArrowDropdownCircle />
+                        </span>
+                      </button>
+                      {activeFilter === "status" && (
+                        <div className="absolute left-28 top-0 ml-1 w-48 bg-white border rounded-md shadow-lg z-50">
+                          {statusOptions.map((status) => (
+                            <div
+                              key={status}
+                              onClick={() => {
+                                setStatusFilter(status);
+                                setActiveFilter(null);
+                              }}
+                              className={`px-4 py-2 cursor-pointer hover:bg-gray-200 ${
+                                statusFilter === status ? "bg-blue-200" : ""
+                              }`}
+                            >
+                              {status}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Country Filter */}
+                    <div className="relative border-t">
+                      <button
+                        onClick={() =>
+                          setActiveFilter(
+                            activeFilter === "country" ? null : "country"
+                          )
+                        }
+                        className="w-full text-left px-4 py-2 hover:bg-gray-200 flex justify-between items-center"
+                      >
+                        Country
+                        <span>
+                          <IoIosArrowDropdownCircle />
+                        </span>
+                      </button>
+                      {activeFilter === "country" && (
+                        <div className="absolute left-28 top-0 ml-1 w-48 bg-white border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                          {availableCountries.map((country) => (
+                            <div
+                              key={country.code}
+                              onClick={() => {
+                                setSelectedCountry(country.code);
+                                setActiveFilter(null);
+                              }}
+                              className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-200"
+                            >
+                              <img
+                                src={country.flag}
+                                alt="flag"
+                                className="w-5 h-5 mr-2"
+                              />
+                              {country.label}
+                            </div>
+                          ))}
+                          <div
+                            onClick={() => {
+                              setSelectedCountry(null);
+                              setActiveFilter(null);
+                            }}
+                            className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer border-t"
+                          >
+                            Reset filter
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Clear All Filters */}
                     <div
+                      className="border-t px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
+                        setStatusFilter("All");
                         setSelectedCountry(null);
-                        setShowCountryDropdown(false);
+                        setActiveFilter(null);
                       }}
-                      className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer border-t"
                     >
-                      Reset filter
+                      Clear all filters
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="relative w-full md:w-auto">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="appearance-none bg-white border rounded-md px-4 py-2 pr-8 shadow-sm hover:bg-gray-100 focus:outline-none focus:ring focus:ring-gray-100 w-full"
-                >
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                  <svg className="fill-current h-4 w-4" viewBox="0 0 20 20">
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                  </svg>
-                </div>
-              </div>
+              {/* Export Button */}
               <button
                 onClick={handleExport}
                 className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100 w-full md:w-auto"
@@ -807,7 +867,40 @@ const TransactionsPage = () => {
             </div>
           </div>
 
-          {/* Date filter active indicator */}
+          {/* Filters Row -Active filters display */}
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            {/* Active Filters Display - Below on desktop, like date range indicator */}
+            <div className="flex flex-wrap gap-2 items-center">
+              {statusFilter !== "All" && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                  Status: {statusFilter}
+                  <button
+                    onClick={() => setStatusFilter("All")}
+                    className="ml-1 hover:text-blue-900"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              {selectedCountry && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  Country:{" "}
+                  {
+                    availableCountries.find((c) => c.code === selectedCountry)
+                      ?.label
+                  }
+                  <button
+                    onClick={() => setSelectedCountry(null)}
+                    className="ml-1 hover:text-green-900"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Date filter active indicator - Now only for date range */}
           {dateRange.startDate && (
             <div className="text-sm text-gray-500 mb-2">
               Showing transactions from{" "}
@@ -816,6 +909,7 @@ const TransactionsPage = () => {
             </div>
           )}
 
+          {/* Rest of your table and components remain exactly the same */}
           {loading ? (
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="overflow-x-auto">
