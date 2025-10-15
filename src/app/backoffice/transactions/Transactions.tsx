@@ -15,7 +15,7 @@ import api from "../../../hooks/useApi";
 import { useSearchParams } from "next/navigation";
 import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
-import { IoIosArrowDropdown, IoIosArrowDropdownCircle } from "react-icons/io";
+import { IoIosArrowDropdownCircle } from "react-icons/io";
 
 interface ExportTransaction {
   "Transaction ID": number;
