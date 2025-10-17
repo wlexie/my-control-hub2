@@ -40,12 +40,23 @@ const TEMPLATE_MEDIA_URLS = {
   'Paybill_Transaction': null,
   'pending_transaction': null,
   'error_help': null,
+  'something_big': 'https://tuma-website.s3.us-east-1.amazonaws.com/18744e3c-6bff-40b7-b971-fecfb5c0aaf9.jpg',
+  'hint_teaser': null,
+  'pre_announcement': null,
+  'flash_announcement': null, 
+  '5_days': null,             
+  '3_days': null,            
+  'eve_reminder': null,     
+  '4_hours': null,           
+  '1_hour': null,         
+  'flash_hour': null,      
+  'after_sale': null 
 
 }; 
 
 const TEMPLATE_BODIES = {
   'welcome_dormant': "Hi {{1}}, we noticed you haven't been active lately. Is there anything we can help you with to get you started?",
-  'welcome_basics': "Hello {{1}}! Welcome to Tuma. We're excited to have you on board. Here are some basics to get you started.",
+  'welcome_basics': "Hello {{1}}! Welcome to Tuma. We're excited to have you on board. Here are some basics to get you started",
   'welcome_active': "Hi {{1}}, great to see you're active! Let us know if you need any assistance or have any questions.",
   'potential_user': "Hello {{1}}, thank you for your interest in Tuma. We'd love to help you get started. What can we help you with today?",
   'welcome_leads': "Hi {{1}}, thanks for reaching out! We've received your inquiry and a member of our team will be in touch shortly.",
