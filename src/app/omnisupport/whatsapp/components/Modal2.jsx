@@ -17,7 +17,7 @@ const TEMPLATES = [
   'Paybill_Transaction',
   'pending_transaction',
   'error_help',
-  'something_big', // New template
+  'something_bigg', // New template
   'hint_teaser',   // New template
   'pre_announcement', // New template
   'flash_announcement', // New template
@@ -175,7 +175,7 @@ Team Tuma.
     `
   },
   // New Templates
-  something_big: {
+  something_bigg: {
     header: "👀 Something’s Coming...",
     body: `Hi [Name]😊
 Shhh 🤫… we can’t say much yet, but something wild is about to drop on Tuma!

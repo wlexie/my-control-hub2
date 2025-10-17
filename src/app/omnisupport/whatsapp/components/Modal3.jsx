@@ -18,7 +18,7 @@ const TEMPLATE_MEDIA_URLS = {
   'Paybill_Transaction': null,
   'pending_transaction': null,
   'error_help': null,
- 'something_big': 'https://tuma-website.s3.us-east-1.amazonaws.com/18744e3c-6bff-40b7-b971-fecfb5c0aaf9.jpg',
+ 'something_bigg': 'https://tuma-website.s3.us-east-1.amazonaws.com/18744e3c-6bff-40b7-b971-fecfb5c0aaf9.jpg',
   'hint_teaser': null,
   'pre_announcement': null,
   'flash_announcement': null, 
