@@ -37,7 +37,7 @@ interface SMSResult {
   status: string;
   sid?: string;
   error?: string;
-  errorCode?: number; // Added to capture Twilio-specific error codes
+  errorCode?: number; 
 }
 
 export async function POST(req: Request) {
@@ -76,19 +76,14 @@ export async function POST(req: Request) {
     // Loop through each recipient
     for (const phoneNumber of validRecipients) {
       try {
-        // Try sending using Alphanumeric Sender ID ("TUMA")
-        // Note: Alphanumeric Sender IDs require pre-registration in many countries
-        // and are not supported for all destinations or Twilio accounts.
         const twilioResponse = await client.messages.create({
           body: message,
-          from: 'TUMA', // This will likely fail without proper setup/country support
+          from: 'TUMA', 
           to: phoneNumber,
         });
 
         results.push({ to: phoneNumber, status: 'success', sid: twilioResponse.sid });
       } catch (smsError) {
-        // TypeScript catches errors as 'unknown' in strict mode.
-        // We safely cast it to our custom TwilioApiError interface.
         const err = smsError as TwilioApiError;
         console.error(`Error sending SMS to ${phoneNumber} using 'TUMA':`, err.message);
         if (err.code) {
@@ -102,7 +97,7 @@ export async function POST(req: Request) {
         try {
           const fallbackResponse = await client.messages.create({
             body: message,
-            from: twilioPhoneNumber, // This is the reliable method for most accounts
+            from: twilioPhoneNumber, 
             to: phoneNumber,
           });
 
@@ -130,7 +125,6 @@ export async function POST(req: Request) {
 
     const failedMessages = results.filter((r) => r.status === 'failed');
     if (failedMessages.length > 0) {
-      // Use status 207 for Partial Content if some messages failed but others succeeded
       return NextResponse.json(
         { message: 'Some messages failed to send.', results },
         { status: 207 }
@@ -142,8 +136,7 @@ export async function POST(req: Request) {
       { status: 200 }
     );
   } catch (outerError) {
-    // Catch-all for any unexpected errors during the API route execution
-    const err = outerError as Error; // General Error type for outer scope
+    const err = outerError as Error; 
     console.error('API route error:', err);
     return NextResponse.json(
       { message: 'Internal server error.', error: err.message },

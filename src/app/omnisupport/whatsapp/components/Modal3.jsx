@@ -149,7 +149,7 @@ const Modal3 = ({ isOpen, onClose, templateName, selectedChannel }) => {
     setRecipientSearchTerm('');
   };
 
-  const handleContinue = async () => {
+ const handleContinue = async () => {
     if (selectedContacts.length === 0) {
       alert("Please select at least one recipient to send the message");
       return;
@@ -216,6 +216,7 @@ const Modal3 = ({ isOpen, onClose, templateName, selectedChannel }) => {
 
     setIsSending(false);
     setSendResults(currentSendResults);
+    setSelectedContacts([]);
   };
 
   const isContinueDisabled = useMemo(() => {
@@ -529,7 +530,7 @@ const Modal3 = ({ isOpen, onClose, templateName, selectedChannel }) => {
                     Sending...
                 </>
             ) : (
-                'Continue'
+                'Send'
             )}
           </button>
         </div>
