@@ -378,43 +378,72 @@ export default function UserDetailsModal({
     }
   };
 
-  const handleDeclineUser = async () => {
+  const handleDeclineUser = async (declineComment?: string) => {
     if (!user) {
       toast.error("No user selected.");
       return;
     }
 
+    // For Basic Pending users, require a comment
+    if (
+      user.accountStatus === "Basic Pending" &&
+      (!declineComment || !declineComment.trim())
+    ) {
+      toast.error("Please enter a reason for declining the user.");
+      return;
+    }
+
     try {
-      toast.loading("Declining user...");
-      const result = await authFetch(
-        `/account/manual-account-decline?applicantId=${user.userId}&comment=Declining%20test%20account`,
-        { method: "POST" }
+      // Use toast.promise for better UX
+      await toast.promise(
+        async () => {
+          // Use provided comment or fallback to hardcoded one
+          const commentText =
+            declineComment?.trim() || "Declining test account";
+          const encodedComment = encodeURIComponent(commentText);
+          const response = await authFetch(
+            `/account/manual-account-decline?applicantId=${user.userId}&comment=${encodedComment}`,
+            { method: "POST" }
+          );
+
+          // Handle different response statuses
+          if (response.status === "success") {
+            toast.success(response.message || "User declined successfully");
+
+            setUser((prev) =>
+              prev ? { ...prev, accountStatus: "Declined" } : prev
+            );
+            onUserUpdated(user.userId ?? userId, { accountStatus: "Declined" });
+
+            // Reset the comment state and hide the input
+            setComment("");
+            setIsAddingComment(false);
+
+            // Refresh comments to show any system-added comments from the API
+            if (user.accountKey) {
+              await fetchComments(user.accountKey);
+            }
+          } else if (response.status === "warning") {
+            toast(response.message || "Warning during decline", { icon: "⚠️" });
+          } else if (response.status === "error") {
+            throw new Error(response.message || "Failed to decline user");
+          } else {
+            throw new Error("Unexpected response from server.");
+          }
+        },
+        {
+          loading: "Declining user...",
+          success: "User declined successfully",
+          error: (error) => error.message || "Failed to decline user",
+        }
       );
-      toast.dismiss();
-
-      if (result.status === "success") {
-        toast.success(result.message || "User declined successfully");
-
-        setUser((prev) =>
-          prev ? { ...prev, accountStatus: "Declined" } : prev
-        );
-        onUserUpdated(user.userId ?? userId, { accountStatus: "Declined" });
-      } else if (result.status === "warning") {
-        toast(result.message || "Warning during decline", { icon: "⚠️" });
-      } else if (result.status === "error") {
-        toast.error(result.message || "Failed to decline user");
-      } else {
-        toast.error("Unexpected response from server.");
-      }
     } catch (error: unknown) {
-      toast.dismiss();
       if (error instanceof Error) {
         if (error.message.includes("Session expired")) return;
-        toast.error(error.message || "Decline failed");
         console.error("Decline error:", error.message);
       } else {
-        toast.error("An unexpected error occurred during decline.");
         console.error("Decline error:", error);
+        toast.error("An unexpected error occurred during decline.");
       }
     }
   };
@@ -532,10 +561,9 @@ export default function UserDetailsModal({
                         className="border text-sm border-gray-300 text-white bg-red-600 px-4 py-2 rounded-md hover:bg-red-700"
                         disabled={isProcessing}
                       >
-                        Decline
+                        Decline User
                       </button>
                     )}
-
                     {(user.accountStatus === "Basic" ||
                       user.accountStatus === "Active") && (
                       <button
@@ -994,7 +1022,7 @@ export default function UserDetailsModal({
                         rows={3}
                         placeholder={
                           user.accountStatus === "Basic Pending"
-                            ? "Enter reason for declining..."
+                            ? "Enter reason for declining (required)..."
                             : "Type your comment here..."
                         }
                         className="w-full border rounded p-2 text-sm"
@@ -1003,13 +1031,19 @@ export default function UserDetailsModal({
                       />
                       <div className="flex gap-2 mt-2">
                         <button
-                          onClick={
-                            user.accountStatus === "Basic Pending"
-                              ? handleDeclineUser
-                              : handleAddComment
-                          }
+                          onClick={() => {
+                            if (user.accountStatus === "Basic Pending") {
+                              handleDeclineUser(comment); // Pass the comment to decline function
+                            } else {
+                              handleAddComment();
+                            }
+                          }}
                           className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded"
-                          disabled={isProcessing}
+                          disabled={
+                            isProcessing ||
+                            (user.accountStatus === "Basic Pending" &&
+                              !comment.trim())
+                          }
                         >
                           {user.accountStatus === "Basic Pending"
                             ? "Submit Decline"
