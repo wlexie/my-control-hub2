@@ -74,7 +74,7 @@ const Modal3 = ({ isOpen, onClose, templateName, selectedChannel }) => {
           setErrorContacts(`Failed to load contacts: ${error.response?.statusText || error.message}`);
         } else {
           console.error("Failed to fetch contacts (General error):", error);
-          setErrorContacts('Failed to load contacts. Please try again.');
+          setErrorContacts('Failed to load contact. Please try again.');
         }
       } finally {
         setLoadingContacts(false);
