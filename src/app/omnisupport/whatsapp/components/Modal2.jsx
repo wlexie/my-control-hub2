@@ -20,9 +20,9 @@ const TEMPLATES = [
   'something_bigg', // New template
   'hint_teaser',   // New template
   'pre_announcement', // New template
-  'flash_announcement', // New template
-  'flashhour_alert', // New template
-
+ // 'flash_announcement', // New template
+//  'flashhour_alert', // New template
+    'flashh_hour',
   '5_days',       // New template
   '3_days',       // New template
   'eve_reminder', // New template
@@ -179,6 +179,18 @@ Only 1 hour to grab the best exchange rate in history — with zero fees! 🎉�
     `
   },
     flashhour_alert:{
+    header: "🚨 TUMA FLASH HOUR ALERT!🚨",
+    body: `
+ It’s official fam💥  — Tuma Flash Hour is going LIVE!
+
+On 31st of October 2025, 5PM - 6PM UK time, Tuma customers will be able to send money at the highest rate ever seen in the market : 1 GBP = 200 KES
+ 
+Only 1 hour to grab the best exchange rate in history — with zero fees! 🎉💰
+👀 Ready your app. Get your wallet ready — it’s about to go down! 💣
+💸 Don’t just hear about it… be part of it!
+    `
+  },
+      flashh_hour:{
     header: "🚨 TUMA FLASH HOUR ALERT!🚨",
     body: `
  It’s official fam💥  — Tuma Flash Hour is going LIVE!
