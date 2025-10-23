@@ -21,7 +21,7 @@ const TEMPLATE_MEDIA_URLS = {
  'something_bigg': 'https://tuma-website.s3.us-east-1.amazonaws.com/18744e3c-6bff-40b7-b971-fecfb5c0aaf9.jpg',
   'hint_teaser': null,
   'pre_announcement': null,
-  'flash_announcement': null, 
+  'flash_announcement': 'https://tuma-website.s3.us-east-1.amazonaws.com/73834357-83cd-44f5-a1be-0fdc5fcd5b33.jpg', 
   '5_days': null,             
   '3_days': null,            
   'eve_reminder': null,     

@@ -43,16 +43,16 @@ const TEMPLATE_MEDIA_URLS = {
   'something_bigg': 'https://tuma-website.s3.us-east-1.amazonaws.com/18744e3c-6bff-40b7-b971-fecfb5c0aaf9.jpg',
   'hint_teaser': null,
   'pre_announcement': null,
-  'flash_announcement': null, 
-  '5_days': null,             
-  '3_days': null,            
-  'eve_reminder': null,     
-  '4_hours': null,           
-  '1_hour': null,         
-  'flash_hour': null,      
-  'after_sale': null 
+  'flash_announcement': null,
+  '5_days': null,
+  '3_days': null,
+  'eve_reminder': null,
+  '4_hours': null,
+  '1_hour': null,
+  'flash_hour': null,
+  'after_sale': null
 
-}; 
+};
 
 const TEMPLATE_BODIES = {
   'welcome_dormant': "Hi {{1}}, we noticed you haven't been active lately. Is there anything we can help you with to get you started?",
@@ -191,22 +191,27 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
     if (selectedChat?.id) fetchFullConversation(false);
   }, [selectedChat, fetchFullConversation]);
   useEffect(() => {
-    if (!selectedChat?.id || selectedChat.isClosed) return;
+    // Only poll if a chat is selected, regardless of its closed status
+    if (!selectedChat?.id) return;
     const intervalId = setInterval(() => fetchFullConversation(true), POLLING_INTERVAL);
     return () => clearInterval(intervalId);
-  }, [selectedChat?.id, selectedChat?.isClosed, fetchFullConversation]);
+  }, [selectedChat?.id, fetchFullConversation]); // Removed selectedChat.isClosed from dependencies
   useEffect(() => { document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen || isTemplateModalOpen); }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen, isTemplateModalOpen]);
 
   const sendMessage = async () => {
     if (newMessage.trim() === '' || !selectedChat) return;
     const recipientPhoneNumber = userPhoneNumber;
     if (!recipientPhoneNumber) { console.error('Recipient phone number (msisdn) could not be determined.'); return; }
+
     const userMsg = { id: `temp-${Date.now()}`, payload: newMessage, createdAt: new Date().toISOString(), direction: 'sent', type: 'text' };
     setMessages(prevMessages => [...prevMessages, userMsg]);
     setNewMessage('');
     setShowEmojiPicker(false);
+
     try {
       await axios.post('/api/sendMessage', { recipientPhone: recipientPhoneNumber, message: newMessage });
+      // Optionally, if the chat was closed, you might want to update its status here or let the backend handle it.
+      // For now, we'll just refetch messages.
       setTimeout(() => fetchFullConversation(true), 1500);
     } catch (error) {
       console.error('Error sending message:', error.response?.data || error);
@@ -260,7 +265,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
       setMessages(prev => prev.filter(m => !optimisticMessages.some(opt => opt.id === m.id)));
     }
   };
-  
+
   const addEmoji = (emoji) => setNewMessage(prev => prev + emoji.native);
   const handleCloseChat = async () => { if (!selectedChat || !selectedChat.id) return; try { await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`); setSelectedChat(null); } catch (error) { console.error("Error closing conversation:", error.response?.data || error.message); alert("Failed to close the conversation."); } finally { setIsModalOpen(false); } };
   const handleFileChange = (e) => { const file = e.target.files[0]; if (file) handleFileUpload(file); };
@@ -277,7 +282,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
       {isTemplatesModalOpen && ( <TemplatesModal closeModal={() => setIsTemplatesModalOpen(false)} onSelectTemplate={handleSelectTemplate} userName={userName} /> )}
       {isTemplateModalOpen && ( <TemplateModal closeModal={() => setIsTemplateModalOpen(false)} onSelectTemplate={handleSendTemplate} userName={userName}/> )}
 
-      {!selectedChat ? ( <div className="text-gray-500 flex justify-center items-center h-full"> Select a chat to start a conversation </div> ) 
+      {!selectedChat ? ( <div className="text-gray-500 flex justify-center items-center h-full"> Select a chat to start a conversation </div> )
       : (
         <>
           <header className="bg-white p-4 border-b border-gray-200">
@@ -285,7 +290,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                 <div className="flex items-start ">
                   <div className='flex flex-col'>
 
-                  
+
                   <div className='flex  gap-4'>
 
                     <div className="relative flex-shrink-0">
@@ -295,7 +300,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                     <div className="flex flex-col">
                         <h2 className="md:text-lg text-sm font-semibold text-gray-800">{userName}</h2>
                         <p className="text-[10px] md:text-[12px] text-gray-400 md:mt-0.5">{userPhoneNumber.replace('+', '')}</p>
-                       
+
                     </div>
                                     </div>
 
@@ -318,15 +323,15 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                               </div>
 
           </header>
-          
+
           <main className="relative flex-1 flex flex-col min-h-0">
             <div className="overflow-y-auto p-6 space-y-6 flex-1">
-              {loadingMessages ? ( <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div> ) 
-              : errorMessages ? ( <div className="text-red-500 text-center">{errorMessages}</div> ) 
+              {loadingMessages ? ( <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div> )
+              : errorMessages ? ( <div className="text-red-500 text-center">{errorMessages}</div> )
               : ( messages.map((msg) => {
                   if (!msg || !msg.payload) return null;
                   const isSent = msg.direction === 'sent';
-                  
+
                   return isSent ? (
                     <div key={msg.id} className="flex justify-end items-start gap-3">
                       <div className="flex flex-col items-end">
@@ -367,63 +372,68 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
             </div>
             {showEmojiPicker && <div className="absolute z-10 bottom-4 right-4"><Picker data={data} onEmojiSelect={addEmoji} /></div>}
           </main>
-          
-          {!selectedChat.isClosed && (
-            <button onClick={() => setIsTemplateModalOpen(true)} className="absolute bottom-32 right-7 z-20 bg-green-500 hover:bg-green-600 text-white rounded-full p-3 shadow-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" title="Send a Template Message">
-              <FaPlus size={20} />
-            </button>
-          )}
+
+          {/* This button is now always available, regardless of chat.isClosed */}
+          <button onClick={() => setIsTemplateModalOpen(true)} className="absolute bottom-32 right-7 z-20 bg-green-500 hover:bg-green-600 text-white rounded-full p-3 shadow-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" title="Send a Template Message">
+            <FaPlus size={20} />
+          </button>
+
 
           <footer className="pt-4 px-4 pb-4">
-            {selectedChat.isClosed ? ( <div className="p-3 text-center bg-gray-100 rounded-lg"><p className="text-sm text-gray-500">This conversation is closed.</p></div> ) 
-            : (
-              <div>
-                <div className="p-1 bg-white border border-gray-200 rounded-xl">
-                    <textarea 
-                        ref={textareaRef} 
-                        value={newMessage} 
-                        onChange={(e) => setNewMessage(e.target.value)} 
-                        onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())} 
-                        rows={1} 
-                        className="w-full flex-1 px-2 py-5  text-sm bg-transparent resize-none max-h-40  focus:outline-none" 
-                        placeholder="Please type here..." 
-                    />
-                </div>
-                <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-1">
-                            <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => setShowEmojiPicker(p => !p)}>
-                                <Smile className="w-5 h-5" />
-                            </button>
-                            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*, .pdf, .doc, .docx, .txt" />
-                            <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => fileInputRef.current.click()} disabled={isUploading}>
-                                {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
-                            </button>
-                        </div>
-                        
-                      
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900" onClick={() => setIsTemplatesModalOpen(true)}>
-                            <FaListAlt className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm font-medium">Templates</span>
-                        </button>
-                        <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-                            <FaStickyNote className="w-4 h-4 text-yellow-500" />
-                            <span className="text-sm font-medium">Add Note</span>
-                        </button>
-                        </div>
-
-                    <button 
-                        onClick={sendMessage} 
-                        className="px-3 md:px-8 md:py-2 py-1 font-semibold text-white bg-blue-600 rounded-sm hover:bg-blue-700 disabled:bg-blue-300" 
-                        disabled={!newMessage.trim() && !isUploading}
-                    >
-                        Send
-                    </button>
-                </div>
+            {/* Conditional message when chat is closed */}
+            {selectedChat.isClosed && (
+              <div className="p-3 text-center bg-yellow-100 rounded-lg mb-2">
+                <p className="text-sm text-yellow-800">This conversation is currently closed. Sending a new message will re-open it.</p>
               </div>
             )}
+
+            {/* The reply input area and controls are now always rendered */}
+            <div>
+              <div className="p-1 bg-white border border-gray-200 rounded-xl">
+                  <textarea
+                      ref={textareaRef}
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
+                      rows={1}
+                      className="w-full flex-1 px-2 py-5  text-sm bg-transparent resize-none max-h-40  focus:outline-none"
+                      placeholder={selectedChat.isClosed ? "Type to re-open conversation..." : "Please type here..."}
+                  />
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-1">
+                          <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => setShowEmojiPicker(p => !p)}>
+                              <Smile className="w-5 h-5" />
+                          </button>
+                          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*, .pdf, .doc, .docx, .txt" />
+                          <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => fileInputRef.current.click()} disabled={isUploading}>
+                              {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
+                          </button>
+                      </div>
+
+
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900" onClick={() => setIsTemplatesModalOpen(true)}>
+                          <FaListAlt className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm font-medium">Templates</span>
+                      </button>
+                      <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                          <FaStickyNote className="w-4 h-4 text-yellow-500" />
+                          <span className="text-sm font-medium">Add Note</span>
+                      </button>
+                      </div>
+
+                  <button
+                      onClick={sendMessage}
+                      className="px-3 md:px-8 md:py-2 py-1 font-semibold text-white bg-blue-600 rounded-sm hover:bg-blue-700 disabled:bg-blue-300"
+                      disabled={!newMessage.trim() && !isUploading}
+                  >
+                      Send
+                  </button>
+              </div>
+            </div>
           </footer>
         </>
       )}
