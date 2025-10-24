@@ -23,14 +23,18 @@ const TEMPLATE_MEDIA_URLS = {
   'pre_announcement': null,
   'flash_announcement': 'https://tuma-website.s3.us-east-1.amazonaws.com/73834357-83cd-44f5-a1be-0fdc5fcd5b33.jpg', 
   'flashhour': 'https://tuma-website.s3.us-east-1.amazonaws.com/73834357-83cd-44f5-a1be-0fdc5fcd5b33.jpg', 
-    'flashh_hour': 'https://tuma-website.s3.us-east-1.amazonaws.com/73834357-83cd-44f5-a1be-0fdc5fcd5b33.jpg', 
+    'flashh_hour': 'https://tuma-website.s3.us-east-1.amazonaws.com/73834357-83cd-44f5-a1be-0fdc5fcd5b33.jpg',
+    'flash_alert': 'https://tuma-website.s3.us-east-1.amazonaws.com/fecaef4d-0709-4b87-95a9-d1c0faaa56c6.jpg',
   '5_days': null,             
   '3_days': null,            
   'eve_reminder': null,     
   '4_hours': null,           
   '1_hour': null,         
   'flash_hour': null,      
-  'after_sale': null        
+  'after_sale': null,
+      'test': 'https://tuma-website.s3.us-east-1.amazonaws.com/73834357-83cd-44f5-a1be-0fdc5fcd5b33.jpg', 
+
+
 };
 // --- End Configuration Constants ---
 

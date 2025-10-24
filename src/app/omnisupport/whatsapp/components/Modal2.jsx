@@ -23,6 +23,8 @@ const TEMPLATES = [
  // 'flash_announcement', // New template
 //  'flashhour_alert', // New template
     'flashh_hour',
+    'flash_alert',
+    'test',
   '5_days',       // New template
   '3_days',       // New template
   'eve_reminder', // New template
@@ -58,6 +60,19 @@ Cheers!🥂
 Tuma Team.`
   },
   welcome_basics: {
+    header: "Karibu Tuma!",
+    body: `Hi! 💫
+A hearty Welcome to Tuma, we’re thrilled to have you join our growing community!💙💸
+From now on, sending money home will be fast, simple, and full of heart 💖🏠
+You've already created your account, now it's time to make your first transaction and enjoy the full Tuma experience — best exchange rates in the market, no hidden fees, no stress!💸
+Got questions or need a hand? Just reply — we’re always here for you, 24/7.
+Thanks for choosing Tuma🌍📲
+#TumaNaTuma
+
+Cheers!🥂
+Tuma Team.`
+  },
+    test: {
     header: "Karibu Tuma!",
     body: `Hi! 💫
 A hearty Welcome to Tuma, we’re thrilled to have you join our growing community!💙💸
@@ -188,6 +203,18 @@ On 31st of October 2025, 5PM - 6PM UK time, Tuma customers will be able to send 
 Only 1 hour to grab the best exchange rate in history — with zero fees! 🎉💰
 👀 Ready your app. Get your wallet ready — it’s about to go down! 💣
 💸 Don’t just hear about it… be part of it!
+    `
+  },
+    flash_alert:{
+    header: "⏰ 200 Reasons to Use Tuma!",
+    body: `
+Did you hear it? 👀 Tuma is making history! 
+🗓️ Friday, 31 Oct — 5 - 6PM (UK)
+💷 1GBP = 200 KES — one hour only!
+🔥 Best exchange rate ever. Zero fees.
+💥 Keep your app close, and your card ready! 💨
+💬 Don’t gatekeep — share with your people before they say “ulichelewa bro!” 😅
+👉 Learn more: https://tuma.com/ 
     `
   },
       flashh_hour:{
