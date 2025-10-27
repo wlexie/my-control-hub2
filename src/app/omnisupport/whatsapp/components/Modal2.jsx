@@ -3,7 +3,7 @@ import { FaWhatsapp, FaEnvelope, FaSms } from 'react-icons/fa';
 import { BsPhone } from 'react-icons/bs';
 import Modal3 from './Modal3'; // Import the new Modal3
 
-// Template names taken directly from your screenshot
+// Template names taken directly from your screenshot and new additions
 const TEMPLATES = [
   'welcome_dormant',
   'welcome_basics',
@@ -17,6 +17,21 @@ const TEMPLATES = [
   'Paybill_Transaction',
   'pending_transaction',
   'error_help',
+  'something_bigg', // New template
+  'hint_teaser',   // New template
+  'pre_announcement', // New template
+ // 'flash_announcement', // New template
+//  'flashhour_alert', // New template
+    'flashh_hour',
+    'flash_alert',
+    'test',
+  '5_days',       // New template
+  '3_days',       // New template
+  'eve_reminder', // New template
+  '4_hours',      // New template
+  '1_hour',       // New template
+  'flash_hour',   // New template
+  'after_sale',   // New template
 ];
 
 // Storing the content for each template
@@ -45,6 +60,19 @@ Cheers!🥂
 Tuma Team.`
   },
   welcome_basics: {
+    header: "Karibu Tuma!",
+    body: `Hi! 💫
+A hearty Welcome to Tuma, we’re thrilled to have you join our growing community!💙💸
+From now on, sending money home will be fast, simple, and full of heart 💖🏠
+You've already created your account, now it's time to make your first transaction and enjoy the full Tuma experience — best exchange rates in the market, no hidden fees, no stress!💸
+Got questions or need a hand? Just reply — we’re always here for you, 24/7.
+Thanks for choosing Tuma🌍📲
+#TumaNaTuma
+
+Cheers!🥂
+Tuma Team.`
+  },
+    test: {
     header: "Karibu Tuma!",
     body: `Hi! 💫
 A hearty Welcome to Tuma, we’re thrilled to have you join our growing community!💙💸
@@ -153,6 +181,54 @@ Team Tuma.
   Team Tuma.
     `
   },
+    flash_announcement:{
+    header: "🚨 TUMA FLASH HOUR ALERT!🚨",
+    body: `
+ It’s official fam💥  — Tuma Flash Hour is going LIVE!
+
+On 31st of October 2025, 5PM - 6PM UK time, Tuma customers will be able to send money at the highest rate ever seen in the market : 1 GBP = 200 KES
+ 
+Only 1 hour to grab the best exchange rate in history — with zero fees! 🎉💰
+👀 Ready your app. Get your wallet ready — it’s about to go down! 💣
+💸 Don’t just hear about it… be part of it!
+    `
+  },
+    flashhour_alert:{
+    header: "🚨 TUMA FLASH HOUR ALERT!🚨",
+    body: `
+ It’s official fam💥  — Tuma Flash Hour is going LIVE!
+
+On 31st of October 2025, 5PM - 6PM UK time, Tuma customers will be able to send money at the highest rate ever seen in the market : 1 GBP = 200 KES
+ 
+Only 1 hour to grab the best exchange rate in history — with zero fees! 🎉💰
+👀 Ready your app. Get your wallet ready — it’s about to go down! 💣
+💸 Don’t just hear about it… be part of it!
+    `
+  },
+    flash_alert:{
+    header: "⏰ 200 Reasons to Use Tuma!",
+    body: `
+Did you hear it? 👀 Tuma is making history! 
+🗓️ Friday, 31 Oct — 5 - 6PM (UK)
+💷 1GBP = 200 KES — one hour only!
+🔥 Best exchange rate ever. Zero fees.
+💥 Keep your app close, and your card ready! 💨
+💬 Don’t gatekeep — share with your people before they say “ulichelewa bro!” 😅
+👉 Learn more: https://tuma.com/ 
+    `
+  },
+      flashh_hour:{
+    header: "🚨 TUMA FLASH HOUR ALERT!🚨",
+    body: `
+ It’s official fam💥  — Tuma Flash Hour is going LIVE!
+
+On 31st of October 2025, 5PM - 6PM UK time, Tuma customers will be able to send money at the highest rate ever seen in the market : 1 GBP = 200 KES
+ 
+Only 1 hour to grab the best exchange rate in history — with zero fees! 🎉💰
+👀 Ready your app. Get your wallet ready — it’s about to go down! 💣
+💸 Don’t just hear about it… be part of it!
+    `
+  },
     error_help:{
     header: "Let’s Sort This Out 🤝",
     body: `
@@ -162,6 +238,140 @@ Team Tuma.
   With 💙,
   Team Tuma.
     `
+  },
+  // New Templates
+  something_bigg: {
+    header: "👀 Something’s Coming...",
+    body: `Hi [Name]😊
+Shhh 🤫… we can’t say much yet, but something wild is about to drop on Tuma!
+Keep your eyes peeled 👀 — the group chats will go wild soon 😎
+We’re about to drop a deal that’ll make you say “Aki Tuma mko serious?!”
+History’s about to be made 💸
+Follow us for the thrill and exclusive hints, don’t say we didn’t tell you 👀🔥
+IG: instagram.com/tuma_app
+FB: facebook.com/share/19E5CiZnAF/?mibextid=wwXIfr`
+  },
+  hint_teaser: {
+    header: "Blink and you’ll miss it!",
+    body: `A Tuma surprise is on the way 💥
+Unaeza guess ni nini?
+It’s short, fast, hot, and might just make your transfers worth double 👀— and if you blink, utamiss! Na ukimiss, that’s on you 🤫
+Follow us for the full reveal — and share the secret before it drops!
+#KaaRada
+Call to action Buttons:
+Tell a Friend
+Follow us on IG: instagram.com/tuma_app
+Follow us on FB: facebook.com/share/19E5CiZnAF/?mibextid=wwXIfr`
+  },
+  pre_announcement: {
+    header: "🤫 We can’t hold it in much longer…",
+    body: `Your pounds are about to stretch further than your jeans after Christmas dinner 💷🔥
+Ready your app. Load your wallet. Tell your people🥳.
+
+Stay tuned — reveal drops tomorrow 🔥
+Call to action Buttons:
+👀 Tell a friend (before they blame you later!)
+Follow us on IG: instagram.com/tuma_app
+Follow us on FB: facebook.com/share/19E5CiZnAF/?mibextid=wwXIfr`
+  },
+  flash_announcement: {
+    header: "🚨 FLASH SALE ALERT!🚨",
+    body: `It’s official fam💥 — Tuma Flash Sale is going LIVE!
+
+On 31st of October 2025, between 5PM and 6PM UK time, Tuma customers will be able to send money at the highest rate ever seen in the market : 1 GBP = 200 KES
+
+Only 1 hour to grab the best exchange rate in history — with zero fees! 🎉💰
+👀 Ready your app. Get your wallet ready — it’s about to go down! 💣
+💸 Don’t just hear about it… be part of it!
+Learn About the Flash Sale → https://tuma.com/flashsale (precise link to be provided later)`
+  },
+  '5_days': { // Using string literal for template names that start with a number
+    header: "⏰ 200 Reasons to use Tuma!",
+    body: `In just 5 days, the game changes.
+Mark your calendar!
+🗓️ Friday 31 Oct, 5PM (UK)
+💷 Be ready or utachekwa later 😅
+🔥 The best exchange rate in history is coming… and it’s waiting for you!
+💸1GBP = 200 KES for just 1 hour
+💥 Keep your app close, and your wallet closer 💨
+💬 Don’t gatekeep this one. Share it with your people!
+Call to action Buttons:
+📱 Open Tuma App (iOS)
+🤖 Open Tuma App (Android)`
+  },
+  '3_days': { // Using string literal
+    header: "⏳ 3 DAYS TO GO!",
+    body: `The Tuma Flash Sale lands this Friday at 5PM (UK) 💥
+Best rate ever. Zero fees. 1 GBP = 200 KES for one hour only.
+Before the clock hits 5PM…
+🛠️ Update your app
+🪪 Complete your verification
+💰 Load up and get ready to send
+💸 Don’t fumble the bag, champ 😅
+Call to action Buttons:
+📱 Open Tuma App (iOS)
+🤖 Open Tuma App (Android)`
+  },
+  eve_reminder: {
+    header: "🚨 Tomorrow. One Hour. One Legendary Rate. 🚨",
+    body: `It’s finally here — the Tuma Flash Sale!
+💷 1 GBP = 200 KES — yes, you read that right! The best exchange rate in history! 🤯
+🗓️ Date: Friday, 31 Oct
+🕔 Time: 5PM–6PM UK / 7PM–8PM EAT
+✅ Update your app
+✅ Verify your account
+✅ Get ready to hit “Send” the moment the sale starts!
+Call to action Buttons:
+📱 Open Tuma App (iOS)
+🤖 Open Tuma App (Android)`
+  },
+  '4_hours': { // Using string literal
+    header: "⏰ 4 HOURS TO HISTORY! 💷",
+    body: `We’re just hours away from the Tuma Flash Sale — and the record-breaking rate of 1 GBP = 200 KES 🤯
+
+One hour only. Zero fees. Maximum value.
+🕔 5PM–6PM UK TIME
+
+Call to action buttons
+📱 Open Tuma App (iOS)
+🤖 Open Tuma App (Android)`
+  },
+  '1_hour': { // Using string literal
+    header: "🚀 T-MINUS 1 HOUR — LET’S GO! 💸",
+    body: `The countdown is real!
+In just 1 hour, you can send money at the best rate ever — 1 GBP = 200 KES!
+💰 Zero fees. One hour only.
+📲 Open your Tuma App, make sure it’s updated, and be ready to tap “Send.”
+🎯 Set your timer — it’s go-time at 5PM UK TIME
+
+Call to action buttons
+📱 Open Tuma App (iOS)
+🤖 Open Tuma App (Android)`
+  },
+  flash_hour: {
+    header: "💥IT’S LIVE! 🚨 — 1 GBP = 200 KES 💷 💥",
+    body: `💸 IT’S GO TIME!
+Flash Sale is LIVE — 5PM–6PM UK ⏰
+Send NOW and get the best exchange rate ever + zero fees 💚
+📲 Open your Tuma App NOW and send before the clock runs out!
+Don’t miss the biggest deal in remittance history.
+Call to action Buttons:
+📱 Send Money (iOS)
+🤖 Send Money (Android)`
+  },
+  after_sale: {
+    header: "💥 What. A. Sale! 💥",
+    body: `You guys showed up BIG! 🙌
+
+Thank you to everyone who joined our first-ever Tuma Flash Sale 🎉
+The love was unreal — best rate, best fam, best vibes 💷 — and wow, what a ride! 💸
+Those who sent at 200 KES know the feeling 😎
+
+Keep your eyes peeled for what’s coming next 👀
+
+👉 Follow for the next surprise
+IG: instagram.com/tuma_app
+FB: facebook.com/share/19E5CiZnAF/?mibextid=wwXIfr`
   }
 };
 
@@ -192,7 +402,8 @@ const Modal2 = ({ isOpen, onClose }) => {
   // Effect to update subject and body when a template is selected
   useEffect(() => {
     if (selectedTemplateName && TEMPLATE_CONTENT[selectedTemplateName]) {
-      setMessageSubject(selectedTemplateName); // Template name as subject
+      // Use the header from TEMPLATE_CONTENT, if available, otherwise default to template name
+      setMessageSubject(TEMPLATE_CONTENT[selectedTemplateName].header || selectedTemplateName);
       setMessageBody(TEMPLATE_CONTENT[selectedTemplateName].body);
     } else {
       setMessageSubject('');
@@ -208,7 +419,7 @@ const Modal2 = ({ isOpen, onClose }) => {
     if (selectedTemplateName) {
       setTemplateDataForModal3({
         name: selectedTemplateName,
-        subject: messageSubject, // Pass the already set subject (template name)
+        subject: messageSubject, // Pass the already set subject
         body: messageBody,      // Pass the already set body
       });
       setIsModal3Open(true);
@@ -350,7 +561,7 @@ const Modal2 = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* Subject (Template Name) */}
+            {/* Subject (Template Name/Header) */}
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-2">Subject</h3>
               <input
@@ -406,7 +617,7 @@ const Modal2 = ({ isOpen, onClose }) => {
                   d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
                 ></path>
               </svg>
-              Send
+              Continue
             </button>
           </div>
         </div>
