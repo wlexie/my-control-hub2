@@ -26,6 +26,7 @@ const TEMPLATES = [
     'flash_alert',
     'test',
   '5_days',       // New template
+    '3_day',       // New template
   '3_days',       // New template
   'eve_reminder', // New template
   '4_hours',      // New template
@@ -300,6 +301,19 @@ Call to action Buttons:
 🤖 Open Tuma App (Android)`
   },
   '3_days': { // Using string literal
+    header: "⏳ 3 DAYS TO GO!",
+    body: `The Tuma Flash Sale lands this Friday at 5PM (UK) 💥
+Best rate ever. Zero fees. 1 GBP = 200 KES for one hour only.
+Before the clock hits 5PM…
+🛠️ Update your app
+🪪 Complete your verification
+💰 Load up and get ready to send
+💸 Don’t fumble the bag, champ 😅
+Call to action Buttons:
+📱 Open Tuma App (iOS)
+🤖 Open Tuma App (Android)`
+  },
+    '3_day': { // Using string literal
     header: "⏳ 3 DAYS TO GO!",
     body: `The Tuma Flash Sale lands this Friday at 5PM (UK) 💥
 Best rate ever. Zero fees. 1 GBP = 200 KES for one hour only.
