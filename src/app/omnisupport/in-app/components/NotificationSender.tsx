@@ -96,8 +96,8 @@ const NotificationSender: React.FC = () => {
 
       <h2 className="text-4xl font-semibold text-gray-500 mb-10 tracking-tight">Send In-App Notification</h2>
 
-      <form onSubmit={handleSendNotification} className="flex-grow flex flex-col"> {/* Wrap in a form tag */}
-        <div className="flex-grow overflow-y-auto pr-4 -mr-4 custom-scrollbar"> {/* Added flex-grow and overflow for scrollable content if it gets too long, custom-scrollbar for better aesthetics */}
+      <form onSubmit={handleSendNotification} className="flex-grow flex flex-col"> 
+        <div className="flex-grow overflow-y-auto pr-5 -mr-4 custom-scrollbar"> 
           
           {/* Notification Title */}
           <div className="mb-7">
