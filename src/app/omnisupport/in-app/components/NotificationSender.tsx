@@ -70,17 +70,24 @@ const NotificationSender: React.FC = () => {
         setFailureCount(response.data.failureCount || 0);
         setSuccessCount(response.data.successCount || 0); // Still show success count if partially failed
       }
-    } catch (error: any) { // Use 'any' for error for simpler handling, or define a more specific error type
-      console.error('Error sending notification:', error);
-      setStatus(`Error: ${error.message || 'Network error'}`);
-      // When a network error occurs, we might not have success/failure counts from the API.
-      // You can decide how to represent this in the UI. For now, setting failure to 1.
-      setFailureCount(0); // Reset or set to a relevant value if known
-      setSuccessCount(0); // Reset or set to a relevant value if known
+      } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error sending notification:', error.response?.data || error.message);
+        setStatus(`Error: ${error.response?.data?.message || error.message}`);
+      } else if (error instanceof Error) {
+        console.error('General error sending notification:', error.message);
+        setStatus(`Error: ${error.message}`);
+      } else {
+        console.error('Unknown error sending notification:', error);
+        setStatus('Error: Unknown error occurred');
+      }
+
+      setFailureCount(0);
+      setSuccessCount(0);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     // Adjusted styling to fill the space
