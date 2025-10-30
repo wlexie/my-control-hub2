@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 // --- Credentials ---
 const MESSAGEBIRD_API_KEY = 'jR0kbXM2FxlNHMblz7sV33G6d';
 const MESSAGEBIRD_CHANNEL_ID = '7e68f5e4-965d-4bbc-9b37-017de54c0d17';
-const MESSAGEBIRD_WHATSAPP_NAMESPACE = '275630005643112'; 
+const MESSAGEBIRD_WHATSAPP_NAMESPACE = '275630005643112';
 
 export async function POST(request) {
   try {
@@ -20,30 +20,28 @@ export async function POST(request) {
       formattedRecipient = `+${formattedRecipient}`;
     }
 
-    // --- LOGIC MODIFICATION START ---
-    // This is the new business rule implementation.
+    let processedParams = params;
 
-    let processedParams = params; 
-
-    // Check if params exist and the first param's value is purely numeric
     if (params && params.length > 0 && params[0].default && /^\d+$/.test(params[0].default)) {
-      // We create a new array to avoid modifying the original.
       console.log(`Original param "${params[0].default}" is numeric. Replacing with "there".`);
-      processedParams = [{ default: 'there' }, ...params.slice(1)]; 
+      processedParams = [{ default: 'there' }, ...params.slice(1)];
     }
 
-
-    // --- DYNAMIC PAYLOAD CONSTRUCTION (using the processed params) ---
     const components = [];
 
     if (mediaUrl) {
+      // Determine media type based on URL extension
+      const isVideo = mediaUrl.toLowerCase().endsWith('.mp4'); // Add other video formats if needed
+
       components.push({
         type: 'header',
-        parameters: [{ type: 'image', image: { url: mediaUrl } }],
+        parameters: [{
+          type: isVideo ? 'video' : 'image', // <--- DYNAMICALLY SET HERE
+          [isVideo ? 'video' : 'image']: { url: mediaUrl }
+        }],
       });
     }
 
-    // Use the `processedParams` which now contains either the original name or "Customer"
     if (processedParams && processedParams.length > 0) {
       components.push({
         type: 'body',
@@ -53,7 +51,7 @@ export async function POST(request) {
         })),
       });
     }
-    
+
     const messageBirdPayload = {
       to: formattedRecipient,
       from: MESSAGEBIRD_CHANNEL_ID,
@@ -86,7 +84,7 @@ export async function POST(request) {
       const errorMessage = responseData.errors?.[0]?.description || 'An unknown error occurred.';
       return NextResponse.json({ error: 'Failed to send template.', details: errorMessage }, { status: response.status });
     }
-    
+
     return NextResponse.json({ success: true, message: 'Template message request sent successfully.', responseData });
 
   } catch (error) {
