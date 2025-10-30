@@ -12,6 +12,18 @@ const initialTemplateCategories = [
       'Please give me a moment while I look into that.'
     ]
   },
+   {
+  title: 'Closure alert',
+  templates: [
+    `Oh, before you go… BIG news! 👀
+FLASH HOUR is tomorrow — 5–6 PM UK! 💥
+For 1 hour only: 1 GBP = 200 bob + zero fees 💷🔥
+Be on alert — don’t miss it!🤗`
+  ]
+},
+
+  
+
   {
     title: 'Payments',
     templates: [
