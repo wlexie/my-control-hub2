@@ -1,145 +1,141 @@
 import { NextResponse } from 'next/server';
-import { Twilio } from 'twilio'; 
+import axios, { AxiosError } from 'axios';
+import { formidable, Fields, Files } from 'formidable';
+import { promises as fs } from 'fs';
+import path from 'path';
+import type { IncomingMessage } from 'http';
 
-interface TwilioApiError extends Error {
-  status?: number;  
-  code?: number;     
-  moreInfo?: string;   
-  details?: unknown;       
-}
+// --- CONFIGURATION ---
+// IMPORTANT: For security, store these secrets in environment variables (.env.local)
+// and access them with process.env.MESSAGEBIRD_API_KEY, etc.
+const MESSAGEBIRD_API_KEY = 'jR0kbXM2FxlNHMblz7sV33G6d'; // Replace with your actual key from .env
+const MESSAGEBIRD_CHANNEL_ID = '7e68f5e4-965d-4bbc-9b37-017de54c0d17'; // Replace with your channel ID from .env
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
-// Load Twilio credentials from environment variables
-const accountSid = process.env.TWILIO_ACCOUNT_SID!;
-const authToken = process.env.TWILIO_AUTH_TOKEN!;
-const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER!;
+export const config = {
+  api: {
+    // bodyParser must be false for formidable to parse multipart form data
+    bodyParser: false,
+  },
+};
 
-// Basic validation for environment variables
-if (!accountSid || !authToken || !twilioPhoneNumber) {
-  console.error('Twilio environment variables are not properly set.');
-  if (process.env.NODE_ENV !== 'production') {
-    console.error(
-      'Please ensure TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER are defined in your .env.local file.'
-    );
-  }
+// --- HELPER FUNCTION TO PARSE FILE UPLOADS ---
+const parseForm = (req: Request): Promise<{ fields: Fields; files: Files }> => {
+  return new Promise((resolve, reject) => {
+    const form = formidable({});
+    form.parse(req as unknown as IncomingMessage, (err, fields, files) => {
+      if (err) return reject(err);
+      resolve({ fields, files });
+    });
+  });
+};
 
-  // For this example, we'll proceed but be aware of this.
-}
-
-const client = new Twilio(accountSid, authToken);
-
-interface SendSMSRequestBody {
-  to: string[];
-  message: string;
-}
-
-interface SMSResult {
-  to: string;
-  status: string;
-  sid?: string;
-  error?: string;
-  errorCode?: number; 
-}
-
-export async function POST(req: Request) {
+// --- MAIN API ROUTE HANDLER ---
+export async function POST(request: Request) {
   try {
-    const body = (await req.json()) as SendSMSRequestBody;
-    const { to, message } = body;
+    const contentType = request.headers.get('content-type') || '';
 
-    // Input validation
-    if (!Array.isArray(to) || to.length === 0) {
-      return NextResponse.json(
-        { message: 'Recipient phone numbers (to) are required and must be an array.' },
-        { status: 400 }
-      );
-    }
+    // --- BRANCH 1: HANDLE FILE UPLOADS (for single messages with attachments) ---
+    if (contentType.includes('multipart/form-data')) {
+      const { fields, files } = await parseForm(request);
 
-    if (!message || typeof message !== 'string' || message.trim() === '') {
-      return NextResponse.json(
-        { message: 'Message content is required.' },
-        { status: 400 }
-      );
-    }
-
-    const validRecipients = to.filter(
-      (number) => typeof number === 'string' && number.trim() !== ''
-    );
-
-    if (validRecipients.length === 0) {
-      return NextResponse.json(
-        { message: 'No valid recipient phone numbers provided.' },
-        { status: 400 }
-      );
-    }
-
-    const results: SMSResult[] = [];
-
-    // Loop through each recipient
-    for (const phoneNumber of validRecipients) {
-      try {
-        const twilioResponse = await client.messages.create({
-          body: message,
-          from: 'TUMA', 
-          to: phoneNumber,
-        });
-
-        results.push({ to: phoneNumber, status: 'success', sid: twilioResponse.sid });
-      } catch (smsError) {
-        const err = smsError as TwilioApiError;
-        console.error(`Error sending SMS to ${phoneNumber} using 'TUMA':`, err.message);
-        if (err.code) {
-          console.error(`Twilio Error Code: ${err.code}`);
-        }
-        if (err.moreInfo) {
-          console.error(`More Info: ${err.moreInfo}`);
-        }
-
-        // Fallback: use Twilio phone number
-        try {
-          const fallbackResponse = await client.messages.create({
-            body: message,
-            from: twilioPhoneNumber, 
-            to: phoneNumber,
-          });
-
-          results.push({
-            to: phoneNumber,
-            status: 'success (fallback)',
-            sid: fallbackResponse.sid,
-          });
-        } catch (fallbackError) {
-          const fbErr = fallbackError as TwilioApiError;
-          console.error(`Fallback failed for ${phoneNumber}:`, fbErr.message);
-          if (fbErr.code) {
-            console.error(`Fallback Twilio Error Code: ${fbErr.code}`);
-          }
-
-          results.push({
-            to: phoneNumber,
-            status: 'failed',
-            error: fbErr.message,
-            errorCode: fbErr.code,
-          });
-        }
+      if (!files.file || !fields.recipientPhone) {
+        return NextResponse.json({ error: 'File and recipientPhone are required.' }, { status: 400 });
       }
+
+      const fileArray = Array.isArray(files.file) ? files.file : [files.file];
+      const phoneArray = Array.isArray(fields.recipientPhone) ? fields.recipientPhone : [fields.recipientPhone];
+      const file = fileArray[0];
+      const recipientPhone = phoneArray[0];
+
+      const publicUploadDir = path.join(process.cwd(), 'public', 'uploads');
+      await fs.mkdir(publicUploadDir, { recursive: true });
+
+      const newFilename = `${Date.now()}-${file.originalFilename}`;
+      const newPath = path.join(publicUploadDir, newFilename);
+      await fs.rename(file.filepath, newPath);
+
+      const mediaUrl = `${BASE_URL}/uploads/${newFilename}`;
+      let messagePayload: object;
+
+      if (file.mimetype?.startsWith('image/')) {
+        messagePayload = { to: recipientPhone, from: MESSAGEBIRD_CHANNEL_ID, type: 'image', content: { image: { url: mediaUrl } } };
+      } else {
+        messagePayload = { to: recipientPhone, from: MESSAGEBIRD_CHANNEL_ID, type: 'file', content: { file: { url: mediaUrl } } };
+      }
+      
+      const messageBirdResponse = await axios.post('https://conversations.messagebird.com/v1/send', messagePayload, {
+          headers: { Authorization: `AccessKey ${MESSAGEBIRD_API_KEY}`, 'Content-Type': 'application/json' },
+      });
+
+      return NextResponse.json({ success: true, response: messageBirdResponse.data });
     }
 
-    const failedMessages = results.filter((r) => r.status === 'failed');
-    if (failedMessages.length > 0) {
+    // --- BRANCH 2: HANDLE JSON (for bulk SMS text campaigns) ---
+    else if (contentType.includes('application/json')) {
+      const body = await request.json();
+      // **FIXED**: Expect 'to' (an array) and 'message' from the React component
+      const { to: recipients, message } = body;
+
+      // **VALIDATION**: Ensure the data is what we expect for a campaign
+      if (!recipients || !Array.isArray(recipients) || recipients.length === 0 || !message) {
+        return NextResponse.json(
+          { success: false, error: 'Request body must include a non-empty "to" array and a "message" string.' },
+          { status: 400 } // 400 Bad Request
+        );
+      }
+
+      // **PROCESSING**: Create a list of API calls to make, one for each recipient
+      const sendPromises = recipients.map((recipientPhone: string) => {
+        const messagePayload = {
+          to: recipientPhone.trim(), // Sanitize by trimming whitespace
+          from: MESSAGEBIRD_CHANNEL_ID,
+          type: 'text',
+          content: { text: message },
+        };
+
+        return axios.post('https://conversations.messagebird.com/v1/send', messagePayload, {
+          headers: { Authorization: `AccessKey ${MESSAGEBIRD_API_KEY}`, 'Content-Type': 'application/json' },
+        });
+      });
+
+      // **EXECUTION**: Run all API calls in parallel and wait for them to finish
+      const results = await Promise.allSettled(sendPromises);
+
+      // **RESPONSE**: Report a summary of the campaign outcome
+      const successfulSends = results.filter(res => res.status === 'fulfilled').length;
+      const failedSends = results.length - successfulSends;
+
+      console.log(`Campaign processed: ${successfulSends} successful, ${failedSends} failed.`);
+
+      // Use a 207 Multi-Status code if some messages failed but others succeeded
+      const responseStatus = failedSends > 0 && successfulSends > 0 ? 207 : 200;
+
       return NextResponse.json(
-        { message: 'Some messages failed to send.', results },
-        { status: 207 }
+        {
+          success: true,
+          message: `Campaign processed. Successfully sent ${successfulSends} of ${recipients.length} messages.`,
+          details: {
+            totalRecipients: recipients.length,
+            successful: successfulSends,
+            failed: failedSends,
+          },
+        },
+        { status: responseStatus }
       );
     }
 
+    // --- BRANCH 3: HANDLE UNSUPPORTED REQUEST TYPES ---
+    else {
+      return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
+    }
+
+  } catch (error) {
+    // --- GENERIC ERROR HANDLING ---
+    const axiosError = error as AxiosError;
+    console.error('API Route Error:', axiosError.response?.data || axiosError.message);
     return NextResponse.json(
-      { message: 'All SMS messages sent successfully!', results },
-      { status: 200 }
-    );
-  } catch (outerError) {
-    const err = outerError as Error; 
-    console.error('API route error:', err);
-    return NextResponse.json(
-      { message: 'Internal server error.', error: err.message },
+      { success: false, error: 'An internal server error occurred.' },
       { status: 500 }
     );
   }
