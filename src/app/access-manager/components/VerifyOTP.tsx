@@ -1,5 +1,3 @@
-// This should be located at a path like `pages/verify-otp.tsx` or `app/verify-otp/page.tsx`
-
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
@@ -9,7 +7,7 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../../../store/authSlice"; // Make sure this path is correct
 import { jwtDecode } from "jwt-decode";
-import Cookies from "js-cookie"; 
+import Cookies from "js-cookie";
 
 interface DecodedToken {
   exp: number;
@@ -21,12 +19,14 @@ const VerifyOTPContent = () => {
   const router = useRouter();
   const dispatch = useDispatch();
   const email = searchParams.get("email") || "";
+  //  const phone = searchParams.get("phone") || ""; // Example if you pass phone in query
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
   const [resendDisabled, setResendDisabled] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [channel, setChannel] = useState("email"); // 'email' or 'phone'
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -108,34 +108,38 @@ const VerifyOTPContent = () => {
     }
 
     try {
-      const response = await axios.post(
-                "https://auth.tuma-app.com/api/auth/email",
+      // The channelValue will be the email for now, but you can adapt this
+      // to use a phone number from searchParams if the channel is 'phone'.
+      const channelValue = email; // or `channel === 'email' ? email : phone`
 
-       // `${process.env.NEXT_PUBLIC_API_AUTH_URL}/auth/email`,
-        { email, verificationCode },
+      const response = await axios.post(
+        "https://auth.tuma-app.com/api/auth/verify-channel-otp",
+        {
+          channel,
+          channelValue,
+          verificationCode,
+        },
         { headers: { "Content-Type": "application/json" } }
       );
 
       if (response.status === 200 && response.data.accessToken) {
-        // ---- START: THE CORRECTED COOKIE-SETTING LOGIC ----
-
-        // 1. SET THE COOKIE WITH A ROOT PATH
         Cookies.set("accessToken", response.data.accessToken, {
-          expires: 1, // Expires in 1 day
-          secure: process.env.NODE_ENV === "production", 
-          path: "/", // <-- This is the important addition
-        });
-
-        // 2. UPDATE REDUX (This remains unchanged)
-        const decodedToken = jwtDecode<DecodedToken>(response.data.accessToken);
-        const tokenExpiry = decodedToken.exp * 1000;
-
-        // ⬇Save expiry in cookie
-        Cookies.set("accessTokenExpiry", tokenExpiry.toString(), {
-          expires: 1, // same as accessToken
+          expires: 1,
           secure: process.env.NODE_ENV === "production",
           path: "/",
         });
+
+        const decodedToken = jwtDecode<DecodedToken>(
+          response.data.accessToken
+        );
+        const tokenExpiry = decodedToken.exp * 1000;
+
+        Cookies.set("accessTokenExpiry", tokenExpiry.toString(), {
+          expires: 1,
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        });
+
         dispatch(
           setCredentials({
             accessToken: response.data.accessToken,
@@ -144,10 +148,8 @@ const VerifyOTPContent = () => {
           })
         );
 
-        // ---- END: THE CORRECTED COOKIE-SETTING LOGIC ----
-
         setIsVerified(true);
-        router.push("/dashboard"); // This will now work correctly
+        router.push("/dashboard");
       } else {
         setError("Invalid OTP or unexpected response. Please try again.");
         setOtp(["", "", "", "", "", ""]);
@@ -171,14 +173,13 @@ const VerifyOTPContent = () => {
     setError("");
     setIsLoading(true);
     try {
+      // You might want to adapt this URL based on the selected channel too
       await axios.post(
-                `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(
-
-       // `${process.env.NEXT_PUBLIC_API_AUTH_URL}/auth/send-otp/${encodeURIComponent(
+        `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(
           email
         )}`
       );
-      alert("A new OTP has been sent to your email.");
+      alert(`A new OTP has been sent to your ${channel}.`);
     } catch (err) {
       const resendErrorMsg =
         axios.isAxiosError(err) && err.response?.data?.message
@@ -227,9 +228,39 @@ const VerifyOTPContent = () => {
             <h1 className="mb-2 text-center text-xl font-semibold text-gray-800 md:text-left sm:text-2xl">
               OTP Verification
             </h1>
-            <p className="mb-6 text-center text-gray-500 md:text-left">
-              Enter the code sent to <br className="sm:hidden" />
-              <span className="font-medium text-gray-900">{email}</span>
+         
+
+            {/* Channel Selection Radio Buttons */}
+            <div className="mb-6 flex justify-center space-x-6 md:justify-start">
+               <p     className=" text-center text-xl font-semibold text-purple-600 md:text-left ">
+Verify By:</p>
+              <label className="flex cursor-pointer items-center space-x-2">
+                <input
+                  type="radio"
+                  name="channel"
+                  value="email"
+                  checked={channel === "email"}
+                  onChange={() => setChannel("email")}
+                  className="h-4 w-4"
+                />
+                <span className="text-gray-700">Email</span>
+              </label>
+              <label className="flex cursor-pointer items-center space-x-2">
+                <input
+                  type="radio"
+                  name="channel"
+                  value="phone"
+                  checked={channel === "phone"}
+                  onChange={() => setChannel("phone")}
+                  className="h-4 w-4"
+                />
+                <span className="text-gray-700">Phone</span>
+              </label>
+            </div>
+              <p className="mb-4 text-center text-gray-500 md:text-left">
+              Enter the OTP sent to your{" "}
+              {channel === "email" ? "email" : "phone"}
+              <br className="sm:hidden" />
             </p>
 
             {error && (
@@ -270,7 +301,11 @@ const VerifyOTPContent = () => {
                     : "hover:bg-gray-900"
                 }`}
               >
-                {isLoading ? "Verifying..." : "Verify"}
+                {isLoading
+                  ? "Verifying..."
+                  : `Verify ${
+                      channel.charAt(0).toUpperCase() + channel.slice(1)
+                    }`}
               </button>
             </form>
             <p className="mt-6 text-center text-sm text-gray-500">

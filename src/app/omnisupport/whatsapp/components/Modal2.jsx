@@ -24,8 +24,12 @@ const TEMPLATES = [
 //  'flashhour_alert', // New template
     'flashh_hour',
     'flash_alert',
+    'complete_ver',
     'test',
-  '5_days',       // New template
+  '5_days',
+  'closure_alert',  
+    'lead_clients',
+    '3_dayss',       // New template
   '3_days',       // New template
   'eve_reminder', // New template
   '4_hours',      // New template
@@ -72,6 +76,16 @@ Thanks for choosing Tuma🌍📲
 Cheers!🥂
 Tuma Team.`
   },
+    closure_alert: {
+    header: "Alert",
+    body: `
+    Oh, before you go… BIG news! 👀
+FLASH HOUR is tomorrow — 5–6 PM UK! 💥
+For 1 hour only: 1 GBP = 200 bob + zero fees 💷🔥
+Be on alert — don’t miss it!🤗
+
+    `
+  },
     test: {
     header: "Karibu Tuma!",
     body: `Hi! 💫
@@ -93,6 +107,26 @@ We're thrilled to see you transacting and trusting us with your transfers. Tuma 
 Thanks for choosing Tuma – we’re just getting started!
 With love,
 Team Tuma.`
+  },
+   complete_ver: {
+    header: "ID Re-upload Needed 🔁",
+    body: `Hi 👋
+
+Thank you for submitting your documents to Tuma! Since you’re signing up from the UK, we’ll need a UK-issued Identification document to complete your verification.
+
+Please upload any one clear document below at your earliest convenience:
+✅ UK Passport, or
+✅ UK Driving Licence, or 
+✅ Biometric Residence Permit (BRP)
+
+Use this link to re-submit:
+🔗 https://eu.onfido.app/f/7ce8946f-e6eb-414c-a2c5-3bc78638c86f 
+If you have an e-visa, please send a screenshot to this chat.
+We’ll verify your account right away so you can start sending money seamlessly✅
+Thanks!
+
+~ Team Tuma 💙
+`
   },
   welcome_decline: {
     header: "Oops!",
@@ -312,6 +346,19 @@ Call to action Buttons:
 📱 Open Tuma App (iOS)
 🤖 Open Tuma App (Android)`
   },
+    '3_dayss': { // Using string literal
+    header: "⏳ 3 DAYS TO GO!",
+    body: `The Tuma Flash Sale lands this Friday at 5PM (UK) 💥
+Best rate ever. Zero fees. 1 GBP = 200 KES for one hour only.
+Before the clock hits 5PM…
+🛠️ Update your app
+🪪 Complete your verification
+💰 Load up and get ready to send
+💸 Don’t fumble the bag, champ 😅
+Call to action Buttons:
+📱 Open Tuma App (iOS)
+🤖 Open Tuma App (Android)`
+  },
   eve_reminder: {
     header: "🚨 Tomorrow. One Hour. One Legendary Rate. 🚨",
     body: `It’s finally here — the Tuma Flash Sale!
@@ -358,6 +405,18 @@ Don’t miss the biggest deal in remittance history.
 Call to action Buttons:
 📱 Send Money (iOS)
 🤖 Send Money (Android)`
+  },
+    lead_clients: {
+    header: "3 Minutes & You’re In! ✨",
+    body: `Hi 👋
+Welcome to Tuma!
+You’re just a few minutes away from activating your account to enjoy Tuma’s special rate this Friday of 200 bob! 
+The verification is super simple — it takes less than 3 minutes.
+See the video above for a step-by-step guide to get verified 🎥
+Once done, your account will be activated and ready for Flash Hour.
+ If you need help, just reply — we’re here for you 💙
+~ Team Tuma
+`
   },
   after_sale: {
     header: "💥 What. A. Sale! 💥",

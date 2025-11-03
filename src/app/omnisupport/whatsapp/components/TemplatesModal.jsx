@@ -12,6 +12,18 @@ const initialTemplateCategories = [
       'Please give me a moment while I look into that.'
     ]
   },
+   {
+  title: 'Closure alert',
+  templates: [
+    `Oh, before you go… BIG news! 👀
+FLASH HOUR is tomorrow — 5–6 PM UK! 💥
+For 1 hour only: 1 GBP = 200 bob + zero fees 💷🔥
+Be on alert — don’t miss it!🤗`
+  ]
+},
+
+  
+
   {
     title: 'Payments',
     templates: [
@@ -25,11 +37,11 @@ const initialTemplateCategories = [
       // ... (rest of your initial data is unchanged)
       {
         subtitle: 'ID Request',
-        message: `Hi [User Name]🎉, Thank you for choosing to be part of the Tuma Team. Unfortunately🥺, we are having issues verifying your documents. To proceed, please resubmit the following:\n\nA clear and valid UK ID or Passport 🇬🇧🪪\n\nNote: Please ensure the documents are clear, legible, with all corners visible, and submitted through the Tuma App 📲.\n\nIf you need assistance or have any questions, feel free to reach out. 💬\n\nBest regards,\nThe Tuma Team 💥`
+        message: `Hi [User Name]🎉, Thank you for choosing to be part of the Tuma Team. Unfortunately, we are having issues verifying your documents. To proceed, please resubmit the following:\n\nA clear and valid UK ID or Passport 🇬🇧🪪\n\nNote: Please ensure the documents are clear, legible, with all corners visible, and submitted through the Tuma App 📲.\n\nIf you need assistance or have any questions, feel free to reach out. 💬\n\nBest regards,\nThe Tuma Team 💥`
       },
       {
         subtitle: 'Expired ID',
-        message: `Hi [User Name]🎉, Thank you for choosing to be part of the Tuma Team. Unfortunately🥺, we are having issues verifying your documents as the one you submitted has expired. To proceed, please resubmit the following:\n\nA clear and valid UK ID or Passport 🇬🇧🪪\nOr, an alternative valid document if applicable 📑.\n\nNote: Please ensure the documents are clear, legible, with all corners visible, and submitted through the Tuma App 📲.\n\nIf you need assistance or have any questions, feel free to reach out. 💬\n\nBest regards,\nThe Tuma Team 💥`
+        message: `Hi [User Name]🎉, Thank you for choosing to be part of the Tuma Team. Unfortunately, we are having issues verifying your documents as the one you submitted has expired. To proceed, please resubmit the following:\n\nA clear and valid UK ID or Passport 🇬🇧🪪\nOr, an alternative valid document if applicable 📑.\n\nNote: Please ensure the documents are clear, legible, with all corners visible, and submitted through the Tuma App 📲.\n\nIf you need assistance or have any questions, feel free to reach out. 💬\n\nBest regards,\nThe Tuma Team 💥`
       },
       {
         subtitle: 'Account Verified',
@@ -93,7 +105,7 @@ export default function TemplatesModal({ closeModal, onSelectTemplate, userName 
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40 flex justify-end" onClick={closeModal}>
+      <div className="fixed inset-0 bg-black/45 z-40 flex justify-end" onClick={closeModal}>
         <div 
           className="w-full max-w-md h-full bg-white shadow-xl flex flex-col p-4"
           onClick={(e) => e.stopPropagation()}
