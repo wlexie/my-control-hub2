@@ -97,7 +97,7 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
 
   // Run animation when totalAmount changes
   useEffect(() => {
-    let start = 0;
+    const start = 0;
     const end = totalAmount;
     if (start === end) return;
 
