@@ -362,7 +362,8 @@ const TransactionsPage = () => {
           t.receiverName?.toLowerCase().includes(query) ||
           t.currencyIso3a?.toLowerCase().includes(query) ||
           t.senderAmount?.toString().includes(query) ||
-          t.transactionReference?.toLowerCase().includes(query)
+          t.transactionReference?.toLowerCase().includes(query) ||
+          t.settlementReference?.toLowerCase().includes(query)
       );
     }
 
@@ -701,7 +702,7 @@ const TransactionsPage = () => {
             <div className="relative w-full md:w-[450px] md:mx-auto order-3 md:order-none">
               <input
                 type="text"
-                placeholder="Search by Sender, Recipient and ID"
+                placeholder="Search by ID, Sender and Recipient"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-2 pl-2 border rounded-md shadow-sm focus:ring focus:ring-gray-100"
