@@ -20,6 +20,15 @@ interface Contact {
   isSelected: boolean;
 }
 
+// Added interface for type safety on imported file data
+interface ImportedRow {
+  Phone?: string | number;
+  number?: string | number;
+  'Full Name'?: string;
+  name?: string;
+  FDUNU?: string;
+}
+
 const STATUS_CATEGORIES = [
   'Select All',
   'Lead',
@@ -219,11 +228,12 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen, onClo
 
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (ext === "csv") {
-      Papa.parse(file, {
+      // FIX: Used a generic to type the parsed result, removing the need for `any`
+      Papa.parse<ImportedRow>(file, {
         header: true,
         skipEmptyLines: true,
         complete: (result) => {
-          const imported = result.data.map((r: any) => ({
+          const imported = result.data.map((r) => ({
             phone: String(r.Phone || r.number || "").trim(),
             name: String(r['Full Name'] || r.name || r.Phone || "Imported Contact").trim(),
             status: "Imported",
@@ -238,8 +248,9 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen, onClo
         const workbook = XLSX.read(data, { type: "binary" });
         const sheetName = workbook.SheetNames.find(name => name.toLowerCase().trim() === "customer lead - onfido review") || workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet);
-        const imported = rows.map((r: any) => ({
+        // FIX: Used a generic to type the JSON result, removing the need for `any`
+        const rows = XLSX.utils.sheet_to_json<ImportedRow>(sheet);
+        const imported = rows.map((r) => ({
           phone: String(r.Phone || "").trim(),
           name: String(r['Full Name'] || r.FDUNU || r.Phone || "Imported Contact").trim(),
           status: "Imported",
