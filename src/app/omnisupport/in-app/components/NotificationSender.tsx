@@ -70,13 +70,32 @@ const NotificationSender: React.FC = () => {
         setFailureCount(response.data.failureCount || 0);
         setSuccessCount(response.data.successCount || 0); // Still show success count if partially failed
       }
-    } catch (error: any) { // Use 'any' for error for simpler handling, or define a more specific error type
+    } catch (error: unknown) { // FIX: Changed 'any' to 'unknown' and added robust error handling
       console.error('Error sending notification:', error);
-      setStatus(`Error: ${error.message || 'Network error'}`);
-      // When a network error occurs, we might not have success/failure counts from the API.
-      // You can decide how to represent this in the UI. For now, setting failure to 1.
-      setFailureCount(0); // Reset or set to a relevant value if known
-      setSuccessCount(0); // Reset or set to a relevant value if known
+
+      let errorMessage = 'An unexpected error occurred.';
+
+      // Check if it's an Axios error to get more specific info
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // The server responded with a status code outside the 2xx range
+          const responseData = error.response.data as ApiResponse;
+          errorMessage = responseData.message || `Request failed with status ${error.response.status}`;
+        } else if (error.request) {
+          // The request was made but no response was received
+          errorMessage = 'No response from server. Check network connection.';
+        } else {
+          // Something happened in setting up the request
+          errorMessage = error.message;
+        }
+      } else if (error instanceof Error) {
+        // A generic JavaScript error
+        errorMessage = error.message;
+      }
+      
+      setStatus(`Error: ${errorMessage}`);
+      setFailureCount(0);
+      setSuccessCount(0);
     } finally {
       setLoading(false);
     }
