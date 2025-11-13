@@ -21,7 +21,7 @@ const allModulesData = [
     description:
       "Get complete visibility into every transaction across the Tuma ecosystem. Track, monitor, and audit with confidence in a secure and intuitive interface.",
     path: "/backoffice/dashboard/",
-    roles: ["ADMIN", "OMNISUPPORT", "BACKOFFICE", "DASHBOARD", "COMPLIANCE"],
+    roles: ["ADMIN", "OMNISUPPORT", "BACKOFFICE", "DASHBOARD", "SUPPORT AGENT","COMPLIANCE"],
   },
   {
     name: "OmniSupport",
@@ -30,7 +30,7 @@ const allModulesData = [
     description:
       "Empower your support team to resolve customer issues faster and smarter — all in one unified dashboard designed for real-time conversations and seamless service.",
     path: "/omnisupport",
-    roles: ["ADMIN", "OMNISUPPORT"],
+    roles: ["ADMIN", "SUPPORT AGENT", "OMNISUPPORT"],
   },
   {
     name: "FX Navigator",

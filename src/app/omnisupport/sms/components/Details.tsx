@@ -5,6 +5,8 @@ import { RiCheckDoubleFill } from "react-icons/ri";
 import { LuUsers } from "react-icons/lu";
 import { CiBullhorn } from "react-icons/ci";
 import axios from 'axios';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../../store/store'; // Adjust path if needed
 
 // Interface for the raw data received from the API
 interface CampaignMetric {
@@ -12,24 +14,24 @@ interface CampaignMetric {
   campaignName: string;
   totalContactsSent: number;
   deliveredCount: number;
-  estimatedCost: number; // Added estimatedCost
+  estimatedCost: number;
   failedCount: number;
   pendingCount: number;
-  deliveryStatus: string; // e.g., "MIXED_DELIVERY", "DRAFT"
+  deliveryStatus: string;
   sentAt: string | null;
   completedAt: string | null;
 }
 
-// Interface for the transformed campaign data to be used in the table and cards
+// Interface for the transformed campaign data
 interface Campaign {
   id: number;
   campaignName: string;
-  target: number; // Represents totalContactsSent
-  status: 'Sent' | 'Pending' | 'Draft' | 'Mixed Delivery' | 'All Failed'; // Added 'All Failed'
-  date: string; // Formatted date string
+  target: number;
+  status: 'Sent' | 'Pending' | 'Draft' | 'Mixed Delivery' | 'All Failed';
+  date: string;
   sentBy: string;
-  deliveryRate: number | 'Not sent' | 'Pending'; // Percentage or status string
-  estimatedCost: number; // Propagate estimatedCost
+  deliveryRate: number | 'Not sent' | 'Pending';
+  estimatedCost: number;
 }
 
 const Details: React.FC = () => {
@@ -41,27 +43,55 @@ const Details: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
+
   const itemsPerPage = 5;
 
   // --- Fetch Data from API ---
   useEffect(() => {
     const fetchCampaignMetrics = async () => {
-      try {
-        const response = await axios.get<CampaignMetric[]>('http://localhost:8080/api/sms-campaigns/metrics');
-        setCampaignMetrics(response.data);
+      if (!accessToken) {
+        setError("Authentication required. Please log in.");
         setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get('https://com.tuma-app.com/api/sms-campaigns/metrics', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        // --- FIX APPLIED HERE ---
+        // 1. Log the response to help with debugging the API output structure.
+        console.log("API Response:", response.data);
+
+        // 2. Safely check if the response data is an array. If not, default to an empty array.
+        // This prevents the "campaignMetrics.map is not a function" error.
+        const metricsData = Array.isArray(response.data) ? response.data : [];
+        setCampaignMetrics(metricsData);
+        // --- END OF FIX ---
+
+        setError(null);
       } catch (err) {
         console.error("Error fetching campaign metrics:", err);
-        setError('Failed to fetch campaign metrics. Please check the API URL and server status.');
+        setError('Failed to fetch campaign metrics. Please try again.');
+      } finally {
         setLoading(false);
       }
     };
 
     fetchCampaignMetrics();
-  }, ); 
+  }, [accessToken]); // MODIFIED: Re-run the effect if the token changes
+
 
   // --- Transform API data into Campaign format ---
   const campaigns = useMemo<Campaign[]>(() => {
+    // This check is now a safeguard, but the fix in useEffect should prevent this from being an issue.
+    if (!Array.isArray(campaignMetrics)) {
+        return [];
+    }
     return campaignMetrics.map(metric => {
       let status: Campaign['status'];
       switch (metric.deliveryStatus) {
@@ -71,20 +101,19 @@ const Details: React.FC = () => {
         case 'DRAFT':
           status = 'Draft';
           break;
-        case 'SENT': // Assuming a 'SENT' status might come from the API for fully sent campaigns
+        case 'SENT': 
           status = 'Sent';
           break;
-        case 'PENDING': // Assuming a 'PENDING' status might come from the API
+        case 'PENDING':
           status = 'Pending';
           break;
-        case 'ALL_FAILED': // Added for the new status
+        case 'ALL_FAILED':
           status = 'All Failed';
           break;
         default:
-          status = 'Mixed Delivery'; // Fallback for any other unexpected status
+          status = 'Mixed Delivery';
       }
 
-      // Format date to EAT (East Africa Time)
       const sentAtDate = metric.sentAt ? new Date(metric.sentAt) : null;
       const date = sentAtDate
         ? sentAtDate.toLocaleString('en-US', {
@@ -93,12 +122,11 @@ const Details: React.FC = () => {
             year: 'numeric',
             hour: 'numeric',
             minute: 'numeric',
-            timeZone: 'Africa/Nairobi', // EAT timezone
+            timeZone: 'Africa/Nairobi',
             timeZoneName: 'short',
           })
         : 'N/A';
 
-      // Calculate delivery rate
       let deliveryRate: Campaign['deliveryRate'] = 'Not sent';
       if (metric.totalContactsSent > 0) {
         deliveryRate = (metric.deliveredCount / metric.totalContactsSent) * 100;
@@ -109,12 +137,12 @@ const Details: React.FC = () => {
       return {
         id: metric.id,
         campaignName: metric.campaignName,
-        target: metric.totalContactsSent, // totalContactsSent from API
+        target: metric.totalContactsSent,
         status: status,
         date: date,
-        sentBy: 'Admin', // Hardcoded as requested
+        sentBy: 'Admin',
         deliveryRate: deliveryRate,
-        estimatedCost: metric.estimatedCost, // Include estimatedCost
+        estimatedCost: metric.estimatedCost,
       };
     });
   }, [campaignMetrics]);
@@ -124,11 +152,9 @@ const Details: React.FC = () => {
     return campaigns.filter(campaign => {
       const matchesSearch = campaign.campaignName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = selectedStatus === 'All Status' || campaign.status === selectedStatus;
-      // TODO: Add date filtering logic here if needed for `selectedDates` using the `campaign.date` property
-
       return matchesSearch && matchesStatus;
     });
-  }, [campaigns, searchTerm, selectedStatus, selectedDates]);
+  }, [campaigns, searchTerm, selectedStatus]);
 
   // --- Pagination Logic ---
   const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
@@ -147,18 +173,12 @@ const Details: React.FC = () => {
   // --- Helper functions for styling ---
   const getStatusClasses = (status: Campaign['status']) => {
     switch (status) {
-      case 'Sent':
-        return 'bg-green-100 text-green-700';
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'Draft':
-        return 'bg-gray-100 text-gray-700';
-      case 'Mixed Delivery':
-        return 'bg-purple-100 text-purple-700'; // Specific style for mixed delivery
-      case 'All Failed':
-        return 'bg-red-100 text-red-700'; // Specific style for all failed
-      default:
-        return 'bg-gray-100 text-gray-700';
+      case 'Sent': return 'bg-green-100 text-green-700';
+      case 'Pending': return 'bg-yellow-100 text-yellow-700';
+      case 'Draft': return 'bg-gray-100 text-gray-700';
+      case 'Mixed Delivery': return 'bg-purple-100 text-purple-700';
+      case 'All Failed': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -168,18 +188,15 @@ const Details: React.FC = () => {
       if (rate >= 90) return 'bg-yellow-500';
       return 'bg-red-500';
     }
-    return 'bg-gray-300'; // For 'Pending' or 'Not sent'
+    return 'bg-gray-300';
   };
 
-  // --- Calculate Summary Card Data from API data ---
+  // --- Calculate Summary Card Data ---
   const totalCampaigns = campaigns.length;
   const totalRecipients = campaigns.reduce((acc, campaign) => acc + campaign.target, 0);
-
   const totalDelivered = campaignMetrics.reduce((acc, metric) => acc + metric.deliveredCount, 0);
   const totalSentForDeliveryRate = campaignMetrics.reduce((acc, metric) => acc + metric.totalContactsSent, 0);
   const overallDeliveryRate = totalSentForDeliveryRate > 0 ? (totalDelivered / totalSentForDeliveryRate) * 100 : 0;
-
-  // Calculate total spend dynamically: sum estimatedCost only if deliveryStatus is NOT 'DRAFT'
   const totalSpend = useMemo(() => {
     return campaignMetrics.reduce((acc, metric) => {
       if (metric.deliveryStatus !== 'DRAFT') {
@@ -189,7 +206,6 @@ const Details: React.FC = () => {
     }, 0);
   }, [campaignMetrics]);
 
-  // --- Loading and Error States ---
   if (loading) {
     return <div className="p-6 text-center text-gray-700">Loading campaigns data...</div>;
   }
@@ -222,8 +238,8 @@ const Details: React.FC = () => {
             <option>Sent</option>
             <option>Pending</option>
             <option>Draft</option>
-            <option>Mixed Delivery</option> {/* Added for API status */}
-            <option>All Failed</option> {/* Added for new status */}
+            <option>Mixed Delivery</option>
+            <option>All Failed</option>
           </select>
           <select
             className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -240,9 +256,7 @@ const Details: React.FC = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Card 1: Total Campaigns */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div>
             <div className="flex flex-col items-left text-gray-500 text-sm">
               <div className="flex justify-between items-center">
                 <span className="p-2 bg-blue-100 w-fit text-blue-600 rounded-full mr-2">
@@ -257,12 +271,8 @@ const Details: React.FC = () => {
                 12% from last month
               </span>
             </div>
-          </div>
         </div>
-
-        {/* Card 2: Total Recipients */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div>
             <div className="flex flex-col items-left text-gray-500 text-sm">
               <div className="flex justify-between items-center">
                 <span className="p-2 bg-green-100 w-fit text-green-600 rounded-full mr-2">
@@ -279,12 +289,8 @@ const Details: React.FC = () => {
                 +8.5% from last month
               </span>
             </div>
-          </div>
         </div>
-
-        {/* Card 3: Delivery Rate */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div>
             <div className="flex flex-col text-gray-500 text-sm">
               <div className="flex justify-between items-center">
                 <span className="p-2 bg-yellow-100 text-yellow-600 rounded-full mr-2">
@@ -299,12 +305,8 @@ const Details: React.FC = () => {
                 +2.3% from last month
               </span>
             </div>
-          </div>
         </div>
-
-        {/* Card 4: Monthly Spend */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div>
             <div className="flex flex-col text-gray-500 text-sm">
               <div className="flex justify-between items-center">
                 <span className="p-2 bg-red-100 text-red-600 rounded-full mr-2">
@@ -312,7 +314,6 @@ const Details: React.FC = () => {
                 </span>
                 <span className="w-2 h-2 bg-red-500 rounded-full"></span>
               </div>
-              {/* Display totalSpend here */}
               <span className='mt-2 text-xl font-semibold text-black'>${totalSpend.toFixed(2)}</span>
               <p className="text-lg mt-1 font-medium text-gray-600">Total Spend</p>
               <span className="text-green-500 text-xs flex items-center">
@@ -320,7 +321,6 @@ const Details: React.FC = () => {
                 +15.2% from last month
               </span>
             </div>
-          </div>
         </div>
       </div>
 
@@ -329,49 +329,27 @@ const Details: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Campaign Name
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Target
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Sent By
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Delivery Rate
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign Name</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sent By</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Rate</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedCampaigns.map((campaign) => (
               <tr key={campaign.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {campaign.campaignName}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {campaign.target.toLocaleString()}
-                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{campaign.campaignName}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{campaign.target.toLocaleString()}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(campaign.status)}`}>
                     {campaign.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {campaign.date}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {campaign.sentBy}
-                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{campaign.date}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{campaign.sentBy}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {typeof campaign.deliveryRate === 'number' ? (
                     <div className="flex items-center">
@@ -388,7 +366,7 @@ const Details: React.FC = () => {
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  {/* Actions column - currently empty as per request */}
+                  <FaEllipsisV className="text-gray-500 cursor-pointer" />
                 </td>
               </tr>
             ))}

@@ -31,12 +31,21 @@ const TEMPLATE_MEDIA_URLS = {
   '3_days': null,  
   '3_day': 'https://tuma-website.s3.us-east-1.amazonaws.com/18744e3c-6bff-40b7-b971-fecfb5c0aaf9.jpg',                      
   'eve_reminder': null,     
-  '4_hours': null,           
+  '4_hours': null,  
+  'redone': null,
+  'make_up':'https://tuma-website.s3.us-east-1.amazonaws.com/921941fe-5421-45c1-b33b-b0360068a2d0.jpg',
+  'tomorrow': null,  
+  'flash_live1': null,   
+  'apology5': 'https://tuma-website.s3.us-east-1.amazonaws.com/WhatsApp+Image+2025-11-01+at+13.38.45.jpeg',   
   '1_hour': null, 
+  'after': 'https://tuma-website.s3.us-east-1.amazonaws.com/31-Oct-2025-1761936730_3401220.MOV',
   'complete_ver': null,
   'lead_clients': 'https://tuma-website.s3.us-east-1.amazonaws.com/56d76de3-1e1c-4304-a10b-c2a4a168cef7+(1).MP4',        
-  'flash_hour': null,      
+  'flash_hour': null,   
+    'after_hour1': 'https://tuma-website.s3.us-east-1.amazonaws.com/31-Oct-2025-1761936730_3401220.MOV4',      
+   
   'after_sale': null,
+  'after': 'https://tuma-website.s3.us-east-1.amazonaws.com/31-Oct-2025-1761936730_3401220.MOV',
   'test': 'https://tuma-website.s3.us-east-1.amazonaws.com/73834357-83cd-44f5-a1be-0fdc5fcd5b33.jpg', 
 };
 // --- End Configuration Constants ---

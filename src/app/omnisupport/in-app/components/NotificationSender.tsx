@@ -27,7 +27,7 @@ const NotificationSender: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   // IMPORTANT: Replace with your actual endpoint
-  const API_ENDPOINT: string = 'http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/account/send-app-notification-to-all';
+  const API_ENDPOINT: string = 'https://api.tuma-app.com/api/account/send-app-notification-to-all';
 
   const handleSendNotification = async (e: FormEvent) => {
     e.preventDefault(); // Prevent default form submission behavior
