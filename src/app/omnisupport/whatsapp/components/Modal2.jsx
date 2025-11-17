@@ -32,11 +32,13 @@ const TEMPLATES = [
     'apology5',
     'make_up',
         'redone',
+        'rate2',
   '5_days', 
   'tomorrow', 
     'lead_clients',
     '3_dayss',       // New template
   '3_days',       // New template
+  'weekend_treat', 
   'eve_reminder', // New template
   '4_hours',      // New template
   '1_hour',       // New template
@@ -78,6 +80,33 @@ Thanks for choosing Tuma🌍📲
  #TumaNaTuma
 Cheers!🥂
 Tuma Team.`
+  },
+    weekend_treat: {
+    header: "💙 A Little Weekend Treat for You 🙏",
+    body: `Hi 😊
+To make your weekend brighter, we’re giving you the best exchange rate all the way till Sunday, 16th Nov — just for you.
+💸 Today’s rate: KES 170 per £1
+ More love home. More value in every transfer.
+Send with Tuma and let your people receive even more ❤️
+`
+  },
+     bbob_rate: {
+    header: "Karibu Tuma!",
+    body: `Hey!💫
+Thank you for your interest in Tuma! 💙
+Tuma is a fast, secure, and simple way to send money back home to Africa from the UK– best exchange rates in the market, no hidden fees, no stress. 💸
+Thanks for choosing Tuma🌍📲
+
+ #TumaNaTuma
+Cheers!🥂
+Tuma Team.`
+  },
+   rate2: {
+    header: "💙 We Appreciate You — Enjoy KES 170 per £1 Today! 🙏",
+    body: `Hi 😊
+Your continued trust and support mean everything to us. You’re the reason we keep doing what we do, helping you send more love home, with even better value 💫
+This week, enjoy 3 bob ABOVE the market rate on all transfers until Sunday, 16th November!
+💸 Today’s rate: KES 170 per £1`
   },
   redone: {
     header: "Karibu Tuma!",

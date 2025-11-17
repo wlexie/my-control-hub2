@@ -36,7 +36,10 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Format dates to YYYY-MM-DD (without time) for API
+  // Animated amount state
+  const [animatedAmount, setAnimatedAmount] = useState(0);
+
+  // Format dates to YYYY-MM-DD
   const formatDateForAPI = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -72,25 +75,52 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
     };
 
     fetchTransactionData();
-  }, [formattedStart, formattedEnd]); // Using formatted dates as dependencies
+  }, [formattedStart, formattedEnd]);
 
   const getTotalAmount = () => {
     if (!data || !data.analyticsByTransactionType) return 0;
 
     if (currency === "GBP") {
-      // Sum up totalSenderAmount from all transaction types for GBP
       return data.analyticsByTransactionType.reduce(
         (sum, item) => sum + (item.totalSenderAmount || 0),
         0
       );
     } else {
-      // For KES, sum up receiverBreakdown values
       return data.analyticsByTransactionType.reduce((sum, item) => {
         const receiverAmount = item.receiverBreakdown[currency];
         return sum + (receiverAmount || 0);
       }, 0);
     }
   };
+
+  const totalAmount = getTotalAmount();
+
+  // Run animation when totalAmount changes
+  useEffect(() => {
+    const start = 0;
+    const end = totalAmount;
+    if (start === end) return;
+
+    const duration = 1600; // Animation duration (ms)
+    const frameRate = 16; // ~60fps
+    const steps = duration / frameRate;
+    const increment = (end - start) / steps;
+    let current = start;
+
+    const animate = () => {
+      current += increment;
+      if (
+        (increment > 0 && current >= end) ||
+        (increment < 0 && current <= end)
+      ) {
+        current = end;
+      }
+      setAnimatedAmount(current);
+      if (current !== end) requestAnimationFrame(animate);
+    };
+
+    requestAnimationFrame(animate);
+  }, [totalAmount]);
 
   const formatAmount = (amount: number) => {
     const symbol = currency === "GBP" ? "£" : "KES ";
@@ -107,15 +137,11 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
       year: "numeric",
     });
 
-  // Calculating percentage change only if available
   const getPercentageChange = () => {
     if (!data || !data.analyticsByTransactionType.length) return null;
-
-    // Finding the first transaction type with a percentage change
     const itemWithChange = data.analyticsByTransactionType.find(
       (item) => item.percentageChange !== undefined
     );
-
     return itemWithChange?.percentageChange || null;
   };
 
@@ -135,7 +161,6 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
     );
   }
 
-  const totalAmount = getTotalAmount();
   const transactionsCount = data?.transactionsCount || 0;
   const percentageChange = getPercentageChange();
 
@@ -154,7 +179,7 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
 
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-black whitespace-nowrap">
-            {formatAmount(totalAmount)}
+            {formatAmount(animatedAmount)}
           </h1>
           {percentageChange !== null && (
             <span
@@ -175,7 +200,7 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
         </div>
 
         <div className="flex flex-col gap-6 mt-10">
-          {/* Date Period */}
+          {/* Date period */}
           <div className="flex items-center gap-3">
             <span className="bg-yellow-100 rounded-lg p-2">
               <BsCalendar2DateFill className="text-yellow-500 text-lg" />
@@ -190,7 +215,7 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
             </div>
           </div>
 
-          {/* Transaction Count */}
+          {/* Transaction count */}
           <div className="flex items-center gap-3">
             <span className="bg-purple-100 rounded-lg p-2">
               <BsFillBarChartLineFill className="text-purple-800 text-lg" />
@@ -207,13 +232,11 @@ function TransactionTotalsSection({ currency, startDate, endDate }: Props) {
         </div>
       </div>
 
-      {/* Vertical Divider */}
       <Separator
         orientation="vertical"
         className="hidden lg:block h-64 w-[2px] bg-gray-300"
       />
 
-      {/* Right Section - Graph */}
       <div className="flex justify-center lg:justify-start w-full lg:w-auto">
         <CountryTransactions />
       </div>

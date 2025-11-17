@@ -82,7 +82,7 @@ export default function UnreadMessages({ onSelectChat, searchTerm = "" }) {
         },
         params: {
           page: page, 
-          size: 15   
+          size: 50   
         }
       });
 
