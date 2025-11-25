@@ -1,62 +1,130 @@
-// src/components/ClosedMessages.jsx
-
-import { useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import PropTypes from "prop-types";
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
-import { FaWhatsapp } from 'react-icons/fa';
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { FaWhatsapp } from "react-icons/fa";
+import { useSelector } from "react-redux";
+import axios from "axios";
+import { useInView } from 'react-intersection-observer'; // Import the hook
 
-// --- COPIED HELPER FUNCTION ---
+const API_ENDPOINT = "https://com.tuma-app.com/api/conversations/closed";
+
+// --- HELPER FUNCTIONS ---
 const getCountryCode = (msisdn) => {
-  if (!msisdn || typeof msisdn !== 'string') return null;
-  const formattedMsisdn = msisdn.startsWith('+') ? msisdn : `+${msisdn}`;
+  if (!msisdn || typeof msisdn !== "string") return null;
+  const formattedMsisdn = msisdn.startsWith("+") ? msisdn : `+${msisdn}`;
   try {
     const phoneNumber = parsePhoneNumberFromString(formattedMsisdn);
-    if (phoneNumber && phoneNumber.country) return phoneNumber.country;
-  } catch (error) {
-    console.error("Error parsing phone number:", error);
+    return phoneNumber?.country || null;
+  } catch (err) {
+    console.error("Error parsing phone number:", err);
+    return null;
   }
-  return null;
 };
 
 const formatTimestamp = (timestampStr) => {
-    if (!timestampStr) return "";
-    const date = new Date(timestampStr);
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+  if (!timestampStr) return "";
+  const date = new Date(timestampStr);
+  // Add 3 hours
+  date.setHours(date.getHours() + 3);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const messageDay = new Date(date);
+  messageDay.setHours(0, 0, 0, 0);
 
-    if (date.toDateString() === today.toDateString()) {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-    }
-    if (date.toDateString() === yesterday.toDateString()) {
-        return "Yesterday";
-    }
-    return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+  if (messageDay.getTime() === today.getTime()) {
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
+  }
+  if (messageDay.getTime() === yesterday.getTime()) return "Yesterday";
+  return date.toLocaleDateString([], { day: "numeric", month: "short" });
 };
 
-export default function ClosedMessages({ conversations = [], onSelectChat, activeChat, searchTerm = "" }) {
+
+export default function ClosedMessages({ onSelectChat, activeChat, searchTerm = "" }) {
+  const { accessToken } = useSelector((state) => state.auth);
+  const [conversations, setConversations] = useState([]);
   
+  // State for managing pagination
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Setup the Intersection Observer for infinite scroll
+  const { ref, inView } = useInView({
+    threshold: 0.5,
+  });
+
+  // Function to fetch pages of closed conversations
+  const fetchConversations = useCallback(async () => {
+    if (isLoading || !hasMore) return;
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await axios.get(API_ENDPOINT, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: {
+          page: page,
+          size: 15
+        }
+      });
+
+      // The API response is a Page object, data is in `res.data.content`.
+      // The explicit mapping is no longer needed as the structure is correct.
+      setConversations(prev => [...prev, ...res.data.content]);
+      
+      // Increment page number for the next fetch
+      setPage(prevPage => prevPage + 1);
+      
+      // Update hasMore based on the 'last' property from the backend
+      setHasMore(!res.data.last);
+
+    } catch (err) {
+      console.error("Error fetching closed conversations:", err);
+      setError(err.message || "Failed to fetch conversations");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [accessToken, page, hasMore, isLoading]);
+
+  // Effect to trigger fetching more data when the loader is in view
+  useEffect(() => {
+    if (inView && accessToken) {
+      fetchConversations();
+    }
+  }, [inView, accessToken, fetchConversations]);
+
+
+  // Memoized function to filter and sort conversations
   const filteredConversations = useMemo(() => {
     return conversations
-      .filter(conv => (conv.contactName || '').toLowerCase().includes(searchTerm.toLowerCase()))
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      .filter((conv) => (conv.contactName || "").toLowerCase().includes(searchTerm.toLowerCase()))
+      // CORRECTED: Sort by `lastMessageTime` on both objects
+      .sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
   }, [conversations, searchTerm]);
 
   return (
-    <div className="max-w-lg mx-auto font-poppins bg-white flex flex-col">
+    <div className="max-w-lg mx-auto font-poppins bg-white flex flex-col h-full overflow-y-auto">
       <div className="flex-1">
-        {filteredConversations.length === 0 ? (
-          <p className="text-center text-gray-500 mt-4">{searchTerm ? 'No results found.' : 'No closed conversations.'}</p>
+        {filteredConversations.length === 0 && !isLoading ? (
+          <p className="text-center text-gray-500 mt-4 px-4">
+            {searchTerm ? 'No results found.' : 'No closed conversations found.'}
+          </p>
         ) : (
           filteredConversations.map((conv) => {
-            // --- NEW: Added logic for avatar and flag ---
-            const countryCode = getCountryCode(conv.msisdn);
-            const avatarText = (conv.contactName || conv.msisdn || "??").slice(0, 2).toUpperCase();
-
+            const countryCode = getCountryCode(conv.contactPhone);
+            const avatarText = (conv.contactName || conv.contactPhone || "??").slice(0, 2).toUpperCase();
             return (
-              <div key={conv.id} className={`cursor-pointer px-4 py-2 border-b flex justify-between items-center transition ${activeChat?.id === conv.id ? "bg-gray-100" : "bg-white hover:bg-gray-50"}`} onClick={() => onSelectChat(conv)}>
+              <div
+                key={conv.ticketId} // Use ticketId for a reliable key
+                className={`cursor-pointer px-4 py-2 border-b flex justify-between items-center transition ${
+                  activeChat?.ticketId === conv.ticketId ? "bg-gray-100" : "bg-white hover:bg-gray-50"
+                }`}
+                onClick={() => onSelectChat(conv)}
+              >
                 <div className="flex items-start w-full opacity-70">
-                  {/* --- NEW: Avatar and Flag Structure --- */}
                   <div className="relative mr-3 shrink-0">
                     <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                       {avatarText}
@@ -72,27 +140,38 @@ export default function ClosedMessages({ conversations = [], onSelectChat, activ
                   </div>
                   <div className="flex justify-between items-start w-full">
                     <div>
-                      <p className="font-medium text-gray-700 mb-1 text-sm">{conv.contactName || conv.msisdn}</p>
-                      <p className="text-gray-500 text-xs truncate max-w-[270px]">{conv.content}</p>
+                      <p className="font-medium text-gray-700 mb-1 text-sm">{conv.contactName || conv.contactPhone}</p>
+                      <p className="text-gray-500 text-xs truncate max-w-[270px]">{conv.lastMessage}</p>
                     </div>
-                    {/* --- NEW: Timestamp with WhatsApp Icon --- */}
-                    <div className="ml-auto flex items-center shrink-0 pl-2">
-                      <FaWhatsapp className="text-gray-400 mr-1" />
-                      <p className="text-xs text-gray-400 whitespace-nowrap">{formatTimestamp(conv.timestamp)}</p>
-                    </div>
+                     <div className="flex flex-col items-end">
+                       <div className="ml-auto flex items-center shrink-0 mb-2 pl-2">
+                         <FaWhatsapp className="text-green-500 mr-1" />
+                         <p className="text-xs text-gray-400 whitespace-nowrap">{formatTimestamp(conv.lastMessageTime)}</p>
+                       </div>
+                       <span className="text-xs text-pink-500 font-medium"><span className="text-gray-500 mr-1 font-normal">By:</span>{conv.assignedAgentName}</span>
+                     </div>
                   </div>
                 </div>
               </div>
             );
           })
         )}
+
+        {/* Loader element to trigger fetching the next page */}
+        {hasMore && (
+          <div ref={ref} className="flex justify-center items-center p-4">
+            {isLoading && <p className="text-gray-500">Loading more...</p>}
+          </div>
+        )}
+        
+        {/* Display error message if the fetch fails */}
+        {error && <div className="p-4 text-center text-red-500">{error}</div>}
       </div>
     </div>
   );
 }
 
 ClosedMessages.propTypes = {
-  conversations: PropTypes.array.isRequired,
   onSelectChat: PropTypes.func.isRequired,
   activeChat: PropTypes.object,
   searchTerm: PropTypes.string,

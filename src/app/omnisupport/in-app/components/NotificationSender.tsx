@@ -27,7 +27,7 @@ const NotificationSender: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   // IMPORTANT: Replace with your actual endpoint
-  const API_ENDPOINT: string = 'http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/account/send-app-notification-to-all';
+  const API_ENDPOINT: string = 'https://api.tuma-app.com/api/account/send-app-notification-to-all';
 
   const handleSendNotification = async (e: FormEvent) => {
     e.preventDefault(); // Prevent default form submission behavior
@@ -70,6 +70,7 @@ const NotificationSender: React.FC = () => {
         setFailureCount(response.data.failureCount || 0);
         setSuccessCount(response.data.successCount || 0); // Still show success count if partially failed
       }
+<<<<<<< HEAD
       } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         console.error('Axios error sending notification:', error.response?.data || error.message);
@@ -82,6 +83,32 @@ const NotificationSender: React.FC = () => {
         setStatus('Error: Unknown error occurred');
       }
 
+=======
+    } catch (error: unknown) { // FIX: Changed 'any' to 'unknown' and added robust error handling
+      console.error('Error sending notification:', error);
+
+      let errorMessage = 'An unexpected error occurred.';
+
+      // Check if it's an Axios error to get more specific info
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // The server responded with a status code outside the 2xx range
+          const responseData = error.response.data as ApiResponse;
+          errorMessage = responseData.message || `Request failed with status ${error.response.status}`;
+        } else if (error.request) {
+          // The request was made but no response was received
+          errorMessage = 'No response from server. Check network connection.';
+        } else {
+          // Something happened in setting up the request
+          errorMessage = error.message;
+        }
+      } else if (error instanceof Error) {
+        // A generic JavaScript error
+        errorMessage = error.message;
+      }
+      
+      setStatus(`Error: ${errorMessage}`);
+>>>>>>> c67c311c43f4804009e7b126792936c095e5e965
       setFailureCount(0);
       setSuccessCount(0);
     } finally {

@@ -1,3 +1,6 @@
+"use client"; // <--- Add this line here as well
+
+
 import React, { useState } from 'react';
 import { FaRegFileAlt } from 'react-icons/fa';
 import CreateCampaignModal from './CreateCampaignModal';

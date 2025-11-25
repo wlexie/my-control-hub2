@@ -1,39 +1,63 @@
 import { useState } from 'react';
-// import NewContact from './NewContact'; // Remove or comment out this line
-import Modal2 from './Modal2'; // Import your Modal1 component
-import ChatManager from './ChatManager';
+import { useSelector } from 'react-redux';
+import axios from 'axios';
 import { Search, Plus } from 'lucide-react';
+import Modal2 from './Modal2';
+
+// Import the tab components
+import UnreadMessages from './UnreadMessages';
+import InProgressMessages from './InProgressMessages';
+import ClosedMessages from './ClosedMessages';
 
 export default function Messages({ onSelectChat, activeChat }) {
-  // Default active tab
-  const [activeTab, setActiveTab] = useState('In-Progress');
+  const [activeTab, setActiveTab] = useState('Unread');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
+  const { accessToken } = useSelector((state) => state.auth);
 
-  // Conversation counts from ChatManager
+  // You can later fetch these counts from an API or a state manager
   const [conversationCounts, setConversationCounts] = useState({
     unread: 0,
     inProgress: 0,
     closed: 0,
   });
 
-  // When a contact is selected (This might not be directly relevant for Modal1,
-  // as Modal1 handles its own send logic, but keeping it for context if you adapt it)
-  const handleSelectContact = (contact) => {
-    const newConversation = {
-      id: contact.contactId || contact.msisdn,
-      contactName: contact.contactName || contact.msisdn,
-      msisdn: contact.msisdn,
-      content: '',
-      timestamp: new Date().toISOString(),
-      hasNewMessage: false,
-      hasSentMessage: false,
-    };
-    onSelectChat(newConversation);
-    setModalOpen(false);
+  // This function handles opening a ticket and then switching tabs
+  const handleSelectAndOpenChat = async (conversation) => {
+    if (!conversation || !conversation.ticketId) return;
+
+    try {
+      // Call the API to mark the conversation as "open"
+      await axios.post(
+        `https://com.tuma-app.com/api/conversations/${conversation.ticketId}/open`,
+        {}, // No body is needed for this POST request
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      // 1. Set the selected chat as the active one in the parent component
+      onSelectChat(conversation);
+
+      // 2. Switch the active tab to "In-Progress"
+      setActiveTab('In-Progress');
+
+      // 3. Optional: Re-fetch counts or update them manually
+      setConversationCounts(prev => ({
+          ...prev,
+          unread: Math.max(0, prev.unread - 1),
+          inProgress: prev.inProgress + 1
+      }));
+
+
+    } catch (error) {
+      console.error("Error opening conversation:", error);
+      // Optionally, show an error message to the user
+    }
   };
 
-  // Tabs data
   const tabs = [
     { name: 'Unread', count: conversationCounts.unread, color: 'red' },
     { name: 'In-Progress', count: conversationCounts.inProgress, color: 'yellow' },
@@ -55,7 +79,7 @@ export default function Messages({ onSelectChat, activeChat }) {
             Active tickets
           </h1>
           <button
-            onClick={() => setModalOpen(true)} // This button will now open Modal1
+            onClick={() => setModalOpen(true)}
             className="flex items-center gap-1.5 px-4 py-1.5 border border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200"
           >
             <Plus size={18} strokeWidth={2.5} />
@@ -63,7 +87,7 @@ export default function Messages({ onSelectChat, activeChat }) {
           </button>
         </div>
 
-        {/* Search by Contact Number */}
+        {/* Search by Contact Name */}
         <div className="relative w-full">
           <Search
             size={20}
@@ -71,7 +95,7 @@ export default function Messages({ onSelectChat, activeChat }) {
           />
           <input
             type="text"
-            placeholder="Search by contact number..."
+            placeholder="Search by contact name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
@@ -101,26 +125,34 @@ export default function Messages({ onSelectChat, activeChat }) {
         ))}
       </div>
 
-      {/* Chats */}
+      {/* Conditionally Rendered Tab Content */}
       <div className="flex-1 overflow-y-auto">
-        <ChatManager
-          activeTab={activeTab}
-          searchTerm={searchTerm}  // still passes the term
-          onSelectChat={onSelectChat}
-          activeChat={activeChat}
-          setActiveTab={setActiveTab}
-          onCountsChange={setConversationCounts}
-        />
+        {activeTab === 'Unread' && (
+          <UnreadMessages
+            onSelectChat={handleSelectAndOpenChat} // Use the new handler here
+            searchTerm={searchTerm}
+          />
+        )}
+        {activeTab === 'In-Progress' && (
+          <InProgressMessages
+            onSelectChat={onSelectChat} // In-progress chats are already open
+            activeChat={activeChat}
+            searchTerm={searchTerm}
+          />
+        )}
+        {activeTab === 'Closed' && (
+          <ClosedMessages
+            onSelectChat={onSelectChat} // Closed chats don't need to be opened
+            activeChat={activeChat}
+            searchTerm={searchTerm}
+          />
+        )}
       </div>
 
-      {/* Modal for new message - now using Modal1 */}
+      {/* Modal for new message */}
       <Modal2
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
-        // The onSelectContact prop is not directly used by Modal1,
-        // as Modal1 handles its own form submission.
-        // You might integrate Modal1's 'send' logic here if needed.
-        // For now, it simply closes the modal.
       />
     </div>
   );

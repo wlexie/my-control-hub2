@@ -2,7 +2,9 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { FiSend } from 'react-icons/fi';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../../../store/store'; 
+import { RootState } from '../../../../store/store';
+import Papa from "papaparse";
+import * as XLSX from "xlsx";
 
 interface CreateCampaignModalProps {
   isOpen: boolean;
@@ -11,36 +13,57 @@ interface CreateCampaignModalProps {
 
 interface Contact {
   phone: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  status?: string;
+  isSelected: boolean;
 }
 
-interface Category {
-  id: string; 
-  name: string;
-  count: number; 
+// Added interface for type safety on imported file data
+interface ImportedRow {
+  Phone?: string | number;
+  number?: string | number;
+  'Full Name'?: string;
+  name?: string;
+  FDUNU?: string;
 }
+
+const STATUS_CATEGORIES = [
+  'Select All',
+  'Lead',
+  'Basic',
+  'Basic_Pending',
+  'Dormant',
+  'Active',
+  'Decline',
+  'Inactive',
+];
 
 const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen, onClose }) => {
   const [campaignName, setCampaignName] = useState('');
   const [purpose, setPurpose] = useState('Promotional');
-  const [messageContent, setMessageContent] = useState('');
-  const [targetPhoneNumbers, setTargetPhoneNumbers] = useState<string[]>([]);
-  const [currentPhoneNumberInput, setCurrentPhoneNumberInput] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>(''); 
-  const [allContactsFromApi, setAllContactsFromApi] = useState<Contact[]>([]);
-  const [allContactsCount, setAllContactsCount] = useState<number>(0);
+  const [messageContent, setMessageContent] = useState(
+    "Thank you for being part of Tuma’s Flash Hour! 💙\nWe had an amazing turnout, though high traffic caused some hiccups.\nIf you could not complete a transaction, we will reach out with a special rate just for you.\nWe appreciate you & we are glad you are part of the Tuma community!"
+  );
+  const [selectedCategory, setSelectedCategory] = useState<string>('Select All');
+
+  const [allRawContacts, setAllRawContacts] = useState<Contact[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [loadingContacts, setLoadingContacts] = useState<boolean>(false);
-  const [sendingCampaign, setSendingCampaign] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null); // New state for success messages
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [manualNumber, setManualNumber] = useState<string>("");
 
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
 
   const maxMessageLength = 1000;
   const smsCharacterLimit = 160;
 
-  const fetchAllContacts = useCallback(async () => {
+  const fetchAllRawContacts = useCallback(async () => {
     if (!accessToken) {
       setError('Authentication token not found.');
       return;
@@ -55,57 +78,61 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen, onClo
         },
       });
       const validContacts = response.data.filter(contact => contact.phone && !contact.phone.includes('DELETED_'));
-      setAllContactsFromApi(validContacts);
-      setAllContactsCount(validContacts.length);
 
-      const allContactsCategory: Category = {
-        id: 'all-contacts',
-        name: 'All Contacts',
-        count: validContacts.length,
-      };
-      
-      setCategories([allContactsCategory]); 
+      const contactsWithProcessedNames = validContacts.map((contact) => {
+        const phoneAsString = String(contact.phone).trim();
+        const randomIndex = Math.floor(Math.random() * (STATUS_CATEGORIES.length - 1)) + 1;
+        let fullName = 'Unknown Contact';
+        if (contact.firstName && contact.lastName) {
+          fullName = `${contact.firstName.trim()} ${contact.lastName.trim()}`;
+        } else if (contact.firstName) {
+          fullName = contact.firstName.trim();
+        } else if (contact.lastName) {
+          fullName = contact.lastName.trim();
+        }
 
+        return {
+          ...contact,
+          phone: phoneAsString,
+          name: fullName,
+          status: (contact.status || STATUS_CATEGORIES[randomIndex]).trim(),
+          isSelected: false
+        };
+      });
+
+      const uniqueContacts = Array.from(new Map(contactsWithProcessedNames.map(contact => [contact.phone, contact])).values());
+      setAllRawContacts(uniqueContacts);
     } catch (err) {
-      console.error('Failed to fetch contacts:', err);
+      console.error('Failed to fetch all raw contacts:', err);
       setError('Failed to load contacts. Please try again.');
-      setAllContactsCount(0);
-      setCategories([]);
-      setAllContactsFromApi([]);
+      setAllRawContacts([]);
     } finally {
       setLoadingContacts(false);
     }
   }, [accessToken]);
 
-  // Function to clear all form fields
   const clearFormFields = useCallback(() => {
     setCampaignName('');
     setPurpose('Promotional');
     setMessageContent('');
-    setTargetPhoneNumbers([]);
-    setCurrentPhoneNumberInput('');
-    setSelectedCategory('');
+    setSearchTerm('');
     setSendError(null);
     setError(null);
-    // Keep success message visible for a short period, then clear it
-    // Or you could clear it immediately if desired, but this gives feedback
-    // setSuccessMessage(null); 
+    setSuccessMessage(null);
+    setSelectedCategory('Select All');
+    setAllRawContacts(prevContacts => prevContacts.map(contact => ({ ...contact, isSelected: false })));
   }, []);
 
   useEffect(() => {
     if (isOpen) {
-      fetchAllContacts();
+      fetchAllRawContacts();
     } else {
-      // Reset all state variables when modal closes
-      clearFormFields(); // Use the new clear function
-      setCategories([]); // Categories are refetched on open, so clear on close
-      setAllContactsFromApi([]);
-      setAllContactsCount(0);
+      clearFormFields();
+      setAllRawContacts([]);
       setLoadingContacts(false);
-      setSendingCampaign(false);
-      setSuccessMessage(null); // Clear success message on close
+      setIsProcessing(false);
     }
-  }, [isOpen, fetchAllContacts, clearFormFields]);
+  }, [isOpen, fetchAllRawContacts, clearFormFields]);
 
   const currentChars = messageContent.length;
   const smsCount = useMemo(() => {
@@ -113,93 +140,236 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen, onClo
     return Math.ceil(currentChars / smsCharacterLimit);
   }, [currentChars]);
 
-  if (!isOpen) return null;
-
-  const handleAddPhoneNumber = () => {
-    const trimmedNumber = currentPhoneNumberInput.trim();
-    if (trimmedNumber && !targetPhoneNumbers.includes(trimmedNumber)) {
-      setTargetPhoneNumbers([...targetPhoneNumbers, trimmedNumber]);
-      setCurrentPhoneNumberInput('');
-      setSelectedCategory(''); 
-      setSendError(null); // Clear any previous send errors
-      setSuccessMessage(null); // Clear any previous success messages
+  const filteredAndSearchedContacts = useMemo(() => {
+    let contacts = allRawContacts;
+    if (selectedCategory !== 'Select All') {
+      contacts = contacts.filter(contact => contact.status === selectedCategory);
     }
+    if (searchTerm) {
+      const lowercasedSearchTerm = searchTerm.toLowerCase();
+      contacts = contacts.filter(contact =>
+        contact.name?.toLowerCase().includes(lowercasedSearchTerm) ||
+        String(contact.phone).includes(lowercasedSearchTerm)
+      );
+    }
+    return contacts;
+  }, [allRawContacts, selectedCategory, searchTerm]);
+
+  const selectedContactChips = useMemo(() => {
+    return allRawContacts.filter(contact => contact.isSelected);
+  }, [allRawContacts]);
+
+  const handleContactToggle = (phone: string) => {
+    setAllRawContacts(prevContacts =>
+      prevContacts.map(contact =>
+        contact.phone === phone ? { ...contact, isSelected: !contact.isSelected } : contact
+      )
+    );
   };
 
-  const handleRemovePhoneNumber = (numberToRemove: string) => {
-    setTargetPhoneNumbers(targetPhoneNumbers.filter(number => number !== numberToRemove));
-    setSendError(null); // Clear any previous send errors
-    setSuccessMessage(null); // Clear any previous success messages
+  const handleSelectAllFiltered = () => {
+    const allSelectedInFilteredView = filteredAndSearchedContacts.length > 0 && filteredAndSearchedContacts.every(contact => contact.isSelected);
+    setAllRawContacts(prevContacts =>
+      prevContacts.map(contact => {
+        const isInFilteredView = filteredAndSearchedContacts.some(fContact => fContact.phone === contact.phone);
+        if (isInFilteredView) {
+          return { ...contact, isSelected: !allSelectedInFilteredView };
+        }
+        return contact;
+      })
+    );
   };
 
-const handleLaunchCampaign = async () => {
-  setSendingCampaign(true);
-  setSendError(null);       // Clear previous errors
-  setSuccessMessage(null);  // Clear previous success messages
+  const handleRemoveChip = (phone: string) => {
+    setAllRawContacts(prevContacts =>
+      prevContacts.map(contact =>
+        contact.phone === phone ? { ...contact, isSelected: false } : contact
+      )
+    );
+  };
 
-  let recipientsToSend: string[] = [];
+  const selectedRecipientCount = allRawContacts.filter(contact => contact.isSelected).length;
+  const estimatedCost = (selectedRecipientCount * smsCount * 0.05).toFixed(2);
 
-  if (selectedCategory === 'all-contacts') {
-    recipientsToSend = allContactsFromApi.map(contact => contact.phone);
-  } else if (targetPhoneNumbers.length > 0) {
-    recipientsToSend = targetPhoneNumbers;
-  }
-
-  if (recipientsToSend.length === 0) {
-    setSendError('Please add individual recipients or select a target audience category.');
-    setSendingCampaign(false); // <--- IMPORTANT: Reset sending state on client-side validation failure
-    return;
-  }
-
-  if (messageContent.trim() === '') {
-    setSendError('Message content cannot be empty.');
-    setSendingCampaign(false); // <--- IMPORTANT: Reset sending state on client-side validation failure
-    return;
-  }
-
-  try {
-    const response = await axios.post('/api/send-sms', {
-      to: recipientsToSend,
-      message: messageContent,
-      campaignName: campaignName, // Added for completeness, though not used in your API route directly
-      purpose: purpose,           // Added for completeness
-    });
-
-    console.log('Campaign launch response:', response.data);
-
-    // Always reset sendingCampaign to false after the API call completes,
-    // whether it was a success or partial success.
-    setSendingCampaign(false); // <--- CRITICAL FIX HERE
-
-    if (response.status === 200) {
-      setSuccessMessage('Campaign launched successfully!');
-      clearFormFields();
-      // Optionally, you might want to automatically close the modal here or after a short delay
-      // setTimeout(onClose, 3000);
-    } else if (response.status === 207) {
-      setSuccessMessage('Campaign launched with some failures.');
-      clearFormFields();
-      // Even with partial success, clear the form and indicate success (with a warning)
+  const handleAddManualNumber = () => {
+    const num = manualNumber.trim();
+    if (!num) return;
+    if (allRawContacts.some((c) => c.phone === num)) {
+      alert("Number already exists in the contact list.");
+      setManualNumber("");
+      return;
     }
-  } catch (err: unknown) {
-    setSendingCampaign(false); // <--- IMPORTANT: Also reset sending state on API error
-    if (axios.isAxiosError(err)) {
-      console.error('Error launching campaign:', err.response?.data || err.message);
-      setSendError(err.response?.data?.message || 'Failed to launch campaign. Please try again.');
+    const newContact: Contact = { phone: num, name: num, status: "Manual", isSelected: true };
+    setAllRawContacts((prev) => [...prev, newContact]);
+    setManualNumber("");
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const processImportedContacts = (importedContacts: Omit<Contact, 'isSelected'>[]) => {
+      const newContacts: Contact[] = [];
+      const existingPhones = new Set(allRawContacts.map(c => c.phone));
+      importedContacts.forEach(contact => {
+        if (contact.phone && !existingPhones.has(contact.phone)) {
+          newContacts.push({ ...contact, isSelected: true });
+          existingPhones.add(contact.phone);
+        }
+      });
+      if (newContacts.length > 0) {
+        setAllRawContacts(prev => [...prev, ...newContacts]);
+      }
+      const skippedCount = importedContacts.length - newContacts.length;
+      if (skippedCount > 0) {
+        alert(`${skippedCount} duplicate contacts were found in the file and have been skipped.`);
+      }
+    };
+
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext === "csv") {
+      // FIX: Used a generic to type the parsed result, removing the need for `any`
+      Papa.parse<ImportedRow>(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (result) => {
+          const imported = result.data.map((r) => ({
+            phone: String(r.Phone || r.number || "").trim(),
+            name: String(r['Full Name'] || r.name || r.Phone || "Imported Contact").trim(),
+            status: "Imported",
+          })).filter((r) => r.phone);
+          processImportedContacts(imported);
+        },
+      });
+    } else if (ext === "xlsx" || ext === "xls") {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const sheetName = workbook.SheetNames.find(name => name.toLowerCase().trim() === "customer lead - onfido review") || workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        // FIX: Used a generic to type the JSON result, removing the need for `any`
+        const rows = XLSX.utils.sheet_to_json<ImportedRow>(sheet);
+        const imported = rows.map((r) => ({
+          phone: String(r.Phone || "").trim(),
+          name: String(r['Full Name'] || r.FDUNU || r.Phone || "Imported Contact").trim(),
+          status: "Imported",
+        })).filter((r) => r.phone);
+        processImportedContacts(imported);
+      };
+      reader.readAsBinaryString(file);
     } else {
-      console.error('Unexpected error launching campaign:', err);
-      setSendError('An unexpected error occurred. Please try again.');
+      alert("Unsupported file type. Please upload a CSV or Excel file.");
     }
-  }
-};
+    e.target.value = '';
+  };
+
+  const handleCategoryClick = (categoryName: string) => {
+    setSelectedCategory(categoryName);
+    setSearchTerm('');
+    setSendError(null);
+    setSuccessMessage(null);
+  };
+
+ const handleSendCampaign = async () => {
+    setIsProcessing(true);
+    setSendError(null);
+    setSuccessMessage(null);
   
+    // --- Data validation ---
+    const selectedContacts = allRawContacts.filter(contact => contact.isSelected);
+    const validRecipients = selectedContacts
+      .map(contact => contact.phone?.replace(/[^+\d]/g, ''))
+      .filter(phone => phone && /^\+\d{10,}$/.test(phone));
+    
+    if (validRecipients.length === 0) {
+      setSendError('Please select at least one recipient with a valid phone number (e.g., +441234567890).');
+      setIsProcessing(false);
+      return;
+    }
+  
+    if (messageContent.trim() === '') {
+      setSendError('Message content cannot be empty.');
+      setIsProcessing(false);
+      return;
+    }
 
- 
-  const totalRecipients = selectedCategory === 'all-contacts' && !loadingContacts && !error
-    ? allContactsCount
-    : targetPhoneNumbers.length; 
+    // --- Create the payload to save the campaign ---
+    const campaignCreationPayload = {
+      campaignName: campaignName,
+      purposeOfCampaign: purpose,
+      messageContent: messageContent,
+      recipientPhoneNumbers: [...new Set(validRecipients)].join(','),
+      estimatedCost: parseFloat(estimatedCost),
+      targetAudience: selectedCategory,
+      // FIX: Changed 'campaignOverallStatus' to 'deliveryStatus' to match the backend
+      deliveryStatus: 'DRAFT', 
+    };
 
-  const estimatedCost = (totalRecipients * smsCount * 0.05).toFixed(2);
+    try {
+      // ===================================================================
+      // STEP 1: Create the campaign by sending its details to the server.
+      // The endpoint is /api/sms-campaigns
+      // ===================================================================
+      console.log("Step 1: Creating campaign with payload:", campaignCreationPayload);
+      const createResponse = await axios.post(
+        'https://com.tuma-app.com/api/sms-campaigns', 
+        campaignCreationPayload, 
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      // Extract the ID from the response of the first call
+      const newCampaignId = createResponse.data.id;
+      console.log(`Step 1 successful. New Campaign ID: ${newCampaignId}`);
+
+      if (!newCampaignId) {
+        throw new Error("Failed to get a campaign ID from the server.");
+      }
+
+      // ===================================================================
+      // STEP 2: Trigger the send using the new campaign ID.
+      // The endpoint is /api/sms-campaigns/{id}/send
+      // ===================================================================
+      console.log(`Step 2: Triggering send for campaign ID ${newCampaignId}`);
+      const sendResponse = await axios.post(
+        `https://com.tuma-app.com/api/sms-campaigns/${newCampaignId}/send`,
+        {}, // This endpoint doesn't need a body, the ID is in the URL
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      console.log('Step 2 successful. Campaign send response:', sendResponse.data);
+      setSuccessMessage(sendResponse.data || 'Campaign initiated successfully!');
+      
+      // Close the modal after a short delay
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const errorMessage = err.response?.data?.message || err.response?.data || 'An error occurred. Please try again.';
+        console.error('Error during campaign process:', errorMessage);
+        setSendError(String(errorMessage));
+      } else {
+        console.error('An unexpected error occurred:', err);
+        setSendError('An unexpected error occurred. Please check the console.');
+      }
+    } finally {
+      // Ensure the processing state is always turned off
+      setIsProcessing(false);
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -207,14 +377,8 @@ const handleLaunchCampaign = async () => {
         {/* Modal Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Create SMS Campaign</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -222,37 +386,22 @@ const handleLaunchCampaign = async () => {
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-grow">
-          {/* Success Message Display */}
           {successMessage && (
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
               <strong className="font-bold">Success!</strong>
               <span className="block sm:inline"> {successMessage}</span>
-              <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
-                <button onClick={() => setSuccessMessage(null)} className="text-green-700 hover:text-green-900">
-                  <svg className="fill-current h-6 w-6" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
-                </button>
-              </span>
             </div>
           )}
-
-          {/* Error Message Display (for overall fetching or other issues) */}
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-              <strong className="font-bold">Error!</strong>
-              <span className="block sm:inline"> {error}</span>
-              <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
-                <button onClick={() => setError(null)} className="text-red-700 hover:text-red-900">
-                  <svg className="fill-current h-6 w-6" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
-                </button>
-              </span>
-            </div>
+          {sendError && (
+             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 mt-4" role="alert">
+                <strong className="font-bold">Error!</strong>
+                <span className="block sm:inline"> {sendError}</span>
+              </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <label htmlFor="campaignName" className="block text-sm font-medium text-gray-700 mb-1">
-                Campaign Name
-              </label>
+              <label htmlFor="campaignName" className="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
               <input
                 type="text"
                 id="campaignName"
@@ -263,9 +412,7 @@ const handleLaunchCampaign = async () => {
               />
             </div>
             <div>
-              <label htmlFor="purposeOfCampaign" className="block text-sm font-medium text-gray-700 mb-1">
-                Purpose of campaign
-              </label>
+              <label htmlFor="purposeOfCampaign" className="block text-sm font-medium text-gray-700 mb-1">Purpose of campaign</label>
               <select
                 id="purposeOfCampaign"
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -280,9 +427,7 @@ const handleLaunchCampaign = async () => {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="messageContent" className="block text-sm font-medium text-gray-700 mb-1">
-              Message Content
-            </label>
+            <label htmlFor="messageContent" className="block text-sm font-medium text-gray-700 mb-1">Message Content</label>
             <textarea
               id="messageContent"
               rows={4}
@@ -290,182 +435,119 @@ const handleLaunchCampaign = async () => {
               placeholder={`Type your SMS message here... (${smsCharacterLimit} characters recommended)`}
               value={messageContent}
               onChange={(e) => {
-                if (e.target.value.length <= maxMessageLength) {
-                  setMessageContent(e.target.value);
-                }
-                setSendError(null); // Clear errors when message content changes
-                setSuccessMessage(null); // Clear success message
+                if (e.target.value.length <= maxMessageLength) setMessageContent(e.target.value);
+                setSendError(null);
+                setSuccessMessage(null);
               }}
             ></textarea>
             <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
-              <span>
-                {currentChars}/{maxMessageLength} characters • {smsCount} SMS
-              </span>
-              <button className="text-blue-600 hover:text-blue-800 font-medium">Use Template</button>
+              <span>{currentChars}/{maxMessageLength} characters • {smsCount} SMS</span>
+              <button type="button" className="text-blue-600 hover:text-blue-800 font-medium">Use Template</button>
             </div>
           </div>
 
           <div className="mb-6">
-            <label htmlFor="targetAudience" className="block text-sm font-medium text-gray-700 mb-1">
-              Target Audience
-            </label>
-            <div className="flex items-center space-x-2 mb-2">
-              <select
-                id="targetAudience"
-                className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
-                  if (e.target.value !== '') {
-                      setTargetPhoneNumbers([]);
-                  }
-                  setSendError(null); // Clear errors when category changes
-                  setSuccessMessage(null); // Clear success message
-                }}
-                disabled={loadingContacts}
-              >
-                <option value="">Select an option</option> 
-                {loadingContacts ? (
-                  <option value="">Loading contacts...</option>
-                ) : error ? (
-                  <option value="">Error loading contacts</option>
-                ) : categories.length === 0 ? (
-                  <option value="">No categories available</option>
-                ) : (
-                  categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name} ({category.count})
-                    </option>
-                  ))
-                )}
-              </select>
+             <div className="flex space-x-2 overflow-x-auto pb-2 -mx-6 px-6 no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div className="flex space-x-2">
+                    {STATUS_CATEGORIES.map((category) => (
+                    <button
+                        key={category}
+                        type="button"
+                        className={`flex-shrink-0 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${selectedCategory === category ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} ${loadingContacts ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        onClick={() => !loadingContacts && handleCategoryClick(category)}
+                        disabled={loadingContacts}
+                    >
+                        {category} ({category === 'Select All' ? allRawContacts.length : allRawContacts.filter(c => c.status === category).length})
+                    </button>
+                    ))}
+                </div>
             </div>
 
             {loadingContacts && <p className="text-sm text-gray-500 mt-2">Fetching contacts...</p>}
+            {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
 
-            <label htmlFor="addPhoneNumber" className="block text-sm font-medium text-gray-700 mb-1 mt-4">
-              Add Individual Phone Numbers (Optional)
-            </label>
-            <div className="flex items-center space-x-2 mb-2">
-              <input
-                type="text"
-                id="addPhoneNumber"
-                className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Enter phone number (e.g., +1 555 123 4567)"
-                value={currentPhoneNumberInput}
-                onChange={(e) => setCurrentPhoneNumberInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddPhoneNumber();
-                  }
-                }}
-              />
-              <button
-                onClick={handleAddPhoneNumber}
-                className="p-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                title="Add phone number"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </button>
-            </div>
-
-            {targetPhoneNumbers.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {targetPhoneNumbers.map((number, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-                  >
-                    {number}
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePhoneNumber(number)}
-                      className="ml-2 -mr-0.5 h-4 w-4 flex items-center justify-center rounded-full text-blue-500 hover:bg-blue-200"
-                      title="Remove number"
-                    >
-                      <svg
-                        className="h-3 w-3"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
+            {selectedContactChips.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-md mb-4 bg-gray-50 max-h-40 overflow-y-auto mt-4">
+                {selectedContactChips.map((contact) => (
+                  <span key={contact.phone} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    {contact.name || contact.phone}
+                    <button type="button" className="flex-shrink-0 ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none focus:bg-blue-500 focus:text-white" onClick={() => handleRemoveChip(contact.phone)}>
+                      <span className="sr-only">Remove {contact.name || contact.phone}</span>
+                      <svg className="h-2 w-2" stroke="currentColor" fill="none" viewBox="0 0 8 8"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M1 1l6 6m0-6L1 7" /></svg>
                     </button>
                   </span>
                 ))}
               </div>
             )}
 
-            {(totalRecipients === 0 && selectedCategory === '' && !loadingContacts && !error && !sendError && !successMessage) && (
-              <p className="text-sm text-gray-500 mt-2">No recipients or category selected yet</p>
-            )}
-            {sendError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                  <strong className="font-bold">Error!</strong>
-                  <span className="block sm:inline"> {sendError}</span>
-                  <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
-                    <button onClick={() => setSendError(null)} className="text-red-700 hover:text-red-900">
-                      <svg className="fill-current h-6 w-6" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
-                    </button>
-                  </span>
-                </div>
-            )}
-            <div className="flex justify-between items-center text-sm text-gray-700 mt-4">
-              <span>Total Recipients: {totalRecipients}</span>
-              <span>Estimated Cost: ${estimatedCost}</span>
+            <div className="mt-4 relative rounded-md shadow-sm">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.316l3.321 3.321a.75.75 0 11-1.06 1.06l-3.321-3.321A7 7 0 012 9z" clipRule="evenodd" /></svg>
+              </div>
+              <input type="text" name="search" id="search" className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" placeholder="Search by name or phone number..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
+
+            <div className="mt-4 border border-gray-200 rounded-md overflow-hidden max-h-56 overflow-y-auto">
+              <div className="flex items-center p-3 border-b border-gray-200 bg-gray-50">
+                <input type="checkbox" id="select-all-filtered-contacts" className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" checked={filteredAndSearchedContacts.length > 0 && filteredAndSearchedContacts.every(contact => contact.isSelected)} onChange={handleSelectAllFiltered} disabled={filteredAndSearchedContacts.length === 0} />
+                <label htmlFor="select-all-filtered-contacts" className="ml-3 text-sm font-medium text-gray-700 cursor-pointer">Select All ({filteredAndSearchedContacts.length})</label>
+              </div>
+              <ul className="divide-y divide-gray-200">
+                {filteredAndSearchedContacts.length === 0 && !loadingContacts && (<li className="py-2 px-4 text-sm text-gray-500">No contacts found for the current selection and search.</li>)}
+                {filteredAndSearchedContacts.map((contact) => (
+                  <li key={contact.phone} className="flex items-center justify-between py-2 px-4 hover:bg-gray-50">
+                    <div className="flex items-center">
+                      <input id={`contact-${contact.phone}`} name={`contact-${contact.phone}`} type="checkbox" className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" checked={contact.isSelected} onChange={() => handleContactToggle(contact.phone)} />
+                      <label htmlFor={`contact-${contact.phone}`} className="ml-3 block text-sm">
+                        <p className="font-medium text-gray-900">{contact.name || 'Unknown Contact'}</p>
+                        <p className="text-gray-500">{contact.phone}</p>
+                      </label>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold mb-2 text-gray-700">Add Numbers Manually or Import</h3>
+            <div className="flex gap-2">
+              <input type="text" placeholder="Enter phone number manually" className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500" value={manualNumber} onChange={(e) => setManualNumber(e.target.value)} />
+              <button onClick={handleAddManualNumber} className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700">Add</button>
+              <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} className="text-sm" />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Upload a CSV/Excel with columns: <b>phone</b> or <b>number</b> (optional: name)</p>
+          </div>
+
+          <div className="flex justify-between text-sm text-gray-600 mt-3">
+            <span>Total Recipients: {selectedRecipientCount}</span>
+            <span>Estimated Cost: ${estimatedCost}</span>
           </div>
         </div>
 
         {/* Modal Footer */}
         <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50 space-x-4 rounded-b-lg">
           <div>
-            <button
-              type="button"
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              disabled={sendingCampaign}
-            >
-              Save as Draft
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium mr-5 text-gray-700 bg-transparent hover:text-gray-900 focus:outline-none" disabled={isProcessing}>
+              Cancel
             </button>
           </div>
           <div>
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium mr-5 text-gray-700 bg-transparent hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              disabled={sendingCampaign}
+              onClick={handleSendCampaign}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+              disabled={isProcessing || !campaignName || !messageContent || selectedRecipientCount === 0}
             >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleLaunchCampaign}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              disabled={sendingCampaign}
-            >
-              {sendingCampaign ? (
+              {isProcessing ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                   Sending...
                 </>
               ) : (
                 <>
-                  <FiSend className="h-4 w-4 mr-2 -ml-1 transform" />
-                  Launch Campaign
+                  <FiSend className="h-4 w-4 mr-2 -ml-1" />
+                  Send Campaign
                 </>
               )}
             </button>

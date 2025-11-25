@@ -5,7 +5,9 @@ import PropTypes from 'prop-types';
 import axios from 'axios';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
+import { useSelector } from 'react-redux';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
+
 
 // --- Icon Imports ---
 import {
@@ -20,6 +22,11 @@ import Modal from './Modal1';
 import EscalateIssueModal from './EscalateIssueModal';
 import TemplatesModal from './TemplatesModal';
 import TemplateModal from './TemplateModal';
+import MessageStatus from './MessageStatus';
+import Confirmation from './Confirmation';
+import AssignTicketModal from './AssignTicketModal'; // Import the new modal
+
+
 
 // =================================================================================
 // ---  CONFIGURATION CONSTANTS  ---
@@ -88,16 +95,24 @@ const formatDateSeparator = (dateStr) => { const date = new Date(dateStr); const
 
 const formatFullTimestamp = (timestampStr) => {
     if (!timestampStr) return "";
+
     const date = new Date(timestampStr);
+
+    // Add 3 hours
+    date.setHours(date.getHours() + 3);
+
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
+
     const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
     const timeString = date.toLocaleTimeString('en-US', timeOptions).replace(' ', '');
+
     if (date.toDateString() === today.toDateString()) return `Today at ${timeString}`;
     if (date.toDateString() === yesterday.toDateString()) return `Yesterday at ${timeString}`;
     return `${date.toLocaleDateString()} at ${timeString}`;
 };
+
 
 
 // =================================================================================
@@ -118,57 +133,76 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
+ const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
+ const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const dragCounter = useRef(0);
 
-  const userName = chatDetails.name || selectedChat?.contactName || 'Unknown';
-  const userPhoneNumber = chatDetails.phone || selectedChat?.msisdn;
+    const { accessToken } = useSelector((state) => state.auth);
+
+
+  // Use the reliable state for dynamic data
+  const userName = chatDetails.name;
+  const status = chatDetails.status;
+  const userPhoneNumber = chatDetails.phone;
+  const ticketId = chatDetails.ticketId;
+
   const userInitials = getInitials(userName);
   const userAvatarColor = useMemo(() => getColorForId(selectedChat?.id), [selectedChat?.id]);
   const countryCode = useMemo(() => getCountryCode(userPhoneNumber), [userPhoneNumber]);
 
-  const fetchFullConversation = useCallback(async (isBackgroundPoll = false) => {
-    const identifier = selectedChat?.id || selectedChat?.msisdn;
-    if (!identifier) { setMessages([]); return; }
+
+ const fetchFullConversation = useCallback(async (isBackgroundPoll = false) => {
+    const currentTicketId = selectedChat?.ticketId;
+    if (!currentTicketId || !accessToken) {
+      setMessages([]);
+      return;
+    }
+
     if (!isBackgroundPoll) { setLoadingMessages(true); }
     setErrorMessages(null);
+
     try {
-      const response = await axios.get(`${API_BASE_URL}/messages/${identifier}?page=0&size=50`);
-      const fetchedMessages = response.data.content || response.data || [];
-      if (!isBackgroundPoll && fetchedMessages.length > 0) {
-        setChatDetails(prevDetails => {
-          if (prevDetails.phone && prevDetails.name) return prevDetails;
-          const firstUserMessage = fetchedMessages.find(msg => msg.direction === 'received');
-          return { name: prevDetails.name || selectedChat?.contactName, phone: prevDetails.phone || (firstUserMessage ? firstUserMessage.fromNumber : selectedChat?.msisdn) };
-        });
-      }
-      const processedMessages = fetchedMessages.map(msg => {
-        try {
-          const parsedContent = JSON.parse(msg.content);
-          let type = 'unsupported', payload = null;
-          if (parsedContent.text?.trim()) { type = 'text'; payload = parsedContent.text; }
-          else if (parsedContent.image?.url) { type = 'image'; payload = { url: parsedContent.image.url }; }
-          else if (parsedContent.file?.url) { type = 'file'; payload = { url: parsedContent.file.url }; }
-          return { ...msg, type, payload };
-        } catch { return null; }
-      }).filter(Boolean);
-      setMessages(currentMessages => {
-        const serverMessagesMap = new Map(processedMessages.map(m => [m.id, m]));
-        const pendingOptimisticMessages = currentMessages.filter(localMsg => {
-          if (!localMsg.id.toString().startsWith('temp-')) return false;
-          let isConfirmed = false;
-          for (const serverMsg of processedMessages) {
-            if (serverMsg.direction === 'sent' && serverMsg.type === localMsg.type && serverMsg.payload === localMsg.payload) { isConfirmed = true; break; }
-            if (serverMsg.direction === 'sent' && serverMsg.type === 'image' && localMsg.type === 'image' && serverMsg.payload.url === localMsg.payload.url) { isConfirmed = true; break; }
-          }
-          return !isConfirmed;
-        });
-        const newMessages = [...processedMessages, ...pendingOptimisticMessages];
-        return Array.from(new Map(newMessages.map(m => [m.id, m])).values()).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      const response = await axios.get(
+        `https://com.tuma-app.com/api/conversations/${currentTicketId}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      const conversationData = response.data;
+      const fetchedMessages = conversationData.history || [];
+
+      // --- CHANGE 1: Filter out any messages that have a null or empty 'direction' ---
+      const validMessages = fetchedMessages.filter(msg => msg.direction && msg.direction.trim() !== '');
+
+     const processedMessages = validMessages.map(msg => ({
+        id: msg.id, 
+        payload: (msg.messageType === 'image' || msg.messageType === 'file') 
+        ? { url: msg.content } 
+        : msg.content || "[No Content]", 
+        type: msg.messageType === 'image' || msg.messageType === 'file' ? msg.messageType : 'text',
+        createdAt: msg.messageTime,
+        direction: msg.direction,
+        senderName: msg.senderName,
+        status: msg.status,
+
+      }));
+
+      processedMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+      setMessages(processedMessages);
+
+      // --- CHANGE 2: Update all chat details from the fresh API response ---
+      setChatDetails({
+          name: conversationData.contactName,
+          phone: conversationData.contactPhone, // This ensures userPhoneNumber is always up-to-date
+          ticketId: conversationData.ticketId, // Store the ticketId for display
+          status: conversationData.status
       });
+
     } catch (err) {
       if (err.response?.status !== 404) {
         console.error("Error fetching conversation:", err);
@@ -179,24 +213,32 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
     } finally {
       if (!isBackgroundPoll) setLoadingMessages(false);
     }
-  }, [selectedChat?.id, selectedChat?.msisdn, selectedChat?.contactName]);
+  }, [selectedChat?.ticketId, accessToken]);
 
   useEffect(() => { if (textareaRef.current) { textareaRef.current.style.height = 'auto'; textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; } }, [newMessage]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
   useEffect(() => {
+    // Reset state when chat selection changes
     setMessages([]);
     setNewMessage('');
     setShowEmojiPicker(false);
-    setChatDetails({ name: selectedChat?.contactName || '', phone: selectedChat?.msisdn || '' });
-    if (selectedChat?.id) fetchFullConversation(false);
+    setChatDetails({ name: selectedChat?.contactName || '', phone: selectedChat?.contactPhone || '', ticketId: selectedChat?.ticketId || '', status: selectedChat?.status || '' });
+
+    if (selectedChat?.ticketId) {
+      fetchFullConversation(false);
+    }
   }, [selectedChat, fetchFullConversation]);
+
   useEffect(() => {
-    // Only poll if a chat is selected, regardless of its closed status
-    if (!selectedChat?.id) return;
+    if (!selectedChat?.ticketId) return;
     const intervalId = setInterval(() => fetchFullConversation(true), POLLING_INTERVAL);
     return () => clearInterval(intervalId);
-  }, [selectedChat?.id, fetchFullConversation]); // Removed selectedChat.isClosed from dependencies
-  useEffect(() => { document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen || isTemplateModalOpen); }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen, isTemplateModalOpen]);
+  }, [selectedChat?.ticketId, fetchFullConversation]);
+
+  useEffect(() => {
+    document.body.classList.toggle('overflow-hidden', isModalOpen || isEscalateModalOpen || isTemplatesModalOpen || isTemplateModalOpen);
+  }, [isModalOpen, isEscalateModalOpen, isTemplatesModalOpen, isTemplateModalOpen]);
 
   const sendMessage = async () => {
     if (newMessage.trim() === '' || !selectedChat) return;
@@ -267,7 +309,61 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   };
 
   const addEmoji = (emoji) => setNewMessage(prev => prev + emoji.native);
-  const handleCloseChat = async () => { if (!selectedChat || !selectedChat.id) return; try { await axios.post(`${API_BASE_URL}/close-conversation?conversationId=${selectedChat.id}`); setSelectedChat(null); } catch (error) { console.error("Error closing conversation:", error.response?.data || error.message); alert("Failed to close the conversation."); } finally { setIsModalOpen(false); } };
+
+
+
+// CORRECTED CODE
+const handleCloseChat = useCallback(async () => {
+    // For robustness, read the ticketId directly from the state object inside the handler.
+    const currentTicketId = chatDetails.ticketId;
+
+    if (!currentTicketId) {
+      alert("Cannot close ticket: Ticket ID is missing.");
+      console.error("DEBUG: ticketId is missing. Current chatDetails object:", chatDetails);
+      return;
+    }
+
+    setIsCloseConfirmOpen(false);
+
+    try {
+      await axios.post(
+        `https://com.tuma-app.com/api/conversations/${currentTicketId}/close`,
+        {},
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      // This will trigger a re-render and clean up the view
+      setSelectedChat(null);
+    } catch (error) { // <-- ADDED opening brace
+      console.error("Error closing conversation:", error.response?.data || error.message);
+      alert("Failed to close the ticket. Please try again.");
+    } // <-- ADDED closing brace
+}, [chatDetails, accessToken, setSelectedChat]); // <-- ADDED dependency array
+
+
+const handleReopenChat = async () => {
+    const currentTicketId = chatDetails.ticketId;
+    if (!currentTicketId) {
+        alert("Cannot reopen ticket: Ticket ID is missing.");
+        return;
+    }
+
+    try {
+        await axios.post(
+            `https://com.tuma-app.com/api/conversations/${currentTicketId}/reopen`,
+            {}, // No request body is needed, just the headers
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        // On success, simply refetch the conversation data.
+        // This will update the status from 'CLOSED' to 'IN_PROGRESS'
+        // and the footer UI will update automatically.
+        await fetchFullConversation(false); // Pass false to show loading indicator
+    } catch (error) {
+        console.error("Error reopening conversation:", error.response?.data || error.message);
+        alert("Failed to reopen the ticket. Please try again.");
+    }
+};
+
+
   const handleFileChange = (e) => { const file = e.target.files[0]; if (file) handleFileUpload(file); };
   const handleSelectTemplate = (text) => { setNewMessage(text); setIsTemplatesModalOpen(false); };
   const handleDragEnter = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current++; if (e.dataTransfer.items?.length > 0) setIsDraggingOver(true); };
@@ -275,54 +371,161 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
   const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDraggingOver(false); dragCounter.current = 0; if (e.dataTransfer.files?.length > 0) { handleFileUpload(e.dataTransfer.files[0]); e.dataTransfer.clearData(); } };
 
+  const handleAssignTicket = async (assignmentDetails) => {
+    console.log('Ticket assignment initiated with details:', assignmentDetails);
+
+    const { agentId, agentName, note, ticketId: ticketIdToAssign } = assignmentDetails;
+
+    if (!ticketIdToAssign) {
+      alert("Error: Ticket ID is missing for assignment.");
+      console.error("Missing ticketId in handleAssignTicket for API call.");
+      return;
+    }
+    if (!agentId) {
+      alert("Error: Agent not selected for assignment.");
+      return;
+    }
+    if (!accessToken) { // <-- Crucial check for accessToken
+      alert("Error: Access token is missing. Please log in again.");
+      console.error("Access token is missing for assigning ticket.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `https://com.tuma-app.com/api/conversations/${ticketIdToAssign}/assign`,
+        {
+          agentId: agentId,
+          agentName: agentName,
+          reason: note
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`, // <-- Using accessToken here
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        alert("Ticket assigned successfully!");
+        setIsAssignModalOpen(false);
+        fetchFullConversation(false);
+      } else {
+        alert(`Ticket assignment returned an unexpected status: ${response.status}`);
+        console.warn("Unexpected API response for assign ticket:", response);
+      }
+
+    } catch (error) {
+      console.error('Error assigning ticket:', error.response?.data || error.message || error);
+      const errorMessage = error.response?.data?.message ||
+                           error.response?.data?.error ||
+                           error.message ||
+                           "Failed to assign ticket. Please try again.";
+      alert(errorMessage);
+    }
+  };
   return (
     <div className="flex flex-col h-screen bg-white relative" onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
+       {/* --- CHANGE 3: Render the Confirmation modal and wire it up --- */}
+      <Confirmation
+        isOpen={isCloseConfirmOpen}
+        onClose={() => setIsCloseConfirmOpen(false)} // This handles the "Cancel" button
+        onConfirm={handleCloseChat} // This handles the "Confirm" button
+        title="Close Ticket"
+        confirmText="Confirm & Close"
+      >
+        Are you sure you want to close this ticket? This action cannot be undone.
+      </Confirmation>
       {isDraggingOver && ( <div className="absolute inset-0 z-50 bg-blue-500/30 border-4 border-dashed border-blue-600 rounded-2xl flex flex-col items-center justify-center pointer-events-none"><UploadCloud className="w-24 h-24 text-blue-600" /><p className="mt-4 text-2xl font-bold text-blue-800">Drop file to upload</p></div> )}
       {lightboxImage && ( <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 cursor-pointer" onClick={() => setLightboxImage(null)}> <button onClick={() => setLightboxImage(null)} className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/75 rounded-full p-2" > <X size={24} /> </button> <img src={lightboxImage} alt="Lightbox view" className="max-w-full max-h-full rounded-lg shadow-2xl cursor-default" onClick={(e) => e.stopPropagation()} /> </div> )}
       {isTemplatesModalOpen && ( <TemplatesModal closeModal={() => setIsTemplatesModalOpen(false)} onSelectTemplate={handleSelectTemplate} userName={userName} /> )}
       {isTemplateModalOpen && ( <TemplateModal closeModal={() => setIsTemplateModalOpen(false)} onSelectTemplate={handleSendTemplate} userName={userName}/> )}
-
+       {isAssignModalOpen && (
+        <AssignTicketModal
+            isOpen={isAssignModalOpen}
+            onClose={() => setIsAssignModalOpen(false)}
+            onAssign={handleAssignTicket}
+                        ticketId={ticketId} 
+        />
+        )}
       {!selectedChat ? ( <div className="text-gray-500 flex justify-center items-center h-full"> Select a chat to start a conversation </div> )
       : (
         <>
-          <header className="bg-white p-4 border-b border-gray-200">
-            <div className='flex flex-wrap items-start justify-between gap-4'>
-                <div className="flex items-start ">
-                  <div className='flex flex-col'>
+      <header className="bg-white p-2 border-b border-gray-200">
+  <div className="flex items-center justify-between flex-wrap gap-4">
 
+    {/* LEFT SIDE */}
+    <div className="flex items-start gap-4 flex-wrap">
+      <div className="relative flex-shrink-0">
+        <div className={`flex items-center justify-center w-7 h-7 md:w-10 md:h-10 ${userAvatarColor} rounded-full font-semibold text-white text-sm md:text-lg`}>
+          {userInitials}
+        </div>
+        {countryCode && (
+          <img
+            className="absolute md:-bottom-1 md:-right-1 bottom-3 -right-2 md:w-6 md:h-6 h-5 w-5 rounded-full border-2 border-white"
+            src={`https://flagcdn.com/${countryCode.toLowerCase()}.svg`}
+            alt={`${countryCode} flag`}
+            title={countryCode}
+          />
+        )}
+      </div>
 
-                  <div className='flex  gap-4'>
+      <div className="flex flex-col">
+        <h2 className="md:text-lg text-sm font-semibold text-gray-800">{userName}</h2>
+        <p className="text-[10px] md:text-[12px] text-gray-400 md:mt-0.5">{userPhoneNumber.replace('+', '')}</p>
+        <div className="flex items-center gap-2 mt-0.5  flex-wrap">
+          {ticketId && (
+            <span className="text-xs md:text-sm font-medium text-gray-600">
+              Ticket #{ticketId}
+            </span>
+          )}
+          <span className="px-2 py-0.5 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">
+            In Progress
+          </span>
+          <span className="px-2 py-0.5 text-xs font-semibold text-red-800 bg-red-100 rounded-full">
+            Urgent
+          </span>
+          <button className="px-2 py-0.5 text-xs text-gray-500 hidden md:block border border-dashed border-gray-400 rounded-md hover:bg-gray-100">
+            + Add Tag
+          </button>
+        </div>
+      </div>
+    </div>
 
-                    <div className="relative flex-shrink-0">
-                        <div className={`flex items-center justify-center w-7 h-7 md:w-10 md:h-10 ${userAvatarColor} rounded-full font-semibold text-white text-sm md:text-lg`}>{userInitials}</div>
-                        {countryCode && (<img className="absolute md:-bottom-1 md:-right-1 bottom-3 -right-2  md:w-6 md:h-6 h-5 w-5 rounded-full border-2 border-white" src={`https://flagcdn.com/${countryCode.toLowerCase()}.svg`} alt={`${countryCode} flag`} title={countryCode}/>)}
-                    </div>
-                    <div className="flex flex-col">
-                        <h2 className="md:text-lg text-sm font-semibold text-gray-800">{userName}</h2>
-                        <p className="text-[10px] md:text-[12px] text-gray-400 md:mt-0.5">{userPhoneNumber.replace('+', '')}</p>
+    {/* RIGHT SIDE BUTTONS */}
+    <div className="flex items-center gap-2 ml-auto">
+      <button
+        onClick={() => setIsAssignModalOpen(true)}
+        className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
+        Assign
+      </button>
+      <button
+        onClick={() => setIsEscalateModalOpen(true)}
+        className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-orange-600 bg-white border border-orange-400 rounded-sm hover:bg-orange-50 transition-colors"
+      >
+        Escalate
+      </button>
+      <button
+        onClick={() => setIsCloseConfirmOpen(true)} // This now opens the modal
+        className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-white bg-green-500 border border-green-500 rounded-sm hover:bg-green-600 transition-colors"
+      >
+        Close Ticket
+      </button>
 
-                    </div>
-                                    </div>
+      {isEscalateModalOpen && (
+        <EscalateIssueModal
+          closeModal={() => setIsEscalateModalOpen(false)}
+          goBackToModal1={() => {
+            setIsEscalateModalOpen(false);
+            setIsModalOpen(true);
+          }}
+        />
+      )}
+    </div>
+  </div>
+</header>
 
-                     <div className="flex items-center gap-2 mt-0.5 md:mt-2 flex-wrap">
-                        <span className="text-xs md:text-sm font-medium text-gray-600">Ticket #TK-2024-001</span>
-                        <span className="px-2 py-0.5 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">In Progress</span>
-                        <span className="px-2 py-0.5 text-xs font-semibold text-red-800 bg-red-100 rounded-full">Urgent</span>
-                        <button className="px-2 py-0.5 text-xs text-gray-500 hidden md:block border border-dashed border-gray-400 rounded-md hover:bg-gray-100">+ Add Tag</button>
-                        </div>
-                                          </div>
-
-                <div className="flex items-center gap-2">
-                    <button className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">Assign</button>
-                    <button onClick={() => setIsEscalateModalOpen(true)} className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-orange-600 bg-white border border-orange-400 rounded-sm hover:bg-orange-50 transition-colors">Escalate</button>
-                    <button onClick={handleCloseChat} className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm  font-semibold text-white bg-green-500 border border-green-500 rounded-sm hover:bg-green-600 transition-colors">Close Ticket</button>
-                   {/*} <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100 transition-colors"><MoreVertical size={20} /></button> */}
-                    {isEscalateModalOpen && ( <EscalateIssueModal closeModal={() => setIsEscalateModalOpen(false)} goBackToModal1={() => { setIsEscalateModalOpen(false); setIsModalOpen(true); }} /> )}
-                </div>
-            </div>
-                              </div>
-
-          </header>
 
           <main className="relative flex-1 flex flex-col min-h-0">
             <div className="overflow-y-auto p-6 space-y-6 flex-1">
@@ -336,7 +539,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                     <div key={msg.id} className="flex justify-end items-start gap-3">
                       <div className="flex flex-col items-end">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-bold text-gray-800">Tuma Agent</span>
+                           <span className="text-sm font-bold text-gray-600">{msg.senderName || 'Agent'}</span>
                           <span className="text-xs text-gray-500">{formatFullTimestamp(msg.createdAt)}</span>
                         </div>
                         <div className="bg-blue-600 text-white p-3 rounded-lg max-w-lg">
@@ -345,7 +548,10 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                            {msg.type === 'image' && <img src={msg.payload.url} alt="Agent attachment" className="rounded-lg max-w-[200px] cursor-pointer" onClick={() => setLightboxImage(msg.payload.url)} />}
                            {msg.type === 'file' && <a href={msg.payload.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-300 hover:text-white underline"><Paperclip size={16} /><span>File Attachment</span></a>}
                         </div>
-                      </div>
+                         <span className="text-sm text-gray-500 flex items-center gap-1">
+                                      <MessageStatus status={msg.status} />
+                             </span>
+                           </div>
                       <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">AG</div>
                     </div>
                   ) : (
@@ -378,63 +584,72 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
             <FaPlus size={20} />
           </button>
 
+{/* --- REPLACE the entire existing <footer> element in Conversation.js with this --- */}
 
-          <footer className="pt-4 px-4 pb-4">
-            {/* Conditional message when chat is closed */}
-            {selectedChat.isClosed && (
-              <div className="p-3 text-center bg-yellow-100 rounded-lg mb-2">
-                <p className="text-sm text-yellow-800">This conversation is currently closed. Sending a new message will re-open it.</p>
-              </div>
-            )}
+<footer className="pt-4 px-4 pb-4 border-t bg-white">
+  {/* Check if the chat status is 'CLOSED' */}
+  {chatDetails.status === 'CLOSED' ? (
+ <div className="flex justify-center items-center max-h-[8vh]">
+  <div className="p-4 text-center bg-gray-100 rounded-lg flex flex-col sm:flex-row justify-center items-center gap-4">
+    <p className="text-sm font-medium text-gray-800">
+      This conversation is closed.
+    </p>
+    <button
+      onClick={handleReopenChat}
+      className="px-6 py-2 font-semibold text-white bg-yellow-600 rounded-md hover:bg-yellow-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+    >
+      Reopen Ticket
+    </button>
+  </div>
+</div>
 
-            {/* The reply input area and controls are now always rendered */}
-            <div>
-              <div className="p-1 bg-white border border-gray-200 rounded-xl">
-                  <textarea
-                      ref={textareaRef}
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
-                      rows={1}
-                      className="w-full flex-1 px-2 py-5  text-sm bg-transparent resize-none max-h-40  focus:outline-none"
-                      placeholder={selectedChat.isClosed ? "Type to re-open conversation..." : "Please type here..."}
-                  />
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-1">
-                          <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => setShowEmojiPicker(p => !p)}>
-                              <Smile className="w-5 h-5" />
-                          </button>
-                          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*, .pdf, .doc, .docx, .txt" />
-                          <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => fileInputRef.current.click()} disabled={isUploading}>
-                              {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
-                          </button>
-                      </div>
-
-
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900" onClick={() => setIsTemplatesModalOpen(true)}>
-                          <FaListAlt className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm font-medium">Templates</span>
-                      </button>
-                      <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-                          <FaStickyNote className="w-4 h-4 text-yellow-500" />
-                          <span className="text-sm font-medium">Add Note</span>
-                      </button>
-                      </div>
-
-                  <button
-                      onClick={sendMessage}
-                      className="px-3 md:px-8 md:py-2 py-1 font-semibold text-white bg-blue-600 rounded-sm hover:bg-blue-700 disabled:bg-blue-300"
-                      disabled={!newMessage.trim() && !isUploading}
-                  >
-                      Send
-                  </button>
-              </div>
-            </div>
-          </footer>
+  ) : (
+    // If not closed, show the regular message input
+    <div>
+      <div className="p-1 bg-white border border-gray-200 rounded-xl">
+        <textarea
+            ref={textareaRef}
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
+            rows={1}
+            className="w-full flex-1 px-2 py-5 text-sm bg-transparent resize-none max-h-40 focus:outline-none"
+            placeholder="Please type here..."
+        />
+      </div>
+      <div className="flex items-center justify-between mt-2">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1">
+            <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => setShowEmojiPicker(p => !p)}>
+              <Smile className="w-5 h-5" />
+            </button>
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*, .pdf, .doc, .docx, .txt" />
+            <button className="p-2 text-gray-500 rounded-full hover:bg-gray-100" onClick={() => fileInputRef.current.click()} disabled={isUploading}>
+              {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center space-x-4">
+          <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900" onClick={() => setIsTemplatesModalOpen(true)}>
+            <FaListAlt className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium">Templates</span>
+          </button>
+          <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+            <FaStickyNote className="w-4 h-4 text-yellow-500" />
+            <span className="text-sm font-medium">Add Note</span>
+          </button>
+        </div>
+        <button
+          onClick={sendMessage}
+          className="px-3 md:px-8 md:py-2 py-1 font-semibold text-white bg-blue-600 rounded-sm hover:bg-blue-700 disabled:bg-blue-300"
+          disabled={!newMessage.trim() || isUploading}
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  )}
+</footer>
         </>
       )}
     </div>

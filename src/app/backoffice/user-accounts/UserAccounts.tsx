@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { Search } from "lucide-react";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
@@ -39,29 +39,7 @@ export default function UserAccounts() {
   const [sidebarOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [displayedUsers, setDisplayedUsers] = useState<User[]>([]);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const tableContainerRef = useRef<HTMLDivElement>(null);
-
-  const updateUserStatus = (userId: number, newStatus: Partial<User>) => {
-    setAllUsers((prev) =>
-      prev.map((user) =>
-        user.accountId === userId ? { ...user, ...newStatus } : user
-      )
-    );
-    setDisplayedUsers((prev) =>
-      prev.map((user) =>
-        user.accountId === userId ? { ...user, ...newStatus } : user
-      )
-    );
-    setFilteredUsers((prev) =>
-      prev.map((user) =>
-        user.accountId === userId ? { ...user, ...newStatus } : user
-      )
-    );
-  };
-
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -74,15 +52,15 @@ export default function UserAccounts() {
   const dateFilterRef = useRef<HTMLDivElement>(null);
   const [riskFilter, setRiskFilter] = useState<string | null>(null);
 
-  const usersPerPage = isMobile ? 7 : 10;
-  const initialLoadCount = usersPerPage * 2; // Load double the page size initially
-  const loadMoreThreshold = 200; // pixels from bottom to trigger load more
+  // Pagination: user requested 10 users per page
+  const usersPerPage = 10;
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const fetchAllUsers = async () => {
     setLoading(true);
     const pageSize = 100;
     const batchSize = 50;
-    let currentPage = 1;
+    let currentPageNum = 1;
     let allResults: User[] = [];
 
     const fetchPage = async (page: number): Promise<User[]> => {
@@ -105,17 +83,17 @@ export default function UserAccounts() {
       while (true) {
         const pages = Array.from(
           { length: batchSize },
-          (_, i) => currentPage + i
+          (_, i) => currentPageNum + i
         );
-
         const results = await Promise.all(pages.map(fetchPage));
         const combined = results.flat();
 
         if (combined.length === 0) break;
 
         allResults = [...allResults, ...combined];
-        currentPage += batchSize;
+        currentPageNum += batchSize;
 
+        // small delay to avoid hammering the API
         await new Promise((res) => setTimeout(res, 100));
       }
     };
@@ -124,17 +102,20 @@ export default function UserAccounts() {
 
     setAllUsers(allResults);
     setFilteredUsers(allResults);
-    setDisplayedUsers(allResults.slice(0, initialLoadCount));
+    setCurrentPage(1);
+    setDisplayedUsers(allResults.slice(0, usersPerPage));
     setLoading(false);
   };
 
   useEffect(() => {
     fetchAllUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Apply filters/search -> update filteredUsers and reset to page 1
   useEffect(() => {
     const rawQuery = searchQuery.trim();
-    const tokens = rawQuery.toLowerCase().split(/\s+/);
+    const tokens = rawQuery.toLowerCase().split(/\s+/).filter(Boolean);
 
     const filtered = allUsers.filter((user) => {
       // Risk filter
@@ -169,41 +150,37 @@ export default function UserAccounts() {
     });
 
     setFilteredUsers(filtered);
-    setDisplayedUsers(filtered.slice(0, initialLoadCount));
+    setCurrentPage(1);
   }, [searchQuery, dateRange, allUsers, riskFilter]);
 
-  // Infinite scroll handler
-  const handleScroll = useCallback(() => {
-    if (
-      tableContainerRef.current &&
-      !loadingMore &&
-      displayedUsers.length < filteredUsers.length
-    ) {
-      const { scrollTop, scrollHeight, clientHeight } =
-        tableContainerRef.current;
-      const scrollPosition = scrollTop + clientHeight;
-
-      if (scrollHeight - scrollPosition < loadMoreThreshold) {
-        setLoadingMore(true);
-        setTimeout(() => {
-          setDisplayedUsers((prev) => [
-            ...prev,
-            ...filteredUsers.slice(prev.length, prev.length + usersPerPage),
-          ]);
-          setLoadingMore(false);
-        }, 500);
-      }
-    }
-  }, [loadingMore, displayedUsers.length, filteredUsers.length, usersPerPage]);
-
+  // Update displayedUsers whenever filteredUsers or currentPage changes
   useEffect(() => {
-    const container = tableContainerRef.current;
-    if (container) {
-      container.addEventListener("scroll", handleScroll);
-      return () => container.removeEventListener("scroll", handleScroll);
-    }
-  }, [handleScroll]);
+    const startIndex = (currentPage - 1) * usersPerPage;
+    const endIndex = startIndex + usersPerPage;
+    setDisplayedUsers(filteredUsers.slice(startIndex, endIndex));
+  }, [filteredUsers, currentPage]);
 
+  // clear any scroll-based logic (we're using pagination now)
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredUsers.length / usersPerPage)
+  );
+
+  const goToPage = (page: number) => {
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+    setCurrentPage(page);
+    // scroll table/container to top of view if desired (optional)
+    const container = document.querySelector("[data-users-table-top]");
+    if (container)
+      (container as HTMLElement).scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+  };
+
+  // Export logic left as-is (exports filteredUsers)
   type ExportedUserRow = {
     [key: string]: string | number | undefined;
   };
@@ -223,7 +200,7 @@ export default function UserAccounts() {
 
           const doc = user.documents?.[0] ?? {};
           const risk = user.riskScore ?? {};
-          const riskScores = risk.scores ?? {};
+          const riskScores = (risk as any).scores ?? {};
           const tx = user.transaction ?? {};
           const fullName = `${user.firstName} ${user.lastName}`;
           const totalTx =
@@ -312,7 +289,7 @@ export default function UserAccounts() {
         }
       };
 
-      // Parallel batching (10 requests at a time)
+      // Parallel batching (concurrency)
       const concurrency = 50;
       for (let i = 0; i < filteredUsers.length; i += concurrency) {
         const batch = filteredUsers.slice(i, i + concurrency);
@@ -343,6 +320,24 @@ export default function UserAccounts() {
       toast.error("Export failed", { id: toastId });
       console.error("Export error:", error);
     }
+  };
+
+  const updateUserStatus = (userId: number, newStatus: Partial<User>) => {
+    setAllUsers((prev) =>
+      prev.map((user) =>
+        user.accountId === userId ? { ...user, ...newStatus } : user
+      )
+    );
+    setFilteredUsers((prev) =>
+      prev.map((user) =>
+        user.accountId === userId ? { ...user, ...newStatus } : user
+      )
+    );
+    setDisplayedUsers((prev) =>
+      prev.map((user) =>
+        user.accountId === userId ? { ...user, ...newStatus } : user
+      )
+    );
   };
 
   const getCountryDisplay = (code: string | null) => {
@@ -384,6 +379,78 @@ export default function UserAccounts() {
     }
   };
 
+  // small helper to render pagination numbers (keeps it simple)
+  const renderPageNumbers = () => {
+    const pages = [];
+    // for large number of pages, show a condensed range
+    const maxButtons = 7;
+    let start = 1;
+    let end = totalPages;
+
+    if (totalPages > maxButtons) {
+      const sideButtons = Math.floor((maxButtons - 1) / 2);
+      start = Math.max(1, currentPage - sideButtons);
+      end = Math.min(totalPages, currentPage + sideButtons);
+
+      // adjust if we are near the edges
+      if (currentPage <= sideButtons) {
+        start = 1;
+        end = maxButtons;
+      } else if (currentPage + sideButtons >= totalPages) {
+        start = totalPages - (maxButtons - 1);
+        end = totalPages;
+      }
+    }
+
+    for (let p = start; p <= end; p++) {
+      pages.push(
+        <button
+          key={p}
+          onClick={() => goToPage(p)}
+          className={`px-3 py-1 rounded-md ${
+            p === currentPage
+              ? "bg-blue-600 text-white"
+              : "bg-white border text-gray-700"
+          }`}
+        >
+          {p}
+        </button>
+      );
+    }
+
+    if (start > 1) {
+      return (
+        <>
+          <button
+            onClick={() => goToPage(1)}
+            className="px-3 py-1 rounded-md bg-white border text-gray-700"
+          >
+            1
+          </button>
+          <span className="px-2">…</span>
+          {pages}
+        </>
+      );
+    }
+
+    if (end < totalPages) {
+      return (
+        <>
+          {pages}
+          <span className="px-2">…</span>
+          <button
+            onClick={() => goToPage(totalPages)}
+            className="px-3 py-1 rounded-md bg-white border text-gray-700"
+          >
+            {totalPages}
+          </button>
+        </>
+      );
+    }
+
+    return pages;
+  };
+
   return (
     <div className="flex h-screen relative">
       <Sidebar />
@@ -392,7 +459,10 @@ export default function UserAccounts() {
       <div
         className={`flex-1 p-4 md:p-6 md:ml-80 bg-white overflow-x-auto ${isMobile && sidebarOpen ? "opacity-50 pointer-events-none" : ""}`}
       >
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div
+          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4"
+          data-users-table-top
+        >
           <h2 className="text-xl md:text-2xl font-semibold text-black">
             User & Accounts
           </h2>
@@ -475,9 +545,8 @@ export default function UserAccounts() {
 
         <div
           className="overflow-x-auto"
-          ref={tableContainerRef}
           style={{
-            maxHeight: "calc(100vh - 150px)",
+            maxHeight: "calc(100vh - 220px)",
             overflowY: "auto",
             marginBottom: "0.5rem",
           }}
@@ -510,9 +579,7 @@ export default function UserAccounts() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs ${getPastelColor(
-                              user.firstName + user.lastName
-                            )}`}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs ${getPastelColor(user.firstName + user.lastName)}`}
                           >
                             {getInitials(user.firstName + " " + user.lastName)}
                           </div>
@@ -540,36 +607,22 @@ export default function UserAccounts() {
                           )}
                         </div>
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                            statusStyles[user.accountStatus]?.bg ||
-                            "bg-gray-100"
-                          } ${
-                            statusStyles[user.accountStatus]?.text ||
-                            "text-gray-600"
-                          }`}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusStyles[user.accountStatus]?.bg || "bg-gray-100"} ${statusStyles[user.accountStatus]?.text || "text-gray-600"}`}
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              statusStyles[user.accountStatus]?.dot ||
-                              "bg-gray-400"
-                            }`}
+                            className={`w-1.5 h-1.5 rounded-full ${statusStyles[user.accountStatus]?.dot || "bg-gray-400"}`}
                           />
                           {user.accountStatus}
                         </span>
                       </div>
                     </div>
                   ))}
-                  {loadingMore && (
-                    <div className="flex justify-center p-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+
+                  {displayedUsers.length === 0 && (
+                    <div className="text-center py-4 text-gray-500">
+                      No users found.
                     </div>
                   )}
-                  {displayedUsers.length === filteredUsers.length &&
-                    filteredUsers.length > 0 && (
-                      <div className="text-center py-4 text-gray-500">
-                        All users loaded
-                      </div>
-                    )}
                 </>
               ) : (
                 <div className="text-center py-4 text-gray-400">
@@ -645,9 +698,7 @@ export default function UserAccounts() {
                         </td>
                         <td className="px-4 py-3 flex items-center gap-2">
                           <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm ${getPastelColor(
-                              user.firstName + user.lastName
-                            )}`}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm ${getPastelColor(user.firstName + user.lastName)}`}
                           >
                             {getInitials(user.firstName + " " + user.lastName)}
                           </div>
@@ -671,19 +722,10 @@ export default function UserAccounts() {
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                              statusStyles[user.accountStatus]?.bg ||
-                              "bg-gray-100"
-                            } ${
-                              statusStyles[user.accountStatus]?.text ||
-                              "text-gray-600"
-                            }`}
+                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${statusStyles[user.accountStatus]?.bg || "bg-gray-100"} ${statusStyles[user.accountStatus]?.text || "text-gray-600"}`}
                           >
                             <span
-                              className={`w-2 h-2 rounded-full ${
-                                statusStyles[user.accountStatus]?.dot ||
-                                "bg-gray-400"
-                              }`}
+                              className={`w-2 h-2 rounded-full ${statusStyles[user.accountStatus]?.dot || "bg-gray-400"}`}
                             />
                             {user.accountStatus}
                           </span>
@@ -695,30 +737,10 @@ export default function UserAccounts() {
                         <td className="px-4 py-3 text-right">⋯</td>
                       </tr>
                     ))}
-                    {loadingMore && (
-                      <tr>
-                        <td colSpan={8} className="text-center py-4">
-                          <div className="flex justify-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    {displayedUsers.length === filteredUsers.length &&
-                      filteredUsers.length > 0 && (
-                        <tr>
-                          <td
-                            colSpan={8}
-                            className="text-center py-4 text-gray-500"
-                          >
-                            All users loaded
-                          </td>
-                        </tr>
-                      )}
                   </>
                 ) : (
                   <tr>
-                    <td colSpan={8} className="text-center py-4 text-gray-400">
+                    <td colSpan={9} className="text-center py-4 text-gray-400">
                       No users found.
                     </td>
                   </tr>
@@ -728,25 +750,53 @@ export default function UserAccounts() {
           )}
         </div>
 
+        {/* Pagination controls */}
         {!loading && (
-          <div className="text-center text-sm text-gray-500 py-2 mb-2  sticky bottom-0 bg-white border-t">
-            Showing {displayedUsers.length} of {filteredUsers.length} customers
-            {displayedUsers.length < filteredUsers.length && (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 py-3 mt-2 -mb-6 sticky bottom-0 bg-white border-t">
+            <div className="text-sm text-gray-500 mt-4">
+              Showing{" "}
+              {filteredUsers.length === 0
+                ? 0
+                : (currentPage - 1) * usersPerPage + 1}{" "}
+              - {Math.min(currentPage * usersPerPage, filteredUsers.length)} of{" "}
+              {filteredUsers.length} customers
+            </div>
+
+            <div className="flex items-center gap-2 mt-4">
               <button
-                onClick={() => {
-                  setDisplayedUsers((prev) => [
-                    ...prev,
-                    ...filteredUsers.slice(
-                      prev.length,
-                      prev.length + usersPerPage
-                    ),
-                  ]);
-                }}
-                className="ml-3 text-blue-600 hover:text-blue-800"
+                onClick={() => goToPage(1)}
+                className="px-3 py-1 rounded-md bg-white border text-gray-700"
+                disabled={currentPage === 1}
               >
-                Load More
+                {"<<"}
               </button>
-            )}
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                className="px-3 py-1 rounded-md bg-white border text-gray-700"
+                disabled={currentPage === 1}
+              >
+                Prev
+              </button>
+
+              <div className="flex items-center gap-1">
+                {renderPageNumbers()}
+              </div>
+
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                className="px-3 py-1 rounded-md bg-white border text-gray-700"
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+              <button
+                onClick={() => goToPage(totalPages)}
+                className="px-3 py-1 rounded-md bg-white border text-gray-700"
+                disabled={currentPage === totalPages}
+              >
+                {">>"}
+              </button>
+            </div>
           </div>
         )}
 

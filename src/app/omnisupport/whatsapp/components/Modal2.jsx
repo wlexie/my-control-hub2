@@ -26,11 +26,24 @@ const TEMPLATES = [
     'flash_alert',
     'complete_ver',
     'test',
+<<<<<<< HEAD
   '5_days',
   'closure_alert',  
+=======
+    'flash_live1',
+    'after',
+    'after_hour1',
+    'apology5',
+    'make_up',
+        'redone',
+        'rate2',
+  '5_days', 
+  'tomorrow', 
+>>>>>>> c67c311c43f4804009e7b126792936c095e5e965
     'lead_clients',
     '3_dayss',       // New template
   '3_days',       // New template
+  'weekend_treat', 
   'eve_reminder', // New template
   '4_hours',      // New template
   '1_hour',       // New template
@@ -41,6 +54,66 @@ const TEMPLATES = [
 // Storing the content for each template
 const TEMPLATE_CONTENT = {
   potential_user: {
+    header: "Karibu Tuma!",
+    body: `Hey!💫
+Thank you for your interest in Tuma! 💙
+Tuma is a fast, secure, and simple way to send money back home to Africa from the UK– best exchange rates in the market, no hidden fees, no stress. 💸
+Thanks for choosing Tuma🌍📲
+
+ #TumaNaTuma
+Cheers!🥂
+Tuma Team.`
+  },
+    potential_user: {
+    header: "Karibu Tuma!",
+    body: `Hey!💫
+Thank you for your interest in Tuma! 💙
+Tuma is a fast, secure, and simple way to send money back home to Africa from the UK– best exchange rates in the market, no hidden fees, no stress. 💸
+Thanks for choosing Tuma🌍📲
+
+ #TumaNaTuma
+Cheers!🥂
+Tuma Team.`
+  },
+    make_up: {
+    header: "Karibu Tuma!",
+    body: `Hey!💫
+Thank you for your interest in Tuma! 💙
+Tuma is a fast, secure, and simple way to send money back home to Africa from the UK– best exchange rates in the market, no hidden fees, no stress. 💸
+Thanks for choosing Tuma🌍📲
+
+ #TumaNaTuma
+Cheers!🥂
+Tuma Team.`
+  },
+    weekend_treat: {
+    header: "💙 A Little Weekend Treat for You 🙏",
+    body: `Hi 😊
+To make your weekend brighter, we’re giving you the best exchange rate all the way till Sunday, 16th Nov — just for you.
+💸 Today’s rate: KES 170 per £1
+ More love home. More value in every transfer.
+Send with Tuma and let your people receive even more ❤️
+`
+  },
+     bbob_rate: {
+    header: "Karibu Tuma!",
+    body: `Hey!💫
+Thank you for your interest in Tuma! 💙
+Tuma is a fast, secure, and simple way to send money back home to Africa from the UK– best exchange rates in the market, no hidden fees, no stress. 💸
+Thanks for choosing Tuma🌍📲
+
+ #TumaNaTuma
+Cheers!🥂
+Tuma Team.`
+  },
+   rate2: {
+    header: "💙 We Appreciate You — Enjoy KES 170 per £1 Today! 🙏",
+    body: `Hi 😊
+Your continued trust and support mean everything to us. You’re the reason we keep doing what we do, helping you send more love home, with even better value 💫
+This week, enjoy 3 bob ABOVE the market rate on all transfers until Sunday, 16th November!
+💸 Today’s rate: KES 170 per £1`
+  },
+  redone: {
     header: "Karibu Tuma!",
     body: `Hey!💫
 Thank you for your interest in Tuma! 💙
@@ -63,6 +136,17 @@ Thanks for choosing Tuma🌍📲
 Cheers!🥂
 Tuma Team.`
   },
+   after: {
+    header: "Karibu Tuma!",
+    body: `Thank you so much for being part of our Flash Hour today! 🙌
+We truly appreciate the support and excitement.
+We did experience some technical issues due to the high traffic.
+If you tried to transact but couldn’t, don’t worry — we’ll reach out and offer you a special rate just for you. Our team is already on it ✅
+We’re grateful for your patience and trust as we continue building a more seamless TUMA experience for you. 
+For now as Tuma, we say thank you for the amazing turnout! 💙
+More exciting offers coming soon!
+`
+  },
   welcome_basics: {
     header: "Karibu Tuma!",
     body: `Hi! 💫
@@ -76,6 +160,7 @@ Thanks for choosing Tuma🌍📲
 Cheers!🥂
 Tuma Team.`
   },
+<<<<<<< HEAD
     closure_alert: {
     header: "Alert",
     body: `
@@ -87,6 +172,9 @@ Be on alert — don’t miss it!🤗
     `
   },
     test: {
+=======
+   make_up: {
+>>>>>>> c67c311c43f4804009e7b126792936c095e5e965
     header: "Karibu Tuma!",
     body: `Hi! 💫
 A hearty Welcome to Tuma, we’re thrilled to have you join our growing community!💙💸
@@ -98,6 +186,56 @@ Thanks for choosing Tuma🌍📲
 
 Cheers!🥂
 Tuma Team.`
+  },
+    flash_hour1: {
+    header: "🚨 IT’S LIVE — TUMA FLASH HOUR 💥",
+    body: `
+    💸 IT’S GO TIME!
+For the next ONE HOUR only: 5PM–6PM UK ⏰
+💷 1 GBP = 200 KES 💷
+No fees. Just the best rate in history! 🤯
+Send to mum, shosh, mjengo, or savings — make it count before 6PM (UK)!
+`
+    },
+    tomorrow: {
+    header: "Tomorrow it’s raining money 🌧️💷",
+    body: `Hi 👋
+Are you ready? It's tomorrow!
+1 GBP = 200 KES | 31 Oct, 5–6PM UK!
+Finish that mjengo, buy that shamba, support mum & shosh, or stack up for savings and investments 💚
+Is your App ready? Card added? Be there when the clock hits 5 to TUMA fast! ⏰
+`  
+      },
+        apology5: {
+    header: "Tomorrow it’s raining money 🌧️💷",
+    body: `We owe you a BIG apology 😔
+Flash Hour got too lit — traffic went crazy and caused a technical hiccup. We know that was annoying, and we’re really sorry.
+
+The good news: everything is fixed now ✅
+To make it right, we’d love to offer you a personal rat  e of 1 GBP - KES 200 tomorrow from 5–6pm UK time, just like Flash Hour — exclusively for you 💙 No crowd. No chaos.
+Hope you can give us another shot 🙏
+We appreciate you & we’re glad you’re part of Tuma 
+`
+  },
+   after_hour1: {
+    header: "after hour",
+    body: `Hi {{1}},
+
+Flash Hour Wrapped! 💙
+
+Thank you so much for being part of our Flash Hour today! 🙌We truly appreciate the support and excitement.
+
+We did experience some technical issues due to the high traffic.
+
+If you tried to transact but couldn’t, don’t worry — we’ll reach out and offer you a special rate just for you. Our team is already on it ✅
+
+We’re grateful for your patience and trust as we continue building a more seamless TUMA experience for you. 
+
+For now as Tuma, we say thank you for the amazing turnout! 💙
+
+More exciting offers coming soon!
+
+`
   },
   welcome_active: {
     header: "Karibu Tuma!",
