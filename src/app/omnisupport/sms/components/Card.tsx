@@ -29,7 +29,7 @@ const Card: React.FC<CardProps> = ({
         <div className={`p-3 rounded-full ${iconBgColor}`}>
           <Icon className={`${iconColor} text-xl`} />
         </div>
-        {dotColor && <div className={`w-2 h-3 rounded-full ${dotColor}`} />}
+        {dotColor && <div className={`w-2 h-2 rounded-full ${dotColor}`} />}
       </div>
       <div className="flex-grow">
         <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
