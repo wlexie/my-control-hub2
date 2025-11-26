@@ -26,10 +26,6 @@ const TEMPLATES = [
     'flash_alert',
     'complete_ver',
     'test',
-<<<<<<< HEAD
-  '5_days',
-  'closure_alert',  
-=======
     'flash_live1',
     'after',
     'after_hour1',
@@ -39,7 +35,6 @@ const TEMPLATES = [
         'rate2',
   '5_days', 
   'tomorrow', 
->>>>>>> c67c311c43f4804009e7b126792936c095e5e965
     'lead_clients',
     '3_dayss',       // New template
   '3_days',       // New template
@@ -160,21 +155,7 @@ Thanks for choosing Tuma🌍📲
 Cheers!🥂
 Tuma Team.`
   },
-<<<<<<< HEAD
-    closure_alert: {
-    header: "Alert",
-    body: `
-    Oh, before you go… BIG news! 👀
-FLASH HOUR is tomorrow — 5–6 PM UK! 💥
-For 1 hour only: 1 GBP = 200 bob + zero fees 💷🔥
-Be on alert — don’t miss it!🤗
-
-    `
-  },
-    test: {
-=======
    make_up: {
->>>>>>> c67c311c43f4804009e7b126792936c095e5e965
     header: "Karibu Tuma!",
     body: `Hi! 💫
 A hearty Welcome to Tuma, we’re thrilled to have you join our growing community!💙💸

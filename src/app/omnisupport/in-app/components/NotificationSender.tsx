@@ -70,20 +70,6 @@ const NotificationSender: React.FC = () => {
         setFailureCount(response.data.failureCount || 0);
         setSuccessCount(response.data.successCount || 0); // Still show success count if partially failed
       }
-<<<<<<< HEAD
-      } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error('Axios error sending notification:', error.response?.data || error.message);
-        setStatus(`Error: ${error.response?.data?.message || error.message}`);
-      } else if (error instanceof Error) {
-        console.error('General error sending notification:', error.message);
-        setStatus(`Error: ${error.message}`);
-      } else {
-        console.error('Unknown error sending notification:', error);
-        setStatus('Error: Unknown error occurred');
-      }
-
-=======
     } catch (error: unknown) { // FIX: Changed 'any' to 'unknown' and added robust error handling
       console.error('Error sending notification:', error);
 
@@ -108,13 +94,12 @@ const NotificationSender: React.FC = () => {
       }
       
       setStatus(`Error: ${errorMessage}`);
->>>>>>> c67c311c43f4804009e7b126792936c095e5e965
       setFailureCount(0);
       setSuccessCount(0);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     // Adjusted styling to fill the space
@@ -123,8 +108,8 @@ const NotificationSender: React.FC = () => {
 
       <h2 className="text-4xl font-semibold text-gray-500 mb-10 tracking-tight">Send In-App Notification</h2>
 
-      <form onSubmit={handleSendNotification} className="flex-grow flex flex-col"> 
-        <div className="flex-grow overflow-y-auto pr-5 -mr-4 custom-scrollbar"> 
+      <form onSubmit={handleSendNotification} className="flex-grow flex flex-col"> {/* Wrap in a form tag */}
+        <div className="flex-grow overflow-y-auto pr-4 -mr-4 custom-scrollbar"> {/* Added flex-grow and overflow for scrollable content if it gets too long, custom-scrollbar for better aesthetics */}
           
           {/* Notification Title */}
           <div className="mb-7">
