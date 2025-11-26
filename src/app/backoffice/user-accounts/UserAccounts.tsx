@@ -752,7 +752,7 @@ export default function UserAccounts() {
 
         {/* Pagination controls */}
         {!loading && (
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3 py-3 mt-2 -mb-6 sticky bottom-0 bg-white border-t">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-2 py-3 mt-2 -mb-6 sticky bottom-0 bg-white border-t">
             <div className="text-sm text-gray-500 mt-4">
               Showing{" "}
               {filteredUsers.length === 0
@@ -762,7 +762,7 @@ export default function UserAccounts() {
               {filteredUsers.length} customers
             </div>
 
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-2 mt-3">
               <button
                 onClick={() => goToPage(1)}
                 className="px-3 py-1 rounded-md bg-white border text-gray-700"

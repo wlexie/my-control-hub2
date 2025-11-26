@@ -3,14 +3,14 @@ import React from 'react';
 import { IconType } from 'react-icons'; // Assuming you're using react-icons
 
 interface CardProps {
-  icon: IconType; // React-icons component
-  iconBgColor: string; // Tailwind class for background color
-  iconColor: string; // Tailwind class for icon color
+  icon: IconType; 
+  iconBgColor: string; 
+  iconColor: string; 
   title: string;
   value: string;
   change: string;
-  changeColor: string; // Tailwind class for change text color
-  dotColor?: string; // Optional dot color for the top right
+  changeColor: string; 
+  dotColor?: string; 
 }
 
 const Card: React.FC<CardProps> = ({
@@ -29,7 +29,7 @@ const Card: React.FC<CardProps> = ({
         <div className={`p-3 rounded-full ${iconBgColor}`}>
           <Icon className={`${iconColor} text-xl`} />
         </div>
-        {dotColor && <div className={`w-2 h-2 rounded-full ${dotColor}`} />}
+        {dotColor && <div className={`w-2 h-3 rounded-full ${dotColor}`} />}
       </div>
       <div className="flex-grow">
         <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
