@@ -153,7 +153,7 @@ export default function UserAccounts() {
     setCurrentPage(1);
   }, [searchQuery, dateRange, allUsers, riskFilter]);
 
-  // Update displayedUsers whenever filteredUsers or currentPage changes
+  // Update displayedUsers whenever filteredUser
   useEffect(() => {
     const startIndex = (currentPage - 1) * usersPerPage;
     const endIndex = startIndex + usersPerPage;
