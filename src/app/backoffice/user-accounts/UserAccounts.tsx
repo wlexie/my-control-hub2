@@ -200,7 +200,7 @@ export default function UserAccounts() {
 
           const doc = user.documents?.[0] ?? {};
           const risk = user.riskScore ?? {};
-          const riskScores = (risk as any).scores ?? {};
+          const riskScores = risk.scores ?? {};
           const tx = user.transaction ?? {};
           const fullName = `${user.firstName} ${user.lastName}`;
           const totalTx =
