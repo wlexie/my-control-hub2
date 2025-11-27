@@ -15,6 +15,7 @@ export function middleware(request: NextRequest) {
   const protectedPaths = 
   [ 
     '/dashboard', 
+    '/backoffice',
     '/backoffice/transactions', 
     '/backoffice/dashboard',
     '/backoffice/user-accounts',
@@ -28,11 +29,15 @@ export function middleware(request: NextRequest) {
 
 
     //fx routes
+    '/fx-navigator',
     '/fx-navigator/dashboard',
     '/fx-navigator/rate-manager',
 
     //omnisupport
     '/omnisupport',
+    '/omnisupport/whatsapp',
+    '/omnisupport/sms',
+    '/omnisupport/in-app',
 
     //access manager
     '/access-manager',
@@ -50,26 +55,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  //if (isPublicAuthPath && token) {
-   // return NextResponse.redirect(new URL('/', request.url));
- // }
-  
-  // If none of the above rules match, allow the request to proceed
   return NextResponse.next();
 }
 
 // THIS IS THE CRITICAL FIX: The new matcher
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     *
-     * This is a more standard and robust way to apply middleware to most pages.
-     */
+   
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };

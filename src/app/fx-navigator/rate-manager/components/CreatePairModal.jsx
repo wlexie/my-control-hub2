@@ -47,7 +47,7 @@ const ALL_CURRENCY_DATA = {
 
 };    
 
-const FROM_CURRENCY_CODES = ["GBP", "USD", "EUR"];
+const FROM_CURRENCY_CODES = ["GBP", "USD", "EUR", "TZS"];
 const TO_CURRENCY_CODES = ["GBP", "USD", "EUR", "KES", "TZS", "BIF", "GHS", "SSP", "MWK", "UGX", "ETB", "RWF", "ZAR", "SSP"];
 
 // --- Helper Component for Dropdown Items ---
