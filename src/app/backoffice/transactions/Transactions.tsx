@@ -11,7 +11,7 @@ import TransactionModal from "../components/TransactionModal";
 import FraudModal from "../compliance-security/components/FraudModal";
 import { Transaction } from "../types/transactions";
 import * as XLSX from "xlsx";
-import api from "../../../hooks/useApi";
+import api from "../../../utils/apiService"; 
 import { useSearchParams } from "next/navigation";
 import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
@@ -83,7 +83,8 @@ type RawTransaction = Partial<{
 const rowsPerPage = 10;
 
 const TransactionsPage = () => {
-  const { get } = api();
+  // REMOVED: const { get } = api(); -> We use the imported 'api' instance directly
+  
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
@@ -242,37 +243,23 @@ const TransactionsPage = () => {
     };
   }, []);
 
-  // Rest of your existing useEffect hooks remain the same...
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dateFilterRef.current &&
-        !dateFilterRef.current.contains(event.target as Node)
-      ) {
-        setShowDateFilter(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
   useEffect(() => {
     const fetchInitialPage = async () => {
       try {
         setLoading(true);
-        const url = userIdFromQuery
-          ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
-          : `https://api.tuma-app.com/api/transfer/all-transactions?page=1&size=${rowsPerPage}`;
+        // CHANGED: Use relative path (baseURL is in apiService)
+        const endpoint = userIdFromQuery
+          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
+          : `/transfer/all-transactions?page=1&size=${rowsPerPage}`;
 
-        const res = await get<RawTransaction[]>(url);
-        const formatted = res.map(mapApiTransactionToTransaction);
+        // CHANGED: Use api.get() and access .data
+        const res = await api.get<RawTransaction[]>(endpoint);
+        const formatted = res.data.map(mapApiTransactionToTransaction);
 
         setAllTransactions(formatted);
         setFilteredTransactions(formatted);
-      } catch {
+      } catch (err) {
+        console.error("Fetch error:", err);
         setError("Failed to fetch transactions");
       } finally {
         setLoading(false);
@@ -280,7 +267,7 @@ const TransactionsPage = () => {
     };
 
     fetchInitialPage();
-  }, []);
+  }, [userIdFromQuery]);
 
   useEffect(() => {
     const fetchAllPagesRecursively = async () => {
@@ -290,13 +277,15 @@ const TransactionsPage = () => {
       const fetchPage = async (page: number) => {
         if (loadedPages.has(page)) return null;
 
-        const url = userIdFromQuery
-          ? `https://api.tuma-app.com/api/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
-          : `https://api.tuma-app.com/api/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
+        // CHANGED: Use relative path
+        const endpoint = userIdFromQuery
+          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
+          : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
         try {
-          const res = await get<RawTransaction[]>(url);
+          // CHANGED: Use api.get() and access .data
+          const res = await api.get<RawTransaction[]>(endpoint);
           setLoadedPages((prev) => new Set(prev).add(page));
-          return res.length > 0 ? res : null;
+          return res.data.length > 0 ? res.data : null;
         } catch (err) {
           console.error(`Failed to load page ${page}:`, err);
           return null;
@@ -334,7 +323,7 @@ const TransactionsPage = () => {
     };
 
     fetchAllPagesRecursively();
-  }, [loadedPages]);
+  }, [loadedPages, userIdFromQuery]);
 
   useEffect(() => {
     let filtered = [...allTransactions];
@@ -467,15 +456,14 @@ const TransactionsPage = () => {
   const fetchTransactionDetails = async (
     transaction: Transaction
   ): Promise<ExportTransaction> => {
-    const response = await fetch(
-      `https://api.tuma-app.com/api/transfer/transaction-details?transactionId=${transaction.transactionId}`
+    // CHANGED: Use api.get() and relative URL.
+    // Replaced native fetch with axios instance
+    const response = await api.get(
+      `/transfer/transaction-details?transactionId=${transaction.transactionId}`
     );
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const fullDetails = await response.json();
+    // Axios throws on 401/500 automatically, so strict error checking of response.ok is handled by interceptors or catch block
+    const fullDetails = response.data;
     return mapToExportFormat(fullDetails);
   };
 
@@ -651,7 +639,7 @@ const TransactionsPage = () => {
       XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
       XLSX.writeFile(workbook, `${fileName}.xlsx`);
 
-      toast.success(`Exported ${data.length} transactions successfully!`, {
+      toast.success(`Exported ${data.length} transactions successfully!!`, {
         id: toastId,
       });
     } catch (error) {

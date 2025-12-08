@@ -1,10 +1,11 @@
-// components/UserDetailsModal.tsx
 "use client";
-import { authFetch } from "@/utils/authFetch";
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Cookies from "js-cookie";
+// REMOVED: import Cookies from "js-cookie";
+// REMOVED: import { authFetch } from "@/utils/authFetch";
+// ADDED: Axios instance
+import api from "@/utils/apiService"; 
 import {
   getInitials,
   getPastelColor,
@@ -73,10 +74,6 @@ export default function UserDetailsModal({
     notes: React.useRef<HTMLDivElement>(null),
   };
 
-  const getAuthToken = () => {
-    return Cookies.get("accessToken");
-  };
-
   const scrollToSection = (section: keyof typeof sectionRefs) => {
     sectionRefs[section]?.current?.scrollIntoView({ behavior: "smooth" });
     setActiveTab(section);
@@ -102,23 +99,14 @@ export default function UserDetailsModal({
   }, []);
 
   const fetchComments = async (accountKey: string) => {
-    const token = getAuthToken();
-    if (!token) return;
-
     try {
       setIsLoadingComments(true);
-      const res = await fetch(
-        `https://api.tuma-app.com/api/communication/comments/${accountKey}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      // CHANGED: api.get with relative URL
+      const res = await api.get<{ comments: RawComment[] }>(
+        `/communication/comments/${accountKey}`
       );
 
-      if (!res.ok) throw new Error("Failed to fetch comments");
-
-      const result: { comments: RawComment[] } = await res.json();
+      const result = res.data;
       const commentList = result.comments || [];
 
       const mappedComments: Comment[] = commentList.map((item) => ({
@@ -151,43 +139,29 @@ export default function UserDetailsModal({
 
     try {
       setIsProcessing(true);
-      const token = getAuthToken();
-
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      const response = await fetch(
-        "https://api.tuma-app.com/api/communication/add-comment",
+      
+      // CHANGED: api.post with object payload
+      const response = await api.post(
+        "/communication/add-comment",
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            commentType: "TEST",
-            text: comment.trim(),
-            accountUser: user.accountKey,
-            commentBy: `${user.firstName} ${user.lastName}`,
-          }),
+          commentType: "TEST",
+          text: comment.trim(),
+          accountUser: user.accountKey,
+          commentBy: `${user.firstName} ${user.lastName}`,
         }
       );
 
-      const result = await response.json();
+      const result = response.data;
 
-      if (response.ok) {
-        toast.success(result.message || "Comment added successfully");
-        setComment("");
-        setIsAddingComment(false);
-        await fetchComments(user.accountKey);
-      } else {
-        throw new Error(result.message || "Failed to add comment");
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to add comment"
-      );
+      // Axios throws on non-200, so if we are here, it's success (usually)
+      toast.success(result.message || "Comment added successfully");
+      setComment("");
+      setIsAddingComment(false);
+      await fetchComments(user.accountKey);
+
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error.message || "Failed to add comment";
+      toast.error(msg);
       console.error("Add comment error:", error);
     } finally {
       setIsProcessing(false);
@@ -205,18 +179,13 @@ export default function UserDetailsModal({
       const fetchUserDetails = async () => {
         try {
           setLoading(true);
-          const token = getAuthToken();
 
-          const res = await fetch(
-            `https://api.tuma-app.com/api/account/client-profile?userId=${userId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
+          // CHANGED: api.get
+          const res = await api.get(
+            `/account/client-profile?userId=${userId}`
           );
-          if (!res.ok) throw new Error("Failed to fetch user details");
-          const data = await res.json();
+          
+          const data = res.data;
 
           const parsedCards =
             data.cards?.map((cardString: string) => {
@@ -265,11 +234,13 @@ export default function UserDetailsModal({
     try {
       const loadingId = toast.loading("Approving user...");
 
-      const result = await authFetch(
-        `/account/document-recheck?applicantId=${user.userId}`,
-        { method: "POST" }
+      // CHANGED: api.post (replaced authFetch)
+      const res = await api.post(
+        `/account/document-recheck?applicantId=${user.userId}`
       );
-
+      
+      const result = res.data;
+      
       toast.dismiss(loadingId);
 
       // Handle response based on API's status
@@ -289,27 +260,15 @@ export default function UserDetailsModal({
         toast(result.message || "Something to review", {
           icon: "⚠️",
         });
-      } else if (result.status === "error") {
+      } else {
+        // Fallback for success=false inside a 200 OK
         toast.error(result.message || "Approval failed");
-      } else {
-        toast(result.message || "Unknown response from server", {
-          icon: "ℹ️",
-        });
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       toast.dismiss();
-
-      if (error instanceof Error) {
-        if (error.message.includes("Session expired")) {
-          // authFetch already handled logout & redirect
-          return;
-        }
-        toast.error(error.message || "Approval failed");
-        console.error("Approve error:", error.message);
-      } else {
-        toast.error("An unexpected error occurred during approval.");
-        console.error("Approve error:", error);
-      }
+      const msg = error?.response?.data?.message || error.message || "Approval failed";
+      toast.error(msg);
+      console.error("Approve error:", error);
     }
   };
 
@@ -321,13 +280,15 @@ export default function UserDetailsModal({
 
     try {
       toast.loading("Reinstating user...");
-      const result = await authFetch(
-        `/account/reinstate-user?userId=${user.userId}`,
-        { method: "POST" }
+      
+      // CHANGED: api.post (replaced authFetch)
+      const res = await api.post(
+        `/account/reinstate-user?userId=${user.userId}`
       );
+      
+      const result = res.data;
       toast.dismiss();
 
-      // ✅ Handle based on API response
       if (result.status === "success") {
         toast.success(result.message || "User reinstated successfully");
 
@@ -335,21 +296,14 @@ export default function UserDetailsModal({
         onUserUpdated(user.userId ?? userId, { accountStatus: "Active" });
       } else if (result.status === "warning") {
         toast(result.message || "Warning during reinstatement", { icon: "⚠️" });
-      } else if (result.status === "error") {
+      } else {
         toast.error(result.message || "Failed to reinstate user");
-      } else {
-        toast.error("Unexpected response from server.");
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       toast.dismiss();
-      if (error instanceof Error) {
-        if (error.message.includes("Session expired")) return;
-        toast.error(error.message || "Reinstate failed");
-        console.error("Reinstate error:", error.message);
-      } else {
-        toast.error("An unexpected error occurred during reinstatement.");
-        console.error("Reinstate error:", error);
-      }
+      const msg = error?.response?.data?.message || error.message || "Reinstate failed";
+      toast.error(msg);
+      console.error("Reinstate error:", error);
     }
   };
 
@@ -369,57 +323,47 @@ export default function UserDetailsModal({
     }
 
     try {
-      // Use toast.promise for better UX
       await toast.promise(
         async () => {
-          // Use provided comment or fallback to hardcoded one
           const commentText =
             declineComment?.trim() || "Declining test account";
           const encodedComment = encodeURIComponent(commentText);
-          const response = await authFetch(
-            `/account/manual-account-decline?applicantId=${user.userId}&comment=${encodedComment}`,
-            { method: "POST" }
+          
+          // CHANGED: api.post (replaced authFetch)
+          const res = await api.post(
+            `/account/manual-account-decline?applicantId=${user.userId}&comment=${encodedComment}`
           );
+          
+          const response = res.data;
 
-          // Handle different response statuses
           if (response.status === "success") {
-            toast.success(response.message || "User declined successfully");
-
             setUser((prev) =>
               prev ? { ...prev, accountStatus: "Declined" } : prev
             );
             onUserUpdated(user.userId ?? userId, { accountStatus: "Declined" });
 
-            // Reset the comment state and hide the input
             setComment("");
             setIsAddingComment(false);
 
-            // Refresh comments to show any system-added comments from the API
             if (user.accountKey) {
               await fetchComments(user.accountKey);
             }
+            return response.message || "User declined successfully";
           } else if (response.status === "warning") {
-            toast(response.message || "Warning during decline", { icon: "⚠️" });
-          } else if (response.status === "error") {
-            throw new Error(response.message || "Failed to decline user");
+            throw new Error(response.message || "Warning during decline");
           } else {
-            throw new Error("Unexpected response from server.");
+            throw new Error(response.message || "Failed to decline user");
           }
         },
         {
           loading: "Declining user...",
-          success: "User declined successfully",
+          success: (msg) => msg,
           error: (error) => error.message || "Failed to decline user",
         }
       );
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        if (error.message.includes("Session expired")) return;
-        console.error("Decline error:", error.message);
-      } else {
-        console.error("Decline error:", error);
-        toast.error("An unexpected error occurred during decline.");
-      }
+    } catch (error: any) {
+      console.error("Decline error:", error);
+      // toast already handled by toast.promise, but log for debug
     }
   };
 
@@ -431,10 +375,13 @@ export default function UserDetailsModal({
 
     try {
       toast.loading("Suspending user...");
-      const result = await authFetch(
-        `/account/suspend-account?userId=${user.userId}`,
-        { method: "POST" }
+      
+      // CHANGED: api.post (replaced authFetch)
+      const res = await api.post(
+        `/account/suspend-account?userId=${user.userId}`
       );
+      const result = res.data;
+      
       toast.dismiss();
 
       if (result.status === "success") {
@@ -448,26 +395,18 @@ export default function UserDetailsModal({
         });
       } else if (result.status === "warning") {
         toast(result.message || "Warning during suspension", { icon: "⚠️" });
-      } else if (result.status === "error") {
+      } else {
         toast.error(result.message || "Failed to suspend user");
-      } else {
-        toast.error("Unexpected response from server.");
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       toast.dismiss();
-      if (error instanceof Error) {
-        if (error.message.includes("Session expired")) return;
-        toast.error(error.message || "Suspend failed");
-        console.error("Suspend error:", error.message);
-      } else {
-        toast.error("An unexpected error occurred during suspension.");
-        console.error("Suspend error:", error);
-      }
+      const msg = error?.response?.data?.message || error.message || "Suspend failed";
+      toast.error(msg);
+      console.error("Suspend error:", error);
     }
   };
 
   if (!user) return null;
-  //const document = user.documents?.[0];
   const fullName = `${user.firstName} ${user.lastName}`.trim();
   const totalTransactions = user.transaction?.totalTransactions
     ? user.transaction.totalTransactions.successfulTransactions +

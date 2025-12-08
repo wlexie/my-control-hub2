@@ -14,6 +14,8 @@ import {
 import { AnimatePresence } from "framer-motion";
 import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
+// IMPORT API SERVICE
+import api from "../../../utils/apiService";
 
 interface User {
   accountId: number;
@@ -64,19 +66,26 @@ export default function UserAccounts() {
     let allResults: User[] = [];
 
     const fetchPage = async (page: number): Promise<User[]> => {
-      const res = await fetch(
-        `https://api.tuma-app.com/api/account/clients?page=${page}&size=${pageSize}`
-      );
-      if (!res.ok) return [];
-      const data = await res.json();
+      try {
+        // CHANGED: Use api.get with relative URL
+        const res = await api.get(
+          `/account/clients?page=${page}&size=${pageSize}`
+        );
+        
+        // CHANGED: Access .data directly
+        const data = res.data;
 
-      const users = Array.isArray(data.content)
-        ? data.content
-        : Array.isArray(data)
-          ? data
-          : [];
+        const users = Array.isArray(data.content)
+          ? data.content
+          : Array.isArray(data)
+            ? data
+            : [];
 
-      return users;
+        return users;
+      } catch (error) {
+        console.error(`Error fetching page ${page}:`, error);
+        return [];
+      }
     };
 
     const fetchInBatches = async () => {
@@ -180,7 +189,7 @@ export default function UserAccounts() {
       });
   };
 
-  // Export logic left as-is (exports filteredUsers)
+  // Export logic
   type ExportedUserRow = {
     [key: string]: string | number | undefined;
   };
@@ -192,11 +201,14 @@ export default function UserAccounts() {
 
       const fetchUserProfile = async (u: User) => {
         try {
-          const res = await fetch(
-            `https://api.tuma-app.com/api/account/client-profile?userId=${u.accountId}`
+          // CHANGED: Use api.get with relative URL.
+          // Axios handles error status codes by throwing, caught below.
+          const res = await api.get(
+            `/account/client-profile?userId=${u.accountId}`
           );
-          if (!res.ok) throw new Error("Failed to fetch user profile");
-          const user = await res.json();
+          
+          // CHANGED: Access .data directly
+          const user = res.data;
 
           const doc = user.documents?.[0] ?? {};
           const risk = user.riskScore ?? {};

@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import axios from "axios";
-//import api from "../../../utils/apiAuth";
+// IMPORT API
+import api from "../../../utils/apiAuth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -18,16 +18,15 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
+
     try {
-      const response = await axios.post(
-        `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(email)}`
-      // `${process.env.NEXT_PUBLIC_API_AUTH_URL}/auth/send-otp/${encodeURIComponent(email)}`
+      // CHANGED: Use api.post and relative path
+      const response = await api.post(
+        `/auth/send-otp/${encodeURIComponent(email)}`
       );
-  
+
       if (response.status === 200) {
         setNotification("An OTP has been sent to your email. Please verify.");
-        console.log(process.env.API_AUTH_URL)
         router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
       } else {
         setError("Failed to send OTP. Please try again.");
@@ -44,7 +43,6 @@ const Login = () => {
     <div className="flex min-h-screen font-poppins bg-gray-100">
       <div className="flex w-full">
         {/* Left Column: Image */}
-        {/* "hidden" hides this on mobile. "lg:block" makes it visible on large screens (1024px+). */}
         <div className="relative hidden w-1/2 lg:block">
           <Image
             src="/user-access/images/lady.png"
@@ -56,11 +54,15 @@ const Login = () => {
         </div>
 
         {/* Right Column: Form */}
-        {/* "w-full" makes this full-width on mobile. "lg:w-1/2" makes it half-width on large screens. */}
         <div className="flex w-full items-center justify-center p-8 lg:w-1/2 sm:p-12">
           <div className="w-full max-w-sm  md:max-w-md">
             <h2 className="md:mb-10 mb-6 flex items-center gap-4 text-3xl font-bold text-gray-800 lg:text-4xl">
-              <Image src="/user-access/images/logo.png" alt="Logo" width={40} height={35} />
+              <Image
+                src="/user-access/images/logo.png"
+                alt="Logo"
+                width={40}
+                height={35}
+              />
               Control Hub
             </h2>
             <h1 className="md:mb-6 mb-4 text-xl font-semibold text-gray-800 sm:text-2xl">

@@ -3,9 +3,11 @@
 import { useState, Suspense, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import axios from "axios";
+import axios from "axios"; // Kept only for isAxiosError check
+// IMPORT API
+import api from "../../../utils/apiAuth";
 import { useDispatch } from "react-redux";
-import { setCredentials } from "../../../store/authSlice"; // Make sure this path is correct
+import { setCredentials } from "../../../store/authSlice";
 import { jwtDecode } from "jwt-decode";
 import Cookies from "js-cookie";
 
@@ -19,14 +21,13 @@ const VerifyOTPContent = () => {
   const router = useRouter();
   const dispatch = useDispatch();
   const email = searchParams.get("email") || "";
-  //  const phone = searchParams.get("phone") || ""; // Example if you pass phone in query
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
   const [resendDisabled, setResendDisabled] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [channel, setChannel] = useState("email"); // 'email' or 'phone'
+  const [channel, setChannel] = useState("email");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -108,18 +109,16 @@ const VerifyOTPContent = () => {
     }
 
     try {
-      // The channelValue will be the email for now, but you can adapt this
-      // to use a phone number from searchParams if the channel is 'phone'.
-      const channelValue = email; // or `channel === 'email' ? email : phone`
+      const channelValue = email;
 
-      const response = await axios.post(
-        "https://auth.tuma-app.com/api/auth/verify-channel-otp",
+      // CHANGED: Use api.post and relative path
+      const response = await api.post(
+        "/auth/verify-channel-otp",
         {
           channel,
           channelValue,
           verificationCode,
-        },
-        { headers: { "Content-Type": "application/json" } }
+        }
       );
 
       if (response.status === 200 && response.data.accessToken) {
@@ -155,11 +154,9 @@ const VerifyOTPContent = () => {
         setOtp(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       }
-    } catch (err) {
+    } catch (err: any) {
       const specificErrorMsg =
-        axios.isAxiosError(err) && err.response?.data?.message
-          ? err.response.data.message
-          : "Invalid OTP. Please try again.";
+        err.response?.data?.message || "Invalid OTP. Please try again.";
       setError(specificErrorMsg);
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
@@ -173,18 +170,15 @@ const VerifyOTPContent = () => {
     setError("");
     setIsLoading(true);
     try {
-      // You might want to adapt this URL based on the selected channel too
-      await axios.post(
-        `https://auth.tuma-app.com/api/auth/send-otp/${encodeURIComponent(
-          email
-        )}`
+      // CHANGED: Use api.post and relative path
+      await api.post(
+        `/auth/send-otp/${encodeURIComponent(email)}`
       );
       alert(`A new OTP has been sent to your ${channel}.`);
-    } catch (err) {
+    } catch (err: any) {
       const resendErrorMsg =
-        axios.isAxiosError(err) && err.response?.data?.message
-          ? err.response.data.message
-          : "Failed to resend OTP. Please try again.";
+        err.response?.data?.message ||
+        "Failed to resend OTP. Please try again.";
       alert(resendErrorMsg);
     } finally {
       setIsLoading(false);
@@ -228,12 +222,12 @@ const VerifyOTPContent = () => {
             <h1 className="mb-2 text-center text-xl font-semibold text-gray-800 md:text-left sm:text-2xl">
               OTP Verification
             </h1>
-         
 
             {/* Channel Selection Radio Buttons */}
             <div className="mb-6 flex justify-center space-x-6 md:justify-start">
-               <p     className=" text-center text-xl font-semibold text-purple-600 md:text-left ">
-Verify By:</p>
+              <p className=" text-center text-xl font-semibold text-purple-600 md:text-left ">
+                Verify By:
+              </p>
               <label className="flex cursor-pointer items-center space-x-2">
                 <input
                   type="radio"
@@ -257,7 +251,7 @@ Verify By:</p>
                 <span className="text-gray-700">Phone</span>
               </label>
             </div>
-              <p className="mb-4 text-center text-gray-500 md:text-left">
+            <p className="mb-4 text-center text-gray-500 md:text-left">
               Enter the OTP sent to your{" "}
               {channel === "email" ? "email" : "phone"}
               <br className="sm:hidden" />
