@@ -1,11 +1,8 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-// REMOVED: import Cookies from "js-cookie";
-// REMOVED: import { authFetch } from "@/utils/authFetch";
-// ADDED: Axios instance
-import api from "@/utils/apiService"; 
+import api from "@/utils/apiService";
 import {
   getInitials,
   getPastelColor,
@@ -42,6 +39,16 @@ interface Comment {
   commentBy: string;
 }
 
+// Helper interface for error handling
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
 const tabs = [
   { key: "overview", label: "Overview" },
   { key: "kyc", label: "KYC & Verification" },
@@ -67,12 +74,22 @@ export default function UserDetailsModal({
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [, setUserMap] = useState<Record<string, string>>({});
 
-  const sectionRefs = {
-    overview: React.useRef<HTMLDivElement>(null),
-    transactions: React.useRef<HTMLDivElement>(null),
-    kyc: React.useRef<HTMLDivElement>(null),
-    notes: React.useRef<HTMLDivElement>(null),
-  };
+  // Initialize refs individually
+  const overviewRef = useRef<HTMLDivElement>(null);
+  const transactionsRef = useRef<HTMLDivElement>(null);
+  const kycRef = useRef<HTMLDivElement>(null);
+  const notesRef = useRef<HTMLDivElement>(null);
+
+  // Memoize the refs object to keep it stable across renders
+  const sectionRefs = useMemo(
+    () => ({
+      overview: overviewRef,
+      transactions: transactionsRef,
+      kyc: kycRef,
+      notes: notesRef,
+    }),
+    []
+  );
 
   const scrollToSection = (section: keyof typeof sectionRefs) => {
     sectionRefs[section]?.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,26 +99,27 @@ export default function UserDetailsModal({
   useEffect(() => {
     const handleScroll = () => {
       const thresholds = Object.entries(sectionRefs).map(([key, ref]) => ({
-        key,
+        key: key as TabKey,
         offset: ref.current?.getBoundingClientRect().top || Infinity,
       }));
 
+      // Find the section closest to the top (smallest absolute offset)
       const closest = thresholds.reduce((prev, curr) => {
         return Math.abs(curr.offset) < Math.abs(prev.offset) ? curr : prev;
       });
 
-      if (closest.key !== activeTab)
-        setActiveTab(closest.key as keyof typeof sectionRefs);
+      if (closest.key !== activeTab) {
+        setActiveTab(closest.key);
+      }
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [activeTab, sectionRefs]);
 
   const fetchComments = async (accountKey: string) => {
     try {
       setIsLoadingComments(true);
-      // CHANGED: api.get with relative URL
       const res = await api.get<{ comments: RawComment[] }>(
         `/communication/comments/${accountKey}`
       );
@@ -139,28 +157,24 @@ export default function UserDetailsModal({
 
     try {
       setIsProcessing(true);
-      
-      // CHANGED: api.post with object payload
-      const response = await api.post(
-        "/communication/add-comment",
-        {
-          commentType: "TEST",
-          text: comment.trim(),
-          accountUser: user.accountKey,
-          commentBy: `${user.firstName} ${user.lastName}`,
-        }
-      );
+
+      const response = await api.post("/communication/add-comment", {
+        commentType: "TEST",
+        text: comment.trim(),
+        accountUser: user.accountKey,
+        commentBy: `${user.firstName} ${user.lastName}`,
+      });
 
       const result = response.data;
 
-      // Axios throws on non-200, so if we are here, it's success (usually)
       toast.success(result.message || "Comment added successfully");
       setComment("");
       setIsAddingComment(false);
       await fetchComments(user.accountKey);
-
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || error.message || "Failed to add comment";
+    } catch (error: unknown) {
+      const err = error as ApiError;
+      const msg =
+        err?.response?.data?.message || err.message || "Failed to add comment";
       toast.error(msg);
       console.error("Add comment error:", error);
     } finally {
@@ -180,11 +194,8 @@ export default function UserDetailsModal({
         try {
           setLoading(true);
 
-          // CHANGED: api.get
-          const res = await api.get(
-            `/account/client-profile?userId=${userId}`
-          );
-          
+          const res = await api.get(`/account/client-profile?userId=${userId}`);
+
           const data = res.data;
 
           const parsedCards =
@@ -234,16 +245,14 @@ export default function UserDetailsModal({
     try {
       const loadingId = toast.loading("Approving user...");
 
-      // CHANGED: api.post (replaced authFetch)
       const res = await api.post(
         `/account/document-recheck?applicantId=${user.userId}`
       );
-      
+
       const result = res.data;
-      
+
       toast.dismiss(loadingId);
 
-      // Handle response based on API's status
       if (result.status === "success") {
         toast.success(result.message || "User approved successfully");
 
@@ -261,12 +270,13 @@ export default function UserDetailsModal({
           icon: "⚠️",
         });
       } else {
-        // Fallback for success=false inside a 200 OK
         toast.error(result.message || "Approval failed");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss();
-      const msg = error?.response?.data?.message || error.message || "Approval failed";
+      const err = error as ApiError;
+      const msg =
+        err?.response?.data?.message || err.message || "Approval failed";
       toast.error(msg);
       console.error("Approve error:", error);
     }
@@ -280,12 +290,11 @@ export default function UserDetailsModal({
 
     try {
       toast.loading("Reinstating user...");
-      
-      // CHANGED: api.post (replaced authFetch)
+
       const res = await api.post(
         `/account/reinstate-user?userId=${user.userId}`
       );
-      
+
       const result = res.data;
       toast.dismiss();
 
@@ -299,9 +308,11 @@ export default function UserDetailsModal({
       } else {
         toast.error(result.message || "Failed to reinstate user");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss();
-      const msg = error?.response?.data?.message || error.message || "Reinstate failed";
+      const err = error as ApiError;
+      const msg =
+        err?.response?.data?.message || err.message || "Reinstate failed";
       toast.error(msg);
       console.error("Reinstate error:", error);
     }
@@ -313,7 +324,6 @@ export default function UserDetailsModal({
       return;
     }
 
-    // For Basic Pending users, require a comment
     if (
       user.accountStatus === "Basic Pending" &&
       (!declineComment || !declineComment.trim())
@@ -328,12 +338,11 @@ export default function UserDetailsModal({
           const commentText =
             declineComment?.trim() || "Declining test account";
           const encodedComment = encodeURIComponent(commentText);
-          
-          // CHANGED: api.post (replaced authFetch)
+
           const res = await api.post(
             `/account/manual-account-decline?applicantId=${user.userId}&comment=${encodedComment}`
           );
-          
+
           const response = res.data;
 
           if (response.status === "success") {
@@ -358,12 +367,11 @@ export default function UserDetailsModal({
         {
           loading: "Declining user...",
           success: (msg) => msg,
-          error: (error) => error.message || "Failed to decline user",
+          error: (error: ApiError) => error.message || "Failed to decline user",
         }
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Decline error:", error);
-      // toast already handled by toast.promise, but log for debug
     }
   };
 
@@ -375,13 +383,12 @@ export default function UserDetailsModal({
 
     try {
       toast.loading("Suspending user...");
-      
-      // CHANGED: api.post (replaced authFetch)
+
       const res = await api.post(
         `/account/suspend-account?userId=${user.userId}`
       );
       const result = res.data;
-      
+
       toast.dismiss();
 
       if (result.status === "success") {
@@ -398,9 +405,11 @@ export default function UserDetailsModal({
       } else {
         toast.error(result.message || "Failed to suspend user");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss();
-      const msg = error?.response?.data?.message || error.message || "Suspend failed";
+      const err = error as ApiError;
+      const msg =
+        err?.response?.data?.message || err.message || "Suspend failed";
       toast.error(msg);
       console.error("Suspend error:", error);
     }
@@ -572,7 +581,7 @@ export default function UserDetailsModal({
 
               {/* Basic Info */}
               {activeTab === "overview" && (
-                <div className="pt-5">
+                <div className="pt-5" ref={sectionRefs.overview}>
                   <h3 className="font-semibold text-gray-800 mb-2">
                     Basic Information
                   </h3>
@@ -728,7 +737,7 @@ export default function UserDetailsModal({
 
               {/* KYC Verification */}
               {activeTab === "kyc" && (
-                <div className="pt-5">
+                <div className="pt-5" ref={sectionRefs.kyc}>
                   <h3 className="font-semibold text-gray-800 mb-2">
                     Onfido Verification
                   </h3>
@@ -807,7 +816,7 @@ export default function UserDetailsModal({
 
               {/* Transaction Summary */}
               {activeTab === "transactions" && (
-                <div className="pt-5">
+                <div className="pt-5" ref={sectionRefs.transactions}>
                   <h3 className="font-semibold text-gray-800 mb-2">
                     Transaction Summary
                   </h3>
