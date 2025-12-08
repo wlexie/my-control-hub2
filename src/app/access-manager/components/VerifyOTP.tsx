@@ -3,8 +3,7 @@
 import { useState, Suspense, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import axios from "axios"; // Kept only for isAxiosError check
-// IMPORT API
+// REMOVED: import axios from "axios"; 
 import api from "../../../utils/apiAuth";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../../../store/authSlice";
@@ -14,6 +13,16 @@ import Cookies from "js-cookie";
 interface DecodedToken {
   exp: number;
   [key: string]: unknown;
+}
+
+// Define an interface for the expected error structure
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
 }
 
 const VerifyOTPContent = () => {
@@ -111,15 +120,11 @@ const VerifyOTPContent = () => {
     try {
       const channelValue = email;
 
-      // CHANGED: Use api.post and relative path
-      const response = await api.post(
-        "/auth/verify-channel-otp",
-        {
-          channel,
-          channelValue,
-          verificationCode,
-        }
-      );
+      const response = await api.post("/auth/verify-channel-otp", {
+        channel,
+        channelValue,
+        verificationCode,
+      });
 
       if (response.status === 200 && response.data.accessToken) {
         Cookies.set("accessToken", response.data.accessToken, {
@@ -128,9 +133,7 @@ const VerifyOTPContent = () => {
           path: "/",
         });
 
-        const decodedToken = jwtDecode<DecodedToken>(
-          response.data.accessToken
-        );
+        const decodedToken = jwtDecode<DecodedToken>(response.data.accessToken);
         const tokenExpiry = decodedToken.exp * 1000;
 
         Cookies.set("accessTokenExpiry", tokenExpiry.toString(), {
@@ -154,9 +157,10 @@ const VerifyOTPContent = () => {
         setOtp(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as ApiError;
       const specificErrorMsg =
-        err.response?.data?.message || "Invalid OTP. Please try again.";
+        error.response?.data?.message || "Invalid OTP. Please try again.";
       setError(specificErrorMsg);
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
@@ -170,14 +174,12 @@ const VerifyOTPContent = () => {
     setError("");
     setIsLoading(true);
     try {
-      // CHANGED: Use api.post and relative path
-      await api.post(
-        `/auth/send-otp/${encodeURIComponent(email)}`
-      );
+      await api.post(`/auth/send-otp/${encodeURIComponent(email)}`);
       alert(`A new OTP has been sent to your ${channel}.`);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as ApiError;
       const resendErrorMsg =
-        err.response?.data?.message ||
+        error.response?.data?.message ||
         "Failed to resend OTP. Please try again.";
       alert(resendErrorMsg);
     } finally {
