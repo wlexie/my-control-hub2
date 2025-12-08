@@ -210,7 +210,7 @@ const VerifyOTPContent = () => {
             priority
           />
         </div>
-        <div className="flex w-full items-center justify-center p-8 lg:w-1/2 sm:p-12">
+        <div className="flex w-full items-center justify-center p-7 lg:w-1/2 sm:p-12">
           <div className="w-full max-w-md">
             <h2 className="mb-8 flex items-center justify-center gap-4 text-3xl font-bold text-gray-800 md:justify-start lg:text-4xl">
               <Image
