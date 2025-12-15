@@ -15,7 +15,7 @@ export default function TemplatesModal({ closeModal, onSelectTemplate, userName 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_URL = 'http://localhost:8080/api/whatsapp/templates';
+  const API_URL = 'https://com.tuma-app.com/api/whatsapp/templates';
 
   // --- FETCH DATA ---
   const fetchTemplates = async () => {

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
-import { useSelector } from 'react-redux'; // Import Redux to get Token
+import { useSelector } from 'react-redux';
 import { Loader2 } from 'lucide-react';
 
 export default function NewTemplateFormModal({
   onClose,
   onAdd,
-  existingTitles = [] // passed from parent to help with autocomplete
+  existingTitles = [] 
 }) {
   // --- REDUX STATE ---
   const { accessToken } = useSelector((state) => state.auth);
@@ -22,7 +22,7 @@ export default function NewTemplateFormModal({
   const [error, setError] = useState('');
 
   // API URL
-  const API_URL = 'http://localhost:8080/api/whatsapp/templates';
+  const API_URL = 'https://com.tuma-app.com/api/whatsapp/templates';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,13 +58,12 @@ export default function NewTemplateFormModal({
       });
 
       // Notify Parent & Close
-      onAdd(response.data); // Pass back the updated category data
+      onAdd(response.data); 
       onClose();
 
     } catch (err) {
       console.error('Error creating template:', err);
       if (err.response && err.response.data) {
-        // Try to show backend error message
         setError(`Error: ${err.response.data.message || 'Failed to save template.'}`);
       } else {
         setError('Failed to connect to the server.');
@@ -84,7 +83,6 @@ export default function NewTemplateFormModal({
         
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* 1. Category Title Input (with Autocomplete) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Category Title <span className="text-red-500">*</span>
