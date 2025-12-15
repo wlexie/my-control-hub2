@@ -474,7 +474,7 @@ const handleReopenChat = async () => {
       <div className="flex flex-col">
         <h2 className="md:text-lg text-sm font-semibold text-gray-800">{userName}</h2>
         <p className="text-[10px] md:text-[12px] text-gray-400 md:mt-0.5">{userPhoneNumber.replace('+', '')}</p>
-        <div className="flex items-center gap-2 mt-0.5  flex-wrap">
+        <div className="md:flex hidden items-center gap-2 mt-0.5  flex-wrap">
           {ticketId && (
             <span className="text-xs md:text-sm font-medium text-gray-600">
               Ticket #{ticketId}
