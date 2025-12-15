@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
       {
         source: "/api/auth/:path*",
         destination:
-          "http://tuma-dev-backend-auth-alb-2099885708.us-east-1.elb.amazonaws.com/api/auth/:path*",
+          "http://tuma-dev-backend-auth-alb-2099885708.us-east-1.elb.amazonaws.com/api/:path*",
       },
           {
       source: '/api/:path*',
