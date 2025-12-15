@@ -1,105 +1,102 @@
-import React, { useState } from 'react'; // Import useState
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Search, X } from 'lucide-react';
-import NewTemplateFormModal from './NewTemplateFormModal'; // Import the new component
-
-// This is now the INITIAL state, not a constant used for rendering.
-const initialTemplateCategories = [
-  {
-    title: 'Common Issues',
-    templates: [
-      'Hi! Can you please share your account number?',
-      'Please give me a moment while I look into that.'
-    ]
-  },
-   {
-  title: 'Closure alert',
-  templates: [
-    `Oh, before you go… BIG news! 👀
-FLASH HOUR is tomorrow — 5–6 PM UK! 💥
-For 1 hour only: 1 GBP = 200 bob + zero fees 💷🔥
-Be on alert — don’t miss it!🤗`
-  ]
-},
-
-  
-
-  {
-    title: 'Payments',
-    templates: [
-      'I\'ve escalated this to our finance team.',
-      'Refunds are processed within 24-48 hours.'
-    ]
-  },
-  {
-    title: 'Compliance Escalation',
-    templates: [
-      // ... (rest of your initial data is unchanged)
-      {
-        subtitle: 'ID Request',
-        message: `Hi [User Name]🎉, Thank you for choosing to be part of the Tuma Team. Unfortunately, we are having issues verifying your documents. To proceed, please resubmit the following:\n\nA clear and valid UK ID or Passport 🇬🇧🪪\n\nNote: Please ensure the documents are clear, legible, with all corners visible, and submitted through the Tuma App 📲.\n\nIf you need assistance or have any questions, feel free to reach out. 💬\n\nBest regards,\nThe Tuma Team 💥`
-      },
-      {
-        subtitle: 'Expired ID',
-        message: `Hi [User Name]🎉, Thank you for choosing to be part of the Tuma Team. Unfortunately, we are having issues verifying your documents as the one you submitted has expired. To proceed, please resubmit the following:\n\nA clear and valid UK ID or Passport 🇬🇧🪪\nOr, an alternative valid document if applicable 📑.\n\nNote: Please ensure the documents are clear, legible, with all corners visible, and submitted through the Tuma App 📲.\n\nIf you need assistance or have any questions, feel free to reach out. 💬\n\nBest regards,\nThe Tuma Team 💥`
-      },
-      {
-        subtitle: 'Account Verified',
-        message: `Hi [User Name]🎉, Great news 🎉 Your account has been successfully verified, and you’re officially part of the Tuma Team! 🖤 We’re beyond excited to have you with us and can’t wait for you to explore all the amazing features we offer. 🙌\n\nIf you need anything or have any questions, don’t hesitate to reach out. 💬\n\nWelcome aboard – let’s make this journey unforgettable! 🌟\n\nBest regards,\nThe Tuma Team 💥`
-      },
-      {
-        subtitle: 'Refuse Service',
-        message: `Hi [User Name] 👋, Thank you for your time and effort in trying to complete the verification process with us. Unfortunately, we were unable to verify your details, and as a result, we are unable to provide our services at this time. 😔\n\nWe wish you all the best in your future endeavors! 🌟\n\nBest regards,\nThe Tuma Team 💥`
-      }
-    ]
-  }
-];
+import { Search, X, Loader2, Trash2 } from 'lucide-react';
+import axios from 'axios';
+import { useSelector } from 'react-redux';
+import NewTemplateFormModal from './NewTemplateFormModal';
 
 export default function TemplatesModal({ closeModal, onSelectTemplate, userName }) {
-  // --- STATE MANAGEMENT ---
-  // 1. Manage the template data in state
-  const [categories, setCategories] = useState(initialTemplateCategories);
-  // 2. Manage the visibility of the new template form modal
-  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  // --- REDUX STATE ---
+  const { accessToken } = useSelector((state) => state.auth);
 
+  // --- LOCAL STATE ---
+  const [categories, setCategories] = useState([]);
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const API_URL = 'http://localhost:8080/api/whatsapp/templates';
+
+  // --- FETCH DATA ---
+  const fetchTemplates = async () => {
+    try {
+      if (categories.length === 0) setIsLoading(true);
+      const response = await axios.get(API_URL, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setCategories(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching templates:', err);
+      setError('Failed to load templates.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (accessToken) {
+      fetchTemplates();
+    }
+  }, [accessToken]);
+
+  // --- DELETE HANDLERS ---
+  const handleDeleteTemplate = async (id, e) => {
+    e.stopPropagation(); 
+    if (!window.confirm("Are you sure you want to delete this template?")) return;
+
+    try {
+      await axios.delete(`${API_URL}/${id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setCategories(prev => prev.map(cat => ({
+        ...cat,
+        templates: cat.templates.filter(t => t.id !== id)
+      })));
+    } catch (err) {
+      console.error("Error deleting template", err);
+      alert("Failed to delete template");
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm("WARNING: This will delete the Category and ALL templates inside it. Continue?")) return;
+
+    try {
+      await axios.delete(`${API_URL}/categories/${id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setCategories(prev => prev.filter(cat => cat.id !== id));
+    } catch (err) {
+      console.error("Error deleting category", err);
+      alert("Failed to delete category");
+    }
+  };
+
+  // --- CLICK HANDLER ---
   const handleTemplateClick = (rawTemplateText) => {
     const finalText = rawTemplateText.replace(/\[User Name\]/g, userName || 'there');
     onSelectTemplate(finalText);
   };
 
-  // --- LOGIC TO ADD NEW TEMPLATE ---
-  const handleAddTemplate = ({ title, subtitle, message }) => {
-    // If a subtitle is provided, the template is an object. Otherwise, it's a simple string.
-    const newTemplate = subtitle ? { subtitle, message } : message;
-
+  // --- ADD NEW TEMPLATE (FIXED) ---
+  // The Modal now handles the API call. This function just updates the UI.
+  const handleModalSuccess = (updatedCategory) => {
     setCategories(prevCategories => {
-      const existingCategoryIndex = prevCategories.findIndex(cat => cat.title.toLowerCase() === title.toLowerCase());
-
-      // Case 1: Category already exists. Add template to it.
-      if (existingCategoryIndex > -1) {
-        // Create a new array with the updated category
-        return prevCategories.map((cat, index) => {
-          if (index === existingCategoryIndex) {
-            // Return a new category object with the new template added
-            return {
-              ...cat,
-              templates: [...cat.templates, newTemplate]
-            };
-          }
-          return cat;
-        });
-      } 
-      // Case 2: New category. Create it and add it to the list.
-      else {
-        const newCategory = {
-          title: title,
-          templates: [newTemplate]
-        };
-        return [...prevCategories, newCategory];
+      // Check if this category already existed
+      const index = prevCategories.findIndex(c => c.id === updatedCategory.id);
+      
+      if (index !== -1) {
+        // Update existing category
+        const newCats = [...prevCategories];
+        newCats[index] = updatedCategory;
+        return newCats;
+      } else {
+        // Add new category to the end
+        return [...prevCategories, updatedCategory];
       }
     });
-
-    // Close the form modal after submission
+    
     setIsNewModalOpen(false);
   };
 
@@ -110,6 +107,7 @@ export default function TemplatesModal({ closeModal, onSelectTemplate, userName 
           className="w-full max-w-md h-full bg-white shadow-xl flex flex-col p-4"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* HEADER */}
           <div className="flex items-center justify-between pb-4 border-b">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -119,10 +117,9 @@ export default function TemplatesModal({ closeModal, onSelectTemplate, userName 
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            {/* --- MODIFIED BUTTON --- */}
             <button 
-              onClick={() => setIsNewModalOpen(true)} // Opens the new form modal
-              className="ml-3 px-4 py-2 bg-blue-600 border border-transparent text-white rounded-lg hover:bg-blue-700"
+              onClick={() => setIsNewModalOpen(true)}
+              className="ml-3 px-4 py-2 bg-blue-600 border border-transparent text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
             >
               New +
             </button>
@@ -134,50 +131,68 @@ export default function TemplatesModal({ closeModal, onSelectTemplate, userName 
             </button>
           </div>
 
+          {/* CONTENT AREA */}
           <div className="flex-1 overflow-y-auto pt-4 space-y-6">
-            {/* --- RENDER FROM STATE --- */}
-            {categories.map((category) => ( // Use the 'categories' state variable
-              <div key={category.title}>
-                <h3 className="font-semibold text-gray-800 mb-2">{category.title}</h3>
+            
+            {isLoading && (
+              <div className="flex justify-center items-center h-40">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              </div>
+            )}
+
+            {!isLoading && error && (
+              <div className="text-center text-red-500 p-4">{error}</div>
+            )}
+
+            {!isLoading && !error && categories.map((category) => (
+              <div key={category.id || category.title} className="group/category">
+                {/* Category Header */}
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-gray-800">{category.title}</h3>
+                  <button 
+                    onClick={() => handleDeleteCategory(category.id)}
+                    className="p-1 text-gray-400 hover:text-red-600 opacity-0 group-hover/category:opacity-100 transition-opacity"
+                    title="Delete Category"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
                 <div className="space-y-2">
-                  {category.templates.map((template, index) => {
-                    if (typeof template === 'string') {
-                      return (
-                        <div
-                          key={index}
-                          onClick={() => handleTemplateClick(template)}
-                          className="p-3 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 text-gray-700 text-sm"
+                  {category.templates.map((template) => {
+                    const isSimpleTemplate = !template.subtitle;
+                    const displayText = isSimpleTemplate ? template.message : template.subtitle;
+
+                    return (
+                      <div
+                        key={template.id}
+                        onClick={() => handleTemplateClick(template.message)}
+                        className={`group relative p-3 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 text-gray-700 text-sm flex items-center justify-between ${
+                          !isSimpleTemplate ? 'font-medium' : ''
+                        }`}
+                      >
+                        <span className="flex-1 mr-2">{displayText}</span>
+                        <button
+                          onClick={(e) => handleDeleteTemplate(template.id, e)}
+                          className="p-1.5 rounded-full hover:bg-red-100 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete Template"
                         >
-                          {template}
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <div
-                          key={index}
-                          onClick={() => handleTemplateClick(template.message)}
-                          className="p-3 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 text-gray-700 text-sm font-medium"
-                        >
-                          {template.subtitle}
-                        </div>
-                      );
-                    }
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    );
                   })}
                 </div>
-                <button className="text-blue-600 text-sm mt-2 hover:underline">
-                  Load more
-                </button>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* --- RENDER THE NEW MODAL CONDITIONALLY --- */}
       {isNewModalOpen && (
         <NewTemplateFormModal
           onClose={() => setIsNewModalOpen(false)}
-          onAdd={handleAddTemplate}
+          onAdd={handleModalSuccess} // Pass the new handler
           existingTitles={categories.map(c => c.title)}
         />
       )}

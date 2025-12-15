@@ -480,12 +480,12 @@ const handleReopenChat = async () => {
               Ticket #{ticketId}
             </span>
           )}
-          <span className="px-2 py-0.5 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">
+         {/* <span className="px-2 py-0.5 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">
             In Progress
           </span>
           <span className="px-2 py-0.5 text-xs font-semibold text-red-800 bg-red-100 rounded-full">
             Urgent
-          </span>
+          </span>*/}
           <button className="px-2 py-0.5 text-xs text-gray-500 hidden md:block border border-dashed border-gray-400 rounded-md hover:bg-gray-100">
             + Add Tag
           </button>
@@ -497,18 +497,18 @@ const handleReopenChat = async () => {
     <div className="flex items-center gap-2 ml-auto">
       <button
         onClick={() => setIsAssignModalOpen(true)}
-        className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
+        className="px-2 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
         Assign
       </button>
       <button
         onClick={() => setIsEscalateModalOpen(true)}
-        className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-orange-600 bg-white border border-orange-400 rounded-sm hover:bg-orange-50 transition-colors"
+        className="px-2 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold text-orange-600 bg-white border border-orange-400 rounded-sm hover:bg-orange-50 transition-colors"
       >
         Escalate
       </button>
       <button
         onClick={() => setIsCloseConfirmOpen(true)} // This now opens the modal
-        className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-white bg-green-500 border border-green-500 rounded-sm hover:bg-green-600 transition-colors"
+        className="px-2 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold text-white bg-green-500 border border-green-500 rounded-sm hover:bg-green-600 transition-colors"
       >
         Close Ticket
       </button>
@@ -613,7 +613,7 @@ const handleReopenChat = async () => {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
             rows={1}
-            className="w-full flex-1 px-2 py-5 text-sm bg-transparent resize-none max-h-40 focus:outline-none"
+            className="w-full flex-1 px-2 md:py-5 text-sm bg-transparent resize-none max-h-40 focus:outline-none"
             placeholder="Please type here..."
         />
       </div>

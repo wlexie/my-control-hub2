@@ -215,16 +215,16 @@ export default function InProgressMessages({ onSelectChat, activeChat, searchTer
                     </div>
                     <div className="flex flex-col items-end">
                       <div className="ml-auto flex items-center shrink-0 mb-2 pl-2">
-                        <FaWhatsapp className="text-green-500 mr-1" />
+                        <FaWhatsapp className="text-green-500 mr-1 text-sm" />
                         <p className="text-xs text-gray-400 whitespace-nowrap">{formatTimestamp(conv.lastMessageTime)}</p>
                         {unreadCount > 0 && activeChat?.ticketId !== conv.ticketId && (
-                          <div className="ml-2 w-5 h-5 bg-green-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                          <div className="ml-2 w-4 h-4 bg-green-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
                             {unreadCount}
                           </div>
                         )}
                       </div>
                       <span className="text-xs text-yellow-600 font-medium">
-                        <span className="text-gray-500 mr-1 font-normal">By:</span>{conv.assignedAgentName}
+                        <span className="text-gray-500 mr-1 font-normal text-[9px]">By:</span>{conv.assignedAgentName}
                       </span>
                     </div>
                   </div>
