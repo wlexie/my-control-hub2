@@ -89,7 +89,7 @@ export default function NewTemplateFormModal({
             </label>
             <input
               type="text"
-              list="existing-titles" // Connects to datalist below
+              list="existing-titles" 
               value={categoryTitle}
               onChange={(e) => setCategoryTitle(e.target.value)}
               placeholder="e.g. Payments (or type a new one to create)"

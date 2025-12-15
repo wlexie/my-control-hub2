@@ -18,7 +18,7 @@ import { BsChatDots } from "react-icons/bs";
 // --- NAVIGATION ITEMS DATA ---
 // This makes it easier to manage the links and their data
 const messageSources = [
-  { name: 'All Messages', href: '/omnisupport', icon: AiOutlineMessage, count: 24, active: true },
+  //{ name: 'All Messages', href: '/omnisupport', icon: AiOutlineMessage, count: 24, active: true },
   { name: 'WhatsApp', href: '/omnisupport/whatsapp', icon: FaWhatsapp, count: 12 },
   { name: 'In-App', href: '/omnisupport/in-app', icon: FiSmartphone, count: 8 },
   { name: 'Email', href: '/omnisupport/email', icon: FiMail, count: 3 },

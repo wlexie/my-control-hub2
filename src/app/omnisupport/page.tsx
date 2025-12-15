@@ -1,9 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { FiMenu } from "react-icons/fi";
 import SideNav from './whatsapp/components/SideNav';
+import Messages from './whatsapp/components/Messages';
+import Conversation from './whatsapp/components/Conversation';
 
 export default function Page() {
+  const [selectedChat, setSelectedChat] = useState(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
 
   return (
@@ -34,9 +38,43 @@ export default function Page() {
       {/* ===== MAIN CONTENT AREA ===== */}
       <div className="flex-1 flex min-w-0">
         
-     
+        {/* --- DESKTOP LAYOUT (Multi-column) --- */}
+        <div className="hidden md:flex flex-1 overflow-hidden">
+          <div className=" w-[35%] border-r border-r-gray-200 h-full flex flex-col">
+            <Messages onSelectChat={setSelectedChat} activeChat={selectedChat} />
+          </div>
+          <div className="w-[65%] h-full flex-col">
+            <Conversation
+              selectedChat={selectedChat}
+              setSelectedChat={setSelectedChat}
+            />
+          </div>
+        </div>
 
-      
+        {/* --- MOBILE LAYOUT (Single "Screen" at a time) --- */}
+        <div className="md:hidden w-full h-full">
+          {selectedChat ? (
+            // If a chat is selected, show the Conversation screen
+            <div className="w-full h-full animate-slide-in-right">
+              <Conversation
+                selectedChat={selectedChat}
+                setSelectedChat={setSelectedChat}
+                onCloseMobile={() => setSelectedChat(null)}
+              />
+            </div>
+          ) : (
+            // Otherwise, show the Messages list screen
+            <div className="w-full h-full flex flex-col">
+              <header className="flex items-center justify-between p-4 border-b border-b-gray-200">
+                <h1 className="text-xl font-bold">Omnisupport</h1>
+                <button onClick={() => setIsNavOpen(true)} className="p-2" aria-label="Open navigation menu">
+                  <FiMenu size={24} />
+                </button>
+              </header>
+              <Messages onSelectChat={setSelectedChat} activeChat={selectedChat} />
+            </div>
+          )}
+        </div>
 
       </div>
     </div>
