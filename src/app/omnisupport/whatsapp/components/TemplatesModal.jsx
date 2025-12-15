@@ -80,7 +80,6 @@ export default function TemplatesModal({ closeModal, onSelectTemplate, userName 
   };
 
   // --- ADD NEW TEMPLATE (FIXED) ---
-  // The Modal now handles the API call. This function just updates the UI.
   const handleModalSuccess = (updatedCategory) => {
     setCategories(prevCategories => {
       // Check if this category already existed
@@ -92,7 +91,6 @@ export default function TemplatesModal({ closeModal, onSelectTemplate, userName 
         newCats[index] = updatedCategory;
         return newCats;
       } else {
-        // Add new category to the end
         return [...prevCategories, updatedCategory];
       }
     });
