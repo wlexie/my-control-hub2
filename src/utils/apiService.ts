@@ -13,7 +13,7 @@ import axios, {
   
   // API base URL
   //const API_BASE_URL = 'https://api.tuma-app.com/api';
-  const API_BASE_URL = 'http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api';
+  const API_BASE_URL = '/api';
   
   // Create Axios instance
   const api: AxiosInstance = axios.create({

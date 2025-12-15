@@ -1,29 +1,37 @@
 import type { NextConfig } from "next";
 
-
 const nextConfig: NextConfig = {
-  /* config options here */
-
   webpack: (config) => {
     config.resolve.alias.canvas = false;
     config.resolve.alias.encoding = false;
     return config;
   },
+
   experimental: {
-    serverComponentsExternalPackages: ['@react-pdf/renderer'],
+    serverComponentsExternalPackages: ["@react-pdf/renderer"],
   },
 
   images: {
-    domains: ['flagcdn.com'],
-    // You can add other image domai needed
+    domains: ["flagcdn.com"],
   },
-  // Add the typescript block here
+
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
     ignoreBuildErrors: true,
+  },
+
+  async rewrites() {
+    return [
+      {
+        source: "/api/auth/:path*",
+        destination:
+          "http://tuma-dev-backend-auth-alb-2099885708.us-east-1.elb.amazonaws.com/api/auth/:path*",
+      },
+          {
+      source: '/api/:path*',
+      destination:
+        'http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/:path*',
+    },
+    ];
   },
 };
 
