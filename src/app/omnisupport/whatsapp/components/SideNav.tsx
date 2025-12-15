@@ -11,7 +11,7 @@ import User from '../../../access-manager/components/User';
 // --- IMPORTING ICONS ---
 // You may need to install react-icons: npm install react-icons
 import { FiX, FiSmartphone, FiMail } from "react-icons/fi";
-import { AiOutlineMessage } from "react-icons/ai";
+//import { AiOutlineMessage } from "react-icons/ai";
 import { FaWhatsapp } from "react-icons/fa";
 import { BsChatDots } from "react-icons/bs";
 

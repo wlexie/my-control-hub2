@@ -44,7 +44,7 @@ const NavLinkItems = ({ onLinkClick, pathname }) => {
   const navLinks = [
     { href: '/fx-navigator/dashboard', label: 'Dashboard', Icon: DashboardIcon },
     { href: '/fx-navigator/rate-manager', label: 'Rate Manager', Icon: RateManagerIcon },
-    { href: '/omnisupport', label: 'All Messages', Icon: MessagesIcon },
+    { href: '/omnisupport/whatsapp', label: 'Whatsapp Messages', Icon: MessagesIcon },
     { href: '/fx-navigator/trends', label: 'Trends', Icon: TrendsIcon },
     { href: '/fx-navigator/reports', label: 'Reports', Icon: ReportsIcon },
     { href: '/fx-navigator/settings', label: 'Settings', Icon: SettingsIcon },
