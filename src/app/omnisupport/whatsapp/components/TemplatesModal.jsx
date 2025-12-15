@@ -192,7 +192,7 @@ export default function TemplatesModal({ closeModal, onSelectTemplate, userName 
       {isNewModalOpen && (
         <NewTemplateFormModal
           onClose={() => setIsNewModalOpen(false)}
-          onAdd={handleModalSuccess} // Pass the new handler
+          onAdd={handleModalSuccess} 
           existingTitles={categories.map(c => c.title)}
         />
       )}
