@@ -7,8 +7,8 @@ import Image from "next/image";
 import { useRouter } from 'next/navigation';
 // Import React Icons
 import {
-  FaChartLine, FaExchangeAlt, FaUsers, FaShieldAlt,
-  FaBell, FaHeadset, FaFileAlt, FaCog, FaBars, FaTimes
+  FaChartLine, FaUsers,
+  FaBars, FaTimes
 } from "react-icons/fa";
 import User from './User';
 
@@ -28,13 +28,13 @@ export default function SideNav() {
 
   const navItems: NavItem[] = [
     { href: "/access-manager", icon: <FaChartLine className="mr-3" size={22} />, label: "Dashboard" },
-    { href: "/transactions", icon: <FaExchangeAlt className="mr-3" size={20} />, label: "Transactions" },
+   // { href: "/transactions", icon: <FaExchangeAlt className="mr-3" size={20} />, label: "Transactions" },
     { href: "/access-manager/user-access", icon: <FaUsers className="mr-3" size={20} />, label: "User roles & access" },
-    { href: "/compliance", icon: <FaShieldAlt className="mr-3" size={20} />, label: "Compliance & Security" },
+    /*{ href: "/compliance", icon: <FaShieldAlt className="mr-3" size={20} />, label: "Compliance & Security" },
     { href: "/alerts", icon: <FaBell className="mr-3" size={20} />, label: "Alerts & Risk flags" },
     { href: "/support", icon: <FaHeadset className="mr-3" size={20} />, label: "Support" },
     { href: "/reports", icon: <FaFileAlt className="mr-3" size={20} />, label: "Reports & Analytics" },
-    { href: "/settings", icon: <FaCog className="mr-3" size={20} />, label: "Settings & Permissions" },
+    { href: "/settings", icon: <FaCog className="mr-3" size={20} />, label: "Settings & Permissions" },*/
   ];
 
   const handleLogoClick = () => {

@@ -10,7 +10,7 @@ import User from '../../../access-manager/components/User';
 
 // --- IMPORTING ICONS ---
 // You may need to install react-icons: npm install react-icons
-import { FiX, FiSmartphone, FiMail } from "react-icons/fi";
+import { FiX, FiSmartphone} from "react-icons/fi";
 //import { AiOutlineMessage } from "react-icons/ai";
 import { FaWhatsapp } from "react-icons/fa";
 import { BsChatDots } from "react-icons/bs";
@@ -21,7 +21,7 @@ const messageSources = [
   //{ name: 'All Messages', href: '/omnisupport', icon: AiOutlineMessage, count: 24, active: true },
   { name: 'WhatsApp', href: '/omnisupport/whatsapp', icon: FaWhatsapp, count: 12 },
   { name: 'In-App', href: '/omnisupport/in-app', icon: FiSmartphone, count: 8 },
-  { name: 'Email', href: '/omnisupport/email', icon: FiMail, count: 3 },
+ // { name: 'Email', href: '/omnisupport/email', icon: FiMail, count: 3 },
   { name: 'SMS', href: '/omnisupport/sms', icon: BsChatDots, count: 1 },
 ];
 
@@ -94,7 +94,7 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
       {/* Spacer to push content down */}
       <div className="flex-grow"></div>
 
-      {/* Today's Stats Card */}
+      {/* Today's Stats Card 
       <div className="bg-blue-700 p-4 rounded-xl mb-6">
         <h3 className="font-bold text-lg mb-4">Today&apos;s Stats</h3>
         <div className="flex flex-col gap-3 text-sm">
@@ -113,14 +113,13 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      {/* End Shift Button */}
       <button className="w-full flex items-center justify-between px-3 py-2 mb-8 bg-blue-600 border border-white/50 rounded-lg hover:bg-white/20 transition-all duration-300">
           <div className="flex items-center gap-3">
             <span className="w-3 h-3 bg-green-400 rounded-full"></span>
             <span className="font-medium">End Shift</span>
           </div>
           <span>0h 0m</span>
-      </button>
+      </button>*/}
 
       {/* Bottom User Section */}
       <div className="mt-auto">

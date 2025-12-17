@@ -3,61 +3,81 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-// 1. Removed unused 'Popup' import.
-import axios from "axios";
 import { IoIosArrowDown } from "react-icons/io";
+import api from "../../../utils/apiAuth";
 
-// 2. Defined a specific type for the API response to avoid using 'any'.
+/* ================= TYPES ================= */
+
 interface ApiResponse {
   status: string;
   message: string;
   account_key?: string;
 }
 
-// 3. Used the specific ApiResponse type here in the component's props.
-const PlaceholderPopup: React.FC<{ isOpen: boolean; onClose: () => void; response: ApiResponse | null }> = ({ isOpen, onClose, response }) => {
+/* ================= SUCCESS POPUP ================= */
+
+const SuccessPopup: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  response: ApiResponse | null;
+}> = ({ isOpen, onClose, response }) => {
   if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 bg-black/20  flex justify-center items-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-        <h2 className="text-2xl font-bold mb-4">Success!</h2>
-        <p className="mb-2">{response?.message}</p>
-        {response?.account_key && <p className="text-sm text-gray-600 mb-4">Account Key: {response.account_key}</p>}
-        <button onClick={onClose} className="px-4 py-2 bg-gray-800 text-white rounded">Close</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+      <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-xl">
+        <h2 className="mb-4 text-2xl font-bold text-gray-800">
+          Request Submitted
+        </h2>
+        <p className="mb-2 text-gray-700">{response?.message}</p>
+
+        {response?.account_key && (
+          <p className="mb-4 text-sm text-gray-500">
+            Account Key: <span className="font-medium">{response.account_key}</span>
+          </p>
+        )}
+
+        <button
+          onClick={onClose}
+          className="mt-4 rounded-lg bg-gray-800 px-6 py-2 text-white hover:bg-gray-900"
+        >
+          Close
+        </button>
       </div>
     </div>
   );
 };
 
+/* ================= SIGNUP COMPONENT ================= */
 
-export default function ControlHub() {
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
+export default function Signup() {
   const [department, setDepartment] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
-    phoneNumber: ""
+    phoneNumber: "",
   });
-  const [loading, setLoading] = useState(false);
-  // 4. Used the specific ApiResponse type for the state as well.
-  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
+
   const [error, setError] = useState<string | null>(null);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   const departments = [
     { value: "Tech", label: "Tech" },
     { value: "Finance", label: "Finance" },
     { value: "Customer Support", label: "Customer Support" },
-    { value: "Compliance", label: "Compliance" }
+    { value: "Compliance", label: "Compliance" },
   ];
+
+  /* ================= HANDLERS ================= */
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (error) setError(null);
   };
 
@@ -72,196 +92,178 @@ export default function ControlHub() {
       firstName: "",
       lastName: "",
       email: "",
-      phoneNumber: ""
+      phoneNumber: "",
     });
     setDepartment("");
   };
+
+  /* ================= SUBMIT ================= */
 
   const handleRequestAccess = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
+
     try {
-      const requestData = {
+      const response = await api.post("/account/save-system-user", {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
-        department: department
-      };
-  
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_AUTH_URL}/account/save-system-user`,
-        null,
-        {
-          params: requestData
-        }
-      );
-  
+        department,
+      });
+
       setApiResponse(response.data);
-      
+
       if (response.data.status === "error") {
         setError(response.data.message);
       } else {
         setIsPopupOpen(true);
         resetForm();
       }
-    } catch (err: unknown) {
-      console.error("Error requesting access:", err);
-      if (axios.isAxiosError(err)) {
-        if (err.response?.data?.message) {
-          setError(err.response.data.message);
-        } else {
-          setError("An unexpected error occurred. Please try again.");
-        }
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ??
+          "An unexpected error occurred. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
-  
+
+  /* ================= UI ================= */
+
   return (
     <div className="flex min-h-screen w-full bg-white font-poppins">
-      <div className="w-1/2 hidden md:block relative">
+      {/* LEFT IMAGE */}
+      <div className="relative hidden w-1/2 md:block">
         <Image
           src="/user-access/images/lady.png"
-          alt="A person looking at their phone"
-          fill 
-          className="object-cover" 
-          priority 
+          alt="Person using a phone"
+          fill
+          className="object-cover"
+          priority
         />
       </div>
 
-      <div className="w-full md:w-1/2 p-4 px-8 md:p-20 md:pr-32 flex flex-col justify-center md:space-y-6 space-y-4 overflow-y-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
-          <Image src="/user-access/images/logo.png" alt="Logo" width={35} height={30} />
+      {/* RIGHT FORM */}
+      <div className="flex w-full flex-col justify-center space-y-6 overflow-y-auto p-8 md:w-1/2 md:p-20">
+        <h2 className="flex items-center gap-3 text-3xl font-bold text-gray-800">
+          <Image
+            src="/user-access/images/logo.png"
+            alt="Logo"
+            width={35}
+            height={30}
+          />
           Control Hub
         </h2>
-        <p className="text-xl md:text-2xl font-semibold text-gray-800">
+
+        <p className="text-2xl font-semibold text-gray-800">
           Request for Access
         </p>
-        <p className="text-gray-500 font-medium text-base">
+
+        <p className="text-gray-500">
           Already have an account?{" "}
-          <Link href="/login" className="text-blue-600 underline hover:text-blue-800 transition-colors">
+          <Link href="/login" className="text-blue-600 underline">
             Login
           </Link>
         </p>
 
-        <div className="w-full border-t border-gray-200"></div>
-
         <form className="space-y-4" onSubmit={handleRequestAccess}>
-          <div>
-            <label className="block text-sm font-medium text-gray-600">
-              First Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              className="mt-1 w-full px-3 py-2 border text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-          </div>
+          {/* FIRST NAME */}
+          <input
+            name="firstName"
+            placeholder="First Name"
+            value={formData.firstName}
+            onChange={handleChange}
+            required
+            className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-600">
-              Last Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              className="mt-1 w-full px-3 py-2 border text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-          </div>
+          {/* LAST NAME */}
+          <input
+            name="lastName"
+            placeholder="Last Name"
+            value={formData.lastName}
+            onChange={handleChange}
+            required
+            className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+          />
 
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="w-full md:w-1/2">
-              <label className="block text-sm font-medium text-gray-600">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 border text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                required
-              />
-            </div>
-            
-            <div className="w-full md:w-1/2">
-              <label className="block text-sm font-medium text-gray-600">
-                Phone Number <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="tel"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 border text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                required
-              />
-            </div>
-          </div>
+          {/* EMAIL */}
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+          />
 
+          {/* PHONE */}
+          <input
+            name="phoneNumber"
+            placeholder="Phone Number"
+            value={formData.phoneNumber}
+            onChange={handleChange}
+            required
+            className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+          />
+
+          {/* DEPARTMENT */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-600">
-              Department <span className="text-red-500">*</span>
-            </label>
-            <div 
-              className="mt-1 w-full px-3 py-2 border text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none flex justify-between items-center cursor-pointer"
+            <div
+              className="flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <span>{department || "Select Department"}</span>
-              <IoIosArrowDown className={`text-gray-500 transition-transform ${isDropdownOpen ? "transform rotate-180" : ""}`} />
+              <IoIosArrowDown
+                className={`transition-transform ${
+                  isDropdownOpen ? "rotate-180" : ""
+                }`}
+              />
             </div>
+
             {isDropdownOpen && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                {departments.map((dept, index) => (
-                  <div key={`${dept.value}-${index}`}>
-                    <div
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-base"
-                      onClick={() => handleDepartmentSelect(dept.value)}
-                    >
-                      {dept.label}
-                    </div>
-                    {index !== departments.length - 1 && <hr className="border-gray-100" />}
+              <div className="absolute z-10 mt-1 w-full rounded-lg border bg-white shadow">
+                {departments.map((dept) => (
+                  <div
+                    key={dept.value}
+                    onClick={() => handleDepartmentSelect(dept.value)}
+                    className="cursor-pointer px-4 py-2 hover:bg-gray-100"
+                  >
+                    {dept.label}
                   </div>
                 ))}
               </div>
             )}
           </div>
 
+          {/* ERROR */}
           {error && (
-            <div className="mt-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 text-sm">
-              <p>{error}</p>
+            <div className="rounded bg-red-100 p-3 text-sm text-red-700">
+              {error}
             </div>
           )}
 
+          {/* SUBMIT */}
           <button
             type="submit"
-            disabled={loading || !department || !formData.firstName || !formData.lastName || !formData.email || !formData.phoneNumber}
-            className="w-full mt-6 bg-gray-800 hover:bg-gray-950 text-white font-semibold text-lg py-2.5 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading || !department}
+            className="mt-4 w-full rounded-lg bg-gray-800 py-3 text-lg font-semibold text-white hover:bg-gray-900 disabled:opacity-50"
           >
             {loading ? "Processing..." : "Request for Access"}
           </button>
         </form>
       </div>
-      
-      {apiResponse?.status === "created" && (
-        <PlaceholderPopup 
-          isOpen={isPopupOpen} 
-          onClose={() => setIsPopupOpen(false)} 
-          response={apiResponse}
-        />
-      )}
+
+      {/* SUCCESS POPUP */}
+      <SuccessPopup
+        isOpen={isPopupOpen}
+        onClose={() => setIsPopupOpen(false)}
+        response={apiResponse}
+      />
     </div>
   );
 }

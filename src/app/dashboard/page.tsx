@@ -38,7 +38,7 @@ const allModulesData = [
     title: "Take control of your exchange rates.",
     description:
       "Effortlessly manage and update Tuma's FX rates with precision. FX Navigator gives you full visibility and control to react to market changes — instantly.",
-    path: "/fx-navigator/dashboard",
+    path: "/fx-navigator/rate-manager",
     roles: ["ADMIN"],
   },
   {

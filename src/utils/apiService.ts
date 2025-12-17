@@ -15,9 +15,7 @@ import axios, {
   const API_BASE_URL = 'https://api.tuma-app.com/api';
   //const API_BASE_URL = '/api';
   
-  // Create Axios instance
   const api: AxiosInstance = axios.create({
-  //  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
         baseURL: API_BASE_URL,
 
     headers: {

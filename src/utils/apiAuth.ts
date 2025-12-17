@@ -21,10 +21,8 @@ const api: AxiosInstance = axios.create({
   } as AxiosRequestHeaders,
 });
 
-// Store reference
 let store: Store<RootState> | undefined;
 
-// Inject Redux store once
 export const injectStores = (_store: Store<RootState>) => {
   store = _store;
 };
