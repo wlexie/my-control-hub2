@@ -91,7 +91,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        {/* <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="md:col-span-2 bg-white dark:bg-gray-800 p-4 rounded-2xl">
             <AverageTransactionSize />
           </div>
@@ -102,7 +102,7 @@ export default function Dashboard() {
 
         <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl">
           <UniqueCustomersChart />
-        </div>
+        </div> */}
         <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl">
           <LatestTransactions />
         </div>

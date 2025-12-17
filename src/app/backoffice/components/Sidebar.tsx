@@ -23,54 +23,54 @@ const allNavLinks = [
     icon: "/backoffice/transactions.png",
     match: "/backoffice/transactions",
   },
-  {
-    href: "/backoffice/special-limits",
-    label: "Special Limits",
-    icon: "/backoffice/special.png",
-    match: "/backoffice/special-limits",
-  },
-  {
-    href: "/backoffice/reconciliation",
-    label: "Reconciliation",
-    icon: "/backoffice/recon.png",
-    match: "/backoffice/reconciliation",
-  },
+  // {
+  //   href: "/backoffice/special-limits",
+  //   label: "Special Limits",
+  //   icon: "/backoffice/special.png",
+  //   match: "/backoffice/special-limits",
+  // },
+  // {
+  //   href: "/backoffice/reconciliation",
+  //   label: "Reconciliation",
+  //   icon: "/backoffice/recon.png",
+  //   match: "/backoffice/reconciliation",
+  // },
   {
     href: "/backoffice/user-accounts",
     label: "User & Accounts",
     icon: "/backoffice/users.png",
     match: "/backoffice/user-accounts",
   },
-  {
-    href: "/backoffice/fees",
-    label: "Fees & Commissions",
-    icon: "/backoffice/fees.png",
-    match: "/backoffice/fees",
-  },
-  {
-    href: "/backoffice/compliance-security",
-    label: "Compliance & Security",
-    icon: "/backoffice/compliance.png",
-    match: "/backoffice/compliance-security",
-  },
-  {
-    href: "/backoffice/reports",
-    label: "Reports & Analytics",
-    icon: "/backoffice/reports.png",
-    match: "/backoffice/reports",
-  },
-  {
-    href: "/backoffice/support",
-    label: "Support & Disputes",
-    icon: "/backoffice/support.png",
-    match: "/backoffice/support",
-  },
-  {
-    href: "/backoffice/permissions",
-    label: "Settings & Permissions",
-    icon: "/backoffice/settings.png",
-    match: "/backoffice/permissions",
-  },
+  // {
+  //   href: "/backoffice/fees",
+  //   label: "Fees & Commissions",
+  //   icon: "/backoffice/fees.png",
+  //   match: "/backoffice/fees",
+  // },
+  // {
+  //   href: "/backoffice/compliance-security",
+  //   label: "Compliance & Security",
+  //   icon: "/backoffice/compliance.png",
+  //   match: "/backoffice/compliance-security",
+  // },
+  // {
+  //   href: "/backoffice/reports",
+  //   label: "Reports & Analytics",
+  //   icon: "/backoffice/reports.png",
+  //   match: "/backoffice/reports",
+  // },
+  // {
+  //   href: "/backoffice/support",
+  //   label: "Support & Disputes",
+  //   icon: "/backoffice/support.png",
+  //   match: "/backoffice/support",
+  // },
+  // {
+  //   href: "/backoffice/permissions",
+  //   label: "Settings & Permissions",
+  //   icon: "/backoffice/settings.png",
+  //   match: "/backoffice/permissions",
+  // },
 ];
 
 const Sidebar = () => {
