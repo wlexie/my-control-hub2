@@ -9,9 +9,9 @@ import { TransactionStatuses } from "./TransactionStatuses";
 import TransactionTotalsSection from "./TransactionTotalsSection.tsx";
 import AverageTransactionTime from "./AverageTransactionTime";
 import DateFilter from "@/app/backoffice/components/DateFilter";
-import AverageTransactionSize from "./AverageTransactionSize";
-import SizeByCorridor from "./SizeByCountry";
-import UniqueCustomersChart from "./UniqueCustomers";
+// import AverageTransactionSize from "./AverageTransactionSize";
+// import SizeByCorridor from "./SizeByCountry";
+// import UniqueCustomersChart from "./UniqueCustomers";
 
 export default function Dashboard() {
   const [currency, setCurrency] = useState("GBP");
