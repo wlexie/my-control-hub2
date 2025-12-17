@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { IoIosArrowDown } from "react-icons/io";
+import type { AxiosError } from "axios";
 import api from "../../../utils/apiAuth";
 
 /* ================= TYPES ================= */
@@ -12,6 +13,10 @@ interface ApiResponse {
   status: string;
   message: string;
   account_key?: string;
+}
+
+interface ApiErrorResponse {
+  message?: string;
 }
 
 /* ================= SUCCESS POPUP ================= */
@@ -29,11 +34,13 @@ const SuccessPopup: React.FC<{
         <h2 className="mb-4 text-2xl font-bold text-gray-800">
           Request Submitted
         </h2>
+
         <p className="mb-2 text-gray-700">{response?.message}</p>
 
         {response?.account_key && (
           <p className="mb-4 text-sm text-gray-500">
-            Account Key: <span className="font-medium">{response.account_key}</span>
+            Account Key:{" "}
+            <span className="font-medium">{response.account_key}</span>
           </p>
         )}
 
@@ -99,19 +106,22 @@ export default function Signup() {
 
   /* ================= SUBMIT ================= */
 
-  const handleRequestAccess = async (e: React.FormEvent) => {
+  const handleRequestAccess = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const response = await api.post("/account/save-system-user", {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-        department,
-      });
+      const response = await api.post<ApiResponse>(
+        "/account/save-system-user",
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+          department,
+        }
+      );
 
       setApiResponse(response.data);
 
@@ -121,9 +131,11 @@ export default function Signup() {
         setIsPopupOpen(true);
         resetForm();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+
       setError(
-        err?.response?.data?.message ??
+        error.response?.data?.message ??
           "An unexpected error occurred. Please try again."
       );
     } finally {
@@ -170,27 +182,24 @@ export default function Signup() {
         </p>
 
         <form className="space-y-4" onSubmit={handleRequestAccess}>
-          {/* FIRST NAME */}
           <input
             name="firstName"
             placeholder="First Name"
             value={formData.firstName}
             onChange={handleChange}
             required
-            className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-gray-100 px-3 py-3 focus:ring-2 focus:ring-blue-500"
           />
 
-          {/* LAST NAME */}
           <input
             name="lastName"
             placeholder="Last Name"
             value={formData.lastName}
             onChange={handleChange}
             required
-            className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border  border-gray-100 px-3 py-3  focus:ring-2 focus:ring-blue-500"
           />
 
-          {/* EMAIL */}
           <input
             type="email"
             name="email"
@@ -198,23 +207,22 @@ export default function Signup() {
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-gray-100 px-3 py-3  focus:ring-2 focus:ring-blue-500"
           />
 
-          {/* PHONE */}
           <input
             name="phoneNumber"
             placeholder="Phone Number"
             value={formData.phoneNumber}
             onChange={handleChange}
             required
-            className="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-gray-100 px-3 py-3  focus:ring-2 focus:ring-blue-500"
           />
 
           {/* DEPARTMENT */}
           <div className="relative">
             <div
-              className="flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2"
+              className="flex cursor-pointer items-center justify-between rounded-lg border px-3 border-gray-100 px-3 py-3 "
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <span>{department || "Select Department"}</span>
@@ -240,14 +248,12 @@ export default function Signup() {
             )}
           </div>
 
-          {/* ERROR */}
           {error && (
             <div className="rounded bg-red-100 p-3 text-sm text-red-700">
               {error}
             </div>
           )}
 
-          {/* SUBMIT */}
           <button
             type="submit"
             disabled={loading || !department}
@@ -258,7 +264,6 @@ export default function Signup() {
         </form>
       </div>
 
-      {/* SUCCESS POPUP */}
       <SuccessPopup
         isOpen={isPopupOpen}
         onClose={() => setIsPopupOpen(false)}
