@@ -11,11 +11,12 @@ import TransactionModal from "../components/TransactionModal";
 import FraudModal from "../compliance-security/components/FraudModal";
 import { Transaction } from "../types/transactions";
 import * as XLSX from "xlsx";
-import api from "../../../utils/apiService"; 
+import api from "../../../utils/apiService";
 import { useSearchParams } from "next/navigation";
 import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
 import { IoIosArrowDropdownCircle } from "react-icons/io";
+import { transcode } from "buffer";
 
 interface ExportTransaction {
   "Transaction ID": number;
@@ -84,7 +85,7 @@ const rowsPerPage = 10;
 
 const TransactionsPage = () => {
   // REMOVED: const { get } = api(); -> We use the imported 'api' instance directly
-  
+
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
@@ -119,6 +120,9 @@ const TransactionsPage = () => {
   // New state for filter dropdown
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [transactionTypeFilter, setTransactionTypeFilter] = useState<
+    string | null
+  >(null);
 
   const statusOptions = [
     "All",
@@ -130,6 +134,18 @@ const TransactionsPage = () => {
     "Refunded",
     "Escalated",
     "Under Review",
+  ];
+
+  const TRANSACTION_TYPE_OPTIONS = [
+    { label: "Card to Mpesa", value: "CARD_TO_MPESA" },
+    { label: "Card to Bank", value: "CARD_TO_BANK" },
+    { label: "Card to Paybill", value: "CARD_TO_PAYBILL" },
+    { label: "Card to Network", value: "CARD_TO_NETWORK" },
+    { label: "Card to Card", value: "CARD_TO_CARD" },
+    { label: "Open Banking to Bank", value: "OPEN_BANKING_TO_BANK" },
+    { label: "Open Banking to Card", value: "OPEN_BANKING_TO_CARD" },
+    { label: "Open Banking to Mpesa", value: "OPEN_BANKING_TO_MPESA" },
+    { label: "Open Banking to Paybill", value: "OPEN_BANKING_TO_PAYBILL" },
   ];
 
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
@@ -341,6 +357,11 @@ const TransactionsPage = () => {
         );
       }
     }
+    if (transactionTypeFilter) {
+      filtered = filtered.filter(
+        (t) => t.transactionType === transactionTypeFilter
+      );
+    }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -367,7 +388,14 @@ const TransactionsPage = () => {
     }
 
     setFilteredTransactions(filtered);
-  }, [searchQuery, statusFilter, dateRange, allTransactions, selectedCountry]);
+  }, [
+    searchQuery,
+    statusFilter,
+    dateRange,
+    allTransactions,
+    selectedCountry,
+    transactionTypeFilter,
+  ]);
 
   const mapApiTransactionToTransaction = (tx: RawTransaction): Transaction => ({
     transactionId: tx.transactionId || "N/A",
@@ -674,6 +702,14 @@ const TransactionsPage = () => {
     setDropdownOpen(dropdownOpen === transactionId ? null : transactionId);
   };
 
+  const formatTransactionType = (type?: string) => {
+    return (
+      TRANSACTION_TYPE_OPTIONS.find((t) => t.value === type)?.label ||
+      type ||
+      "N/A"
+    );
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
@@ -831,12 +867,59 @@ const TransactionsPage = () => {
                       )}
                     </div>
 
+                    {/* Transaction Type Filter */}
+                    <div className="relative border-t">
+                      <button
+                        onClick={() =>
+                          setActiveFilter(
+                            activeFilter === "type" ? null : "type"
+                          )
+                        }
+                        className="w-full text-left px-4 py-2 hover:bg-gray-200 flex justify-between items-center"
+                      >
+                        Transaction Type
+                        <IoIosArrowDropdownCircle />
+                      </button>
+
+                      {activeFilter === "type" && (
+                        <div className="absolute left-28 top-0 ml-1 w-56 bg-white border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                          {TRANSACTION_TYPE_OPTIONS.map((type) => (
+                            <div
+                              key={type.value}
+                              onClick={() => {
+                                setTransactionTypeFilter(type.value);
+                                setActiveFilter(null);
+                              }}
+                              className={`px-4 py-2 cursor-pointer hover:bg-gray-200 ${
+                                transactionTypeFilter === type.value
+                                  ? "bg-blue-200"
+                                  : ""
+                              }`}
+                            >
+                              {type.label}
+                            </div>
+                          ))}
+
+                          <div
+                            onClick={() => {
+                              setTransactionTypeFilter(null);
+                              setActiveFilter(null);
+                            }}
+                            className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer border-t"
+                          >
+                            Reset filter
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Clear All Filters */}
                     <div
                       className="border-t px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setStatusFilter("All");
                         setSelectedCountry(null);
+                        setTransactionTypeFilter(null);
                         setActiveFilter(null);
                       }}
                     >
@@ -881,6 +964,23 @@ const TransactionsPage = () => {
                   <button
                     onClick={() => setSelectedCountry(null)}
                     className="ml-1 hover:text-green-900"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+
+              {transactionTypeFilter && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 whitespace-nowrap">
+                  Transaction Type:{" "}
+                  {
+                    TRANSACTION_TYPE_OPTIONS.find(
+                      (t) => t.value === transactionTypeFilter
+                    )?.label
+                  }
+                  <button
+                    onClick={() => setTransactionTypeFilter(null)}
+                    className="ml-1 hover:text-purple-900"
                   >
                     ×
                   </button>
@@ -1010,8 +1110,10 @@ const TransactionsPage = () => {
                               <td className="px-6 py-4 hidden lg:table-cell">
                                 {transaction.receiverCurrencyIso3a}
                               </td>
-                              <td className="px-6 py-4 hidden lg:table-cell">
-                                {transaction.transactionType}
+                              <td className="px-6 py-4 hidden lg:table-cell whitespace-nowrap">
+                                {formatTransactionType(
+                                  transaction.transactionType
+                                )}
                               </td>
                               <td className="px-6 py-4">
                                 {formatDateTime(transaction.date)}
