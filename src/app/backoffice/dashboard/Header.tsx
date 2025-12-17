@@ -4,11 +4,11 @@ import { ChevronDown } from "lucide-react";
 import HeroSection from "./HeroSection";
 import TopNav from "./TopNav";
 import { usePathname } from "next/navigation";
-import { sidebarMenuItems } from "../constants/sidebarMenuItems"; 
+import { sidebarMenuItems } from "../constants/sidebarMenuItems";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "../../../store/store"; 
+import { RootState } from "../../../store/store";
 
 interface SidebarMenuItem {
   href: string;
@@ -37,10 +37,10 @@ export default function Header({
 
   const pageTitles: Record<string, string> = {
     "/backoffice/dashboard": "Welcome back",
-    "/backoffice/financial-metrics": "Financial Metrics & Revenue Performance",
-    "/backoffice/customer-analytics": "Customer Analytics",
-    "/backoffice/compliance-risk": "Compliance & Risk Management",
-    "/backoffice/operational-efficiency": "Operational Efficiency",
+    // "/backoffice/financial-metrics": "Financial Metrics & Revenue Performance",
+    // "/backoffice/customer-analytics": "Customer Analytics",
+    // "/backoffice/compliance-risk": "Compliance & Risk Management",
+    // "/backoffice/operational-efficiency": "Operational Efficiency",
   };
 
   const currentTitle = pageTitles[pathname] || "Dashboard";
