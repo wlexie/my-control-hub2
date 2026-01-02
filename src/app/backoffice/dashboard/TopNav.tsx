@@ -18,19 +18,19 @@ interface TopNavProps {
 
 const navItems = [
   { label: "Overview", href: "/backoffice/dashboard" },
-  {
-    label: "Financial Metrics & Revenue Performance",
-    href: "/backoffice/financial-metrics",
-  },
-  { label: "Customer Analytics", href: "/backoffice/customer-analytics" },
-  {
-    label: "Compliance & Risk Management",
-    href: "/backoffice/compliance-risk",
-  },
-  {
-    label: "Operational Efficiency",
-    href: "/backoffice/operational-efficiency",
-  },
+  // {
+  //   label: "Financial Metrics & Revenue Performance",
+  //   href: "/backoffice/financial-metrics",
+  // },
+  // { label: "Customer Analytics", href: "/backoffice/customer-analytics" },
+  // {
+  //   label: "Compliance & Risk Management",
+  //   href: "/backoffice/compliance-risk",
+  // },
+  // {
+  //   label: "Operational Efficiency",
+  //   href: "/backoffice/operational-efficiency",
+  // },
 ];
 
 const getInitials = (firstName: string, lastName: string): string => {

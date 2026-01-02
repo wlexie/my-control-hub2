@@ -736,7 +736,7 @@ export default function UserDetailsModal({
               )}
 
               {/* KYC Verification */}
-              {activeTab === "kyc" && (
+              {/* {activeTab === "kyc" && (
                 <div className="pt-5" ref={sectionRefs.kyc}>
                   <h3 className="font-semibold text-gray-800 mb-2">
                     Onfido Verification
@@ -812,7 +812,7 @@ export default function UserDetailsModal({
                     </div>
                   </div>
                 </div>
-              )}
+              )} */}
 
               {/* Transaction Summary */}
               {activeTab === "transactions" && (
