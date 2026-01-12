@@ -11,7 +11,7 @@ import axios, {
   import type { RootState } from '../store/store';
   
   
-  // API base URL
+  // API base URLs
   const API_BASE_URL = 'https://api.tuma-app.com/api';
   //const API_BASE_URL = '/api';
   
