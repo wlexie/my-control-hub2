@@ -11,9 +11,12 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../../store/store";
 
 interface SidebarMenuItem {
-  href: string;
   label: string;
-  icon?: React.ReactNode;
+  href?: string;
+  submenu?: {
+    label: string;
+    href: string;
+  }[];
 }
 
 interface HeaderProps {
@@ -46,13 +49,16 @@ export default function Header({
   const currentTitle = pageTitles[pathname] || "Dashboard";
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
+    {}
+  );
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const user = useSelector((state: RootState) => state.auth.user);
   const userName = user ? `${user.firstName} ${user.lastName}` : null;
 
   // <-- 1. ADD LOGIC TO FILTER MENU ITEMS -->
-  const getVisibleMenuItems = () => {
+  const getVisibleMenuItems = (): SidebarMenuItem[] => {
     // If the user is not logged in, show no menu items.
     if (!user) {
       return [];
@@ -60,7 +66,16 @@ export default function Header({
 
     // If user's role is 'BACKOFFICE', only show the 'Transactions' link.
     if (user.roles.includes("BACKOFFICE")) {
-      return sidebarMenuItems.filter((item) => item.label === "Transactions");
+      return sidebarMenuItems.filter((item) => {
+        if (item.href) {
+          return item.label === "Transactions";
+        }
+        // For items with submenu (like Financials), check if any subitem should be shown
+        if (item.submenu) {
+          return item.label === "Financials";
+        }
+        return false;
+      });
     }
 
     // For all other logged-in users, show all menu items.
@@ -76,11 +91,75 @@ export default function Header({
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setMenuOpen(false);
+        setExpandedItems({}); // Collapse all submenus when closing main menu
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const toggleSubmenu = (label: string) => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      [label]: !prev[label],
+    }));
+  };
+
+  const renderMenuItem = (item: SidebarMenuItem) => {
+    if (item.href) {
+      // Simple link item
+      return (
+        <Link
+          key={item.href}
+          href={item.href}
+          className="block px-4 py-2 text-md text-gray-700 hover:bg-blue-100"
+          onClick={() => setMenuOpen(false)}
+        >
+          {item.label}
+        </Link>
+      );
+    } else if (item.submenu) {
+      // Item with submenu
+      const isExpanded = expandedItems[item.label] || false;
+
+      return (
+        <div key={item.label} className="border-b last:border-b-0">
+          {/* Main menu item that expands submenu */}
+          <button
+            onClick={() => toggleSubmenu(item.label)}
+            className="w-full flex items-center justify-between px-4 py-2 text-md text-gray-700 hover:bg-blue-100"
+          >
+            <span>{item.label}</span>
+            <ChevronDown
+              size={14}
+              className={`transform transition-transform ${isExpanded ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {/* Submenu items */}
+          {isExpanded && (
+            <div className="ml-4">
+              {item.submenu.map((subItem) => (
+                <Link
+                  key={subItem.href}
+                  href={subItem.href}
+                  className="block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setExpandedItems({}); // Close all submenus
+                  }}
+                >
+                  {subItem.label}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="relative bg-gradient-to-br to-[#163F8B] from-[#276EF1] text-white pb-8 ">
@@ -100,18 +179,10 @@ export default function Header({
         </button>
 
         {menuOpen && (
-          <div className="absolute left-6 mt-2 w-64 bg-white shadow-xl rounded-lg py-2 z-50">
+          <div className="absolute left-6 mt-2 w-64 bg-white shadow-xl rounded-lg py-2 z-50 max-h-[80vh] overflow-y-auto">
             {/* <-- 2. RENDER THE FILTERED LIST --> */}
-            {visibleMenuItems.map((item: SidebarMenuItem) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="block px-4 py-2 text-md text-gray-700 hover:bg-blue-100"
-                onClick={() => setMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {visibleMenuItems.map(renderMenuItem)}
+
             {/* <-- ADDED: Show a message if there are no items to display --> */}
             {visibleMenuItems.length === 0 && (
               <div className="px-4 py-2 text-md text-gray-400">
