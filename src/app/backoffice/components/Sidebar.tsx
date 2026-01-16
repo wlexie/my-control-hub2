@@ -4,13 +4,27 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { HiMenu, HiX } from "react-icons/hi";
+import { HiMenu, HiX, HiChevronDown, HiChevronRight } from "react-icons/hi";
 import User from "../../access-manager/components/User";
 
 import { useSelector } from "react-redux";
 import { RootState } from "../../../store/store";
 
-const allNavLinks = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  match: string;
+}
+
+interface NavGroup {
+  label: string;
+  icon: string;
+  match?: string;
+  submenu?: NavItem[];
+}
+
+const navItems: (NavItem | NavGroup)[] = [
   {
     href: "/backoffice/dashboard",
     label: "Dashboard",
@@ -23,6 +37,7 @@ const allNavLinks = [
     icon: "/backoffice/transactions.png",
     match: "/backoffice/transactions",
   },
+
   // {
   //   href: "/backoffice/special-limits",
   //   label: "Special Limits",
@@ -40,6 +55,32 @@ const allNavLinks = [
     label: "User & Accounts",
     icon: "/backoffice/users.png",
     match: "/backoffice/user-accounts",
+  },
+  {
+    label: "Financials",
+    icon: "/backoffice/reports.png",
+    match: "/backoffice/financials",
+    submenu: [
+      {
+        href: "/backoffice/financials/transactions",
+        label: "Transactions",
+        icon: "/backoffice/fees.png",
+        match: "/backoffice/financials/transactions",
+      },
+      // You can add more financial submenu items here:
+      // {
+      //   href: "/backoffice/financials/revenue",
+      //   label: "Revenue",
+      //   icon: "/backoffice/revenue.png",
+      //   match: "/backoffice/financials/revenue",
+      // },
+      // {
+      //   href: "/backoffice/financials/expenses",
+      //   label: "Expenses",
+      //   icon: "/backoffice/expenses.png",
+      //   match: "/backoffice/financials/expenses",
+      // },
+    ],
   },
   // {
   //   href: "/backoffice/fees",
@@ -77,6 +118,11 @@ const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    {
+      financials: true, // Financials expanded by default
+    }
+  );
 
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -89,13 +135,19 @@ const Sidebar = () => {
 
     // 2. If user has 'BACKOFFICE' role, show only specific links
     if (user.roles.includes("BACKOFFICE")) {
-      return allNavLinks.filter(
-        (link) => link.label === "Dashboard" || link.label === "Transactions"
-      );
+      return navItems.filter((item) => {
+        if ("href" in item) {
+          // Show Dashboard and regular Transactions
+          return item.label === "Dashboard" || item.label === "Transactions";
+        } else {
+          // For NavGroup items, check if label should be shown
+          return item.label === "Financials";
+        }
+      });
     }
 
     // 3. For any other logged-in user, show all links
-    return allNavLinks;
+    return navItems;
   };
 
   const visibleNav = getVisibleNavLinks();
@@ -105,6 +157,97 @@ const Sidebar = () => {
   const goHome = () => router.push("/backoffice/dashboard");
   const toggle = () => setOpen(!open);
   const close = () => setOpen(false);
+
+  const toggleGroup = (groupLabel: string) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [groupLabel.toLowerCase()]: !prev[groupLabel.toLowerCase()],
+    }));
+  };
+
+  const renderNavItem = (
+    item: NavItem,
+    level: number = 0,
+    isSubmenu: boolean = false
+  ) => {
+    const isItemActive = isActive(item.match);
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={close}
+        className={`flex items-center gap-4 px-4 py-2 rounded-lg transition-colors duration-200 ${
+          level > 0 ? `ml-${level * 4}` : ""
+        } ${
+          isItemActive
+            ? "bg-white text-blue-700 font-semibold"
+            : "text-white hover:bg-white/20"
+        }`}
+      >
+        <img
+          src={item.icon}
+          alt=""
+          className={`w-6 h-6 ${isItemActive ? "filter-blue" : "filter-white"}`}
+        />
+        <span className={`${isSubmenu ? "text-sm" : ""}`}>{item.label}</span>
+      </Link>
+    );
+  };
+
+  const renderNavGroup = (group: NavGroup) => {
+    const groupKey = group.label.toLowerCase();
+    const isExpanded = expandedGroups[groupKey] || false;
+    const hasActiveChild = group.submenu?.some((item) => isActive(item.match));
+    const isGroupActive = group.match ? isActive(group.match) : hasActiveChild;
+
+    return (
+      <div key={group.label} className="flex flex-col">
+        {/* Group header */}
+        <button
+          onClick={() => toggleGroup(group.label)}
+          className={`flex items-center justify-between gap-4 px-4 py-2 rounded-lg transition-colors duration-200 ${
+            isGroupActive
+              ? "bg-white/10 text-white font-semibold"
+              : "text-white hover:bg-white/20"
+          }`}
+        >
+          <div className="flex items-center gap-4">
+            <img
+              src={group.icon}
+              alt=""
+              className={`w-6 h-6 ${
+                isGroupActive ? "filter-blue" : "filter-white"
+              }`}
+            />
+            <span>{group.label}</span>
+          </div>
+          {isExpanded ? (
+            <HiChevronDown size={18} />
+          ) : (
+            <HiChevronRight size={18} />
+          )}
+        </button>
+
+        {/* Submenu items */}
+        <AnimatePresence>
+          {isExpanded && group.submenu && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="flex flex-col gap-2 py-2 pl-8">
+                {group.submenu.map((item) => renderNavItem(item, 1, true))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
 
   const content = (
     <div className="h-full md:w-80 w-full bg-blue-700 flex flex-col text-white">
@@ -123,27 +266,9 @@ const Sidebar = () => {
 
       {/* ─── Nav Links ────────────────────────────── */}
       <nav className="flex-grow flex flex-col gap-4 px-4 overflow-y-auto">
-        {visibleNav.map(({ href, label, icon, match }) => (
-          <Link
-            key={href}
-            href={href}
-            onClick={close}
-            className={`flex items-center gap-4 px-4 py-2 rounded-lg transition-colors duration-200 ${
-              isActive(match)
-                ? "bg-white text-blue-700 font-semibold"
-                : "text-white hover:bg-white/20"
-            }`}
-          >
-            <img
-              src={icon}
-              alt=""
-              className={`w-6 h-6 ${
-                isActive(match) ? "filter-blue" : "filter-white"
-              }`}
-            />
-            {label}
-          </Link>
-        ))}
+        {visibleNav.map((item) =>
+          "href" in item ? renderNavItem(item) : renderNavGroup(item)
+        )}
       </nav>
 
       {/* ─── User Section ─────────────────────────── */}
