@@ -245,7 +245,7 @@ export default function AuditTrail() {
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col md:flex-row justify-between items-center mt-6 text-sm">
+      <div className="flex flex-col md:flex-row justify-between items-center mt-7 text-sm">
         <span className="text-gray-600 mb-4 md:mb-0">
           Showing {currentRecords.length} of {filteredRecords.length} records (Page {currentPage} of {totalPages || 1})
         </span>
