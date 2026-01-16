@@ -10,7 +10,7 @@ import { ChevronDown, Check, Search } from "lucide-react"; // Import Search icon
 // --- A. Definitions and Custom Hook ---
 const useClickOutside = (ref, handler) => {
   useEffect(() => {
-    const listener = (event) => {z
+    const listener = (event) => {
       if (!ref.current || ref.current.contains(event.target)) {
         return;
       }
