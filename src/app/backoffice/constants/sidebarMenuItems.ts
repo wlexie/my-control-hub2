@@ -7,7 +7,7 @@ export const sidebarMenuItems = [
       label: "Financials", 
       submenu: [
         { 
-          label: "Transactions", 
+          label: "Revenue", 
           href: "/backoffice/financials/transactions" 
         }
       

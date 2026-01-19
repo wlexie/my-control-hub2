@@ -351,7 +351,7 @@ const FinancialTransactionsPage = () => {
           {/* Header Section - Same layout as original Transactions.tsx */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
             <h2 className="text-2xl font-semibold text-black md:flex-shrink-0">
-              Financial Transactions
+              Transactions Revenue
             </h2>
 
             {/* Search Bar - Centered in Desktop */}

@@ -63,8 +63,8 @@ const navItems: (NavItem | NavGroup)[] = [
     submenu: [
       {
         href: "/backoffice/financials/transactions",
-        label: "Transactions",
-        icon: "/backoffice/fees.png",
+        label: "Revenue",
+        icon: "",
         match: "/backoffice/financials/transactions",
       },
       // You can add more financial submenu items here:
