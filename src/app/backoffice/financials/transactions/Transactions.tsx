@@ -11,7 +11,6 @@ import * as XLSX from "xlsx";
 import api from "../../../../utils/apiService";
 import { useMediaQuery } from "react-responsive";
 import toast from "react-hot-toast";
-import { IoIosArrowDropdownCircle } from "react-icons/io";
 
 interface FinancialTransaction {
   transactionId: number;
@@ -70,7 +69,7 @@ const FinancialTransactionsPage = () => {
     FinancialTransaction[]
   >([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [, setError] = useState("");
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState<{
@@ -84,8 +83,8 @@ const FinancialTransactionsPage = () => {
   const dateFilterRef = useRef<HTMLDivElement>(null);
 
   // Filter states
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [, setShowFilterDropdown] = useState(false);
+
   const [currencyFilter, setCurrencyFilter] = useState<string | null>(null);
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<
     string | null
