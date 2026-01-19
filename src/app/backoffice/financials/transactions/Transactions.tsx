@@ -276,7 +276,7 @@ const FinancialTransactionsPage = () => {
   };
 
   const generateExportFileName = () => {
-    let fileName = "financial_transactions";
+    let fileName = "transactions_revenue";
     if (searchQuery.trim())
       fileName += `_search_${searchQuery.trim().replace(/ /g, "_")}`;
     if (currencyFilter) fileName += `_currency_${currencyFilter}`;

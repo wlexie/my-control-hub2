@@ -177,7 +177,7 @@ const Sidebar = () => {
         key={item.href}
         href={item.href}
         onClick={close}
-        className={`flex items-center gap-4 px-4 py-2 rounded-lg transition-colors duration-200 ${
+        className={`flex items-center gap-${item.icon ? "4" : "2"} px-4 py-2 rounded-lg transition-colors duration-200 ${
           level > 0 ? `ml-${level * 4}` : ""
         } ${
           isItemActive
@@ -185,11 +185,13 @@ const Sidebar = () => {
             : "text-white hover:bg-white/20"
         }`}
       >
-        <img
-          src={item.icon}
-          alt=""
-          className={`w-6 h-6 ${isItemActive ? "filter-blue" : "filter-white"}`}
-        />
+        {item.icon && (
+          <img
+            src={item.icon}
+            alt=""
+            className={`w-6 h-6 ${isItemActive ? "filter-blue" : "filter-white"}`}
+          />
+        )}
         <span className={`${isSubmenu ? "text-sm" : ""}`}>{item.label}</span>
       </Link>
     );
