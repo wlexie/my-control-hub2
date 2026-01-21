@@ -507,7 +507,7 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                     <div key={msg.id} className="flex justify-end items-start gap-3">
                       <div className="flex flex-col items-end">
                         <div className="flex items-center gap-2 mb-1">
-                           <span className="text-sm font-bold text-gray-600">{msg.senderName || 'Agent'}</span>
+                           <span className="text-sm font-bold text-gray-600">{msg.senderName}</span>
                           <span className="text-xs text-gray-500">{formatFullTimestamp(msg.createdAt)}</span>
                         </div>
                         <div className="bg-blue-600 text-white p-3 rounded-lg max-w-lg">
