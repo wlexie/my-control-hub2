@@ -194,7 +194,6 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
         
         return {
           id: msg.id, 
-          // --- UPDATED: Use the parseMediaPayload helper ---
           payload: isMedia ? parseMediaPayload(msg.content) : msg.content || "[No Content]", 
           type: isMedia ? msg.messageType : 'text',
           createdAt: msg.messageTime,
@@ -204,8 +203,42 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
         };
       });
 
-      processedMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      setMessages(processedMessages);
+      // --- DEDUPLICATION LOGIC START ---
+      // This prevents the "Double Agent Message" issue
+      const statusPriority = { 'read': 3, 'delivered': 2, 'sent': 1, 'pending': 0 };
+
+      const uniqueMessages = processedMessages.reduce((acc, current) => {
+        const msgTime = new Date(current.createdAt).getTime();
+        const contentStr = typeof current.payload === 'string' ? current.payload : current.payload.url;
+        
+        // We create a key based on Content and a 3-second time window
+        const groupingKey = `${current.direction}-${contentStr}-${Math.floor(msgTime / 3000)}`;
+
+        const existingIdx = acc.findIndex(item => {
+          const itemTime = new Date(item.createdAt).getTime();
+          const itemContent = typeof item.payload === 'string' ? item.payload : item.payload.url;
+          const itemKey = `${item.direction}-${itemContent}-${Math.floor(itemTime / 3000)}`;
+          return itemKey === groupingKey;
+        });
+
+        if (existingIdx > -1) {
+          // Compare status priorities. Keep the one that is 'Read' or 'Delivered'
+          const existingMsg = acc[existingIdx];
+          const currentPrio = statusPriority[current.status?.toLowerCase()] || 0;
+          const existingPrio = statusPriority[existingMsg.status?.toLowerCase()] || 0;
+
+          if (currentPrio > existingPrio) {
+            acc[existingIdx] = current;
+          }
+        } else {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+      // --- DEDUPLICATION LOGIC END ---
+
+      uniqueMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      setMessages(uniqueMessages);
 
       setChatDetails({
           name: conversationData.contactName,
@@ -334,34 +367,81 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
     }
   };
 
-  const handleSendTemplate = async (templateName) => {
-    if (!userPhoneNumber || !templateName) { alert("Error: Cannot determine recipient's phone number or template name."); return; }
+const handleSendTemplate = async (templateName) => {
+    if (!userPhoneNumber || !templateName || !accessToken) { 
+      alert("Error: Missing recipient phone, template name, or authentication token."); 
+      return; 
+    }
     
     const templateParams = [{ "default": userName === 'Unknown' ? 'there' : userName }];
     const mediaUrl = TEMPLATE_MEDIA_URLS[templateName];
     const templateBody = TEMPLATE_BODIES[templateName];
     const timestamp = new Date().toISOString();
     
+    // Create optimistic UI updates
     const optimisticMessages = [];
-    if (mediaUrl) optimisticMessages.push({ id: `temp-img-${Date.now()}`, type: 'image', direction: 'sent', createdAt: timestamp, payload: { url: mediaUrl, caption: '' } });
+    if (mediaUrl) {
+      optimisticMessages.push({ 
+        id: `temp-img-${Date.now()}`, 
+        type: 'image', 
+        direction: 'sent', 
+        createdAt: timestamp, 
+        payload: { url: mediaUrl, caption: '' } 
+      });
+    }
     if (templateBody) {
       const populatedBody = templateBody.replace('{{1}}', userName === 'Unknown' ? 'there' : userName);
-      optimisticMessages.push({ id: `temp-text-${Date.now()}`, type: 'text', direction: 'sent', createdAt: timestamp, payload: populatedBody });
+      optimisticMessages.push({ 
+        id: `temp-text-${Date.now()}`, 
+        type: 'text', 
+        direction: 'sent', 
+        createdAt: timestamp, 
+        payload: populatedBody 
+      });
     }
     
     if (optimisticMessages.length > 0) setMessages(prev => [...prev, ...optimisticMessages]);
 
+    const payload = {
+      recipient: userPhoneNumber,
+      templateName,
+      params: templateParams,
+      mediaUrl
+    };
+    // ✅ LOG WHAT IS BEING SENT
+console.log('📤 Sending template payload:', payload);
+console.log('📞 Recipient:', userPhoneNumber);
+console.log('📄 Template:', templateName);
+console.log('🧩 Params:', templateParams);
+console.log('🖼 Media URL:', mediaUrl);
+
     try {
-      await axios.post(`${API_BASE_URL}/api/sendTemplate`, { recipient: userPhoneNumber, templateName, params: templateParams, mediaUrl });
+      await axios.post(
+        `${API_BASE_URL}/api/sendTemplate`, 
+        payload,
+        { 
+          headers: { 
+            Authorization: `Bearer ${accessToken}` 
+          } 
+        }
+      );
+
+      console.log('✅ Template sent successfully');
       setIsTemplateModalOpen(false);
+      // Refresh the conversation to sync with the backend
       setTimeout(() => fetchFullConversation(true), 2000);
+      
     } catch (error) {
       const errorDetail = error.response?.data?.details || error.response?.data?.error || error.message;
-      console.error('Error sending template:', error.response?.data || error);
-      alert(`Failed to send template. Reason: ${errorDetail}`);
+      console.error('❌ Error sending template:', error.response?.data || error);
+      console.log(`Failed to send template. Reason: ${errorDetail}`);
+      
+      // Rollback optimistic UI on failure
       setMessages(prev => prev.filter(m => !optimisticMessages.some(opt => opt.id === m.id)));
     }
   };
+
+
 
   const addEmoji = (emoji) => setNewMessage(prev => prev + emoji.native);
 
@@ -513,7 +593,6 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                         <div className="bg-blue-600 text-white p-3 rounded-lg max-w-lg">
                            {msg.type === 'text' && <p className="text-sm break-words whitespace-pre-wrap">{msg.payload}</p>}
                            
-                           {/* --- UPDATED SENT MEDIA RENDERER --- */}
                            {msg.type === 'image' && (
                              <>
                                <img src={msg.payload.url} alt="Media" className="rounded-lg max-w-[200px] cursor-pointer" onClick={() => setLightboxImage(msg.payload.url)} />
@@ -551,7 +630,6 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
                         <div className="bg-gray-100 text-gray-800 p-3 rounded-lg max-w-lg">
                            {msg.type === 'text' && <p className="text-sm break-words whitespace-pre-wrap">{msg.payload}</p>}
                            
-                           {/* --- UPDATED RECEIVED MEDIA RENDERER --- */}
                            {msg.type === 'image' && (
                              <>
                                <img src={msg.payload.url} alt="User media" className="rounded-lg max-w-[200px] cursor-pointer" onClick={() => setLightboxImage(msg.payload.url)} />

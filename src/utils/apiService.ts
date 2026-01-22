@@ -10,6 +10,7 @@ import axios, {
   import type { Store } from 'redux';
   import type { RootState } from '../store/store';
   
+  //yesSSS
   
   // API base URL
   const API_BASE_URL = 'https://api.tuma-app.com/api';
@@ -20,6 +21,7 @@ import axios, {
 
     headers: {
       'Content-Type': 'application/json',
+      
     } as AxiosRequestHeaders, 
   });
   

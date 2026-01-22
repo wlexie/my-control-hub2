@@ -410,14 +410,40 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       setIsRetrying(false);
     }
   };
+
   if (!isOpen) return null;
 
   if (loading || !transaction) {
     return (
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div className="bg-white p-6 rounded-lg shadow-lg">
-          <p>Loading transaction details...</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full mx-4"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Loading Transaction
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 text-2xl"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+          </div>
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+            <p className="text-gray-600">Loading transaction details...</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Transaction ID: {transactionId}
+            </p>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -428,181 +454,351 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 overflow-y-auto py-4">
       <AnimatePresence>
         {isOpen && (
-          <>
-            {/* Mobile: Bottom sheet */}
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="md:hidden absolute bottom-0 left-0 right-0 h-[90vh] bg-white rounded-t-3xl shadow-xl flex flex-col"
-            >
-              <div className="flex justify-between items-center p-4 border-b">
-                <h2 className="text-lg font-bold text-gray-900">
-                  {transaction.transactionId}
-                </h2>
-                <div className="flex items-center gap-2">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="relative mx-auto my-8 max-w-6xl w-full"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="flex justify-between items-center p-6 border-b bg-gray-50">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Transaction Details
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    ID: {transaction.transactionId}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
                   {transaction.status === "PENDING" && isAdmin && (
                     <button
                       onClick={handleRetryPayment}
                       disabled={isRetrying || !transaction.transactionReference}
-                      className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      {isRetrying ? "Processing..." : "Settle Payment"}
+                      {isRetrying ? (
+                        <span className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Processing...
+                        </span>
+                      ) : (
+                        "Settle Payment"
+                      )}
                     </button>
                   )}
                   <button
                     onClick={onClose}
-                    className="text-gray-500 hover:text-gray-700 text-xl"
+                    className="text-gray-500 hover:text-gray-700 text-2xl p-1"
+                    aria-label="Close"
                   >
                     &times;
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="flex flex-col items-center text-center mb-4">
+              {/* Main Content - Multi-row Layout */}
+              <div className="p-6">
+                {/* Status Banner */}
+                <div className="flex items-center justify-center text-center mb-8 p-4 bg-gray-50 rounded-xl">
                   <img
                     src={statusDetails.icon}
                     alt="status icon"
-                    className="w-16 h-16"
+                    className="w-16 h-16 mr-4"
                   />
-                  <h3 className="text-lg font-bold mt-2">
-                    {statusDetails.title}
-                  </h3>
-                  <p className="text-gray-400 mt-1 text-sm">
-                    {statusDetails.reason}
-                  </p>
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {statusDetails.title}
+                    </h3>
+                    <p className="text-gray-600 mt-2 max-w-2xl">
+                      {statusDetails.reason}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Transaction Details */}
-                <div className="space-y-3">
-                  <div className="bg-gray-100 p-3 rounded-lg">
-                    <h3 className="font-semibold text-gray-800 mb-2">
-                      Transaction Details
+                {/* Multi-column Layout for Transaction Details */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Column 1: Transaction Summary */}
+                  <div className="bg-gray-50 p-5 rounded-xl">
+                    <h3 className="font-semibold text-gray-800 mb-4 text-lg">
+                      Transaction Summary
                     </h3>
-                    <div className="grid grid-cols-2 gap-y-1 text-sm">
-                      <p className="text-gray-500">Amount Sent:</p>
-                      <p className="font-semibold text-black">
-                        {transaction.senderAmount} {transaction.currencyIso3a}
-                      </p>
-                      <p className="text-gray-500">Amount Received:</p>
-                      <p className="font-semibold text-black">
-                        {Number(transaction.recipientAmount).toFixed(0)}{" "}
-                        {transaction.receiverCurrencyIso3a}
-                      </p>
-                      <p className="text-gray-500">Exchange Rate:</p>
-                      <p>{transaction.exchangeRate}</p>
-                      <p className="text-gray-500">Transfer Fee:</p>
-                      <p>0.00</p>
-                      <p className="text-gray-500">Payment Method:</p>
-                      <p>{formatChannelName(transaction.transactionType)}</p>
-                      <p className="text-gray-500">Bank Name:</p>
-                      <p>{transaction.bankName || "N/A"}</p>
-                      <p className="text-gray-500">Card Type:</p>
-                      <p>{transaction.paymentTypeDescription || "N/A"}</p>
-                      <p className="text-gray-500">Card Issuer:</p>
-                      <p>{transaction.issuer || "N/A"}</p>
-                      <p className="text-gray-500">Masked Card:</p>
-                      <p>{transaction.maskedPan || "N/A"}</p>
-                      <p className="text-gray-500">Transaction ID:</p>
-                      <p className="truncate">{transaction.transactionId}</p>
-                      <p className="text-gray-500">User ID:</p>
-                      <p>{transaction.userId || "N/A"}</p>
-                      <p className="text-gray-500">Tuma Reference:</p>
-                      <p>{transaction.transactionKey || "N/A"}</p>
-                      <p className="text-gray-500">Trust Payment Reference:</p>
-                      <p>{transaction.tpReference || "N/A"}</p>
-                      <p className="text-gray-500">Settlement Reference:</p>
-                      <p>{transaction.settlementReference || "N/A"}</p>
-                      <p className="text-gray-500">MPESA Reference:</p>
-                      <p>{transaction.mpesaReference || "N/A"}</p>
-                      <p className="text-gray-500">Transaction Reference:</p>
-                      <p>{transaction.transactionReference || "N/A"}</p>
-                      <p className="text-gray-500">Origin:</p>
-                      <p>UK</p>
-                      <p className="text-gray-500">Destination:</p>
-                      <p>{transaction.receiverAddress}</p>
-                      <p className="text-gray-500">Payment Purpose:</p>
-                      <p>{transaction.paymentPurpose}</p>
-                      <p className="text-gray-500">Source of Funds:</p>
-                      <p>{transaction.fundsSource}</p>
-                      <p className="text-gray-500">Time Sent:</p>
-                      <p>{formatDateTime(transaction.date)}</p>
-                      <p className="text-gray-500">Time Received:</p>
-                      <p>{formatDateEAT(transaction.date)}</p>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Amount Sent:</span>
+                        <span className="font-bold text-lg text-gray-900">
+                          {transaction.senderAmount} {transaction.currencyIso3a}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Amount Received:</span>
+                        <span className="font-bold text-lg text-gray-900">
+                          {Number(transaction.recipientAmount).toFixed(0)}{" "}
+                          {transaction.receiverCurrencyIso3a}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Exchange Rate:</span>
+                        <span>{transaction.exchangeRate}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Transfer Fee:</span>
+                        <span>0.00</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Payment Method:</span>
+                        <span>
+                          {formatChannelName(transaction.transactionType)}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Sender Details */}
-                  <div className="bg-gray-100 p-3 rounded-lg">
-                    <h3 className="font-semibold text-gray-800 mb-2">
-                      Sender Details
-                    </h3>
-                    <div className="grid grid-cols-2 gap-y-1 text-sm">
-                      <p className="text-gray-500">Name:</p>
-                      <p className="truncate">{transaction.senderName}</p>
-                      <p className="text-gray-500">Email:</p>
-                      <p className="break-all overflow-hidden text-ellipsis">
-                        {transaction.senderEmail}
-                      </p>
-                      <p className="text-gray-500">Number:</p>
-                      <p className="truncate">{transaction.senderPhone}</p>
+                  {/* Column 2: Sender & Receiver Details */}
+                  <div className="space-y-6">
+                    {/* Sender Details */}
+                    <div className="bg-gray-50 p-5 rounded-xl">
+                      <h3 className="font-semibold text-gray-800 mb-4 text-lg">
+                        Sender Details
+                      </h3>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-gray-500">Name</p>
+                          <p className="font-medium">
+                            {transaction.senderName}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Email</p>
+                          <p className="font-medium break-all">
+                            {transaction.senderEmail}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Phone</p>
+                          <p className="font-medium">
+                            {transaction.senderPhone}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Receiver Details */}
+                    <div className="bg-gray-50 p-5 rounded-xl">
+                      <h3 className="font-semibold text-gray-800 mb-4 text-lg">
+                        Receiver Details
+                      </h3>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-gray-500">Name</p>
+                          <p className="font-medium">
+                            {transaction.receiverName}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Phone</p>
+                          <p className="font-medium">
+                            {transaction.receiverPhone || "N/A"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">
+                            Account Number
+                          </p>
+                          <p className="font-medium">
+                            {transaction.accountNumber || "N/A"}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Receiver Details */}
-                  <div className="bg-gray-100 p-3 rounded-lg">
-                    <h3 className="font-semibold text-gray-800 mb-2">
-                      Receiver Details
+                  {/* Column 3: Payment Details */}
+                  <div className="bg-gray-50 p-5 rounded-xl">
+                    <h3 className="font-semibold text-gray-800 mb-4 text-lg">
+                      Payment Details
                     </h3>
-                    <div className="grid grid-cols-2 gap-y-1 text-sm">
-                      <p className="text-gray-500">Name:</p>
-                      <p>{transaction.receiverName}</p>
-                      <p className="text-gray-500">Number:</p>
-                      <p>{transaction.receiverPhone || "N/A"}</p>
-                      <p className="text-gray-500">Account Number:</p>
-                      <p>{transaction.accountNumber || "N/A"}</p>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500">Bank Name</p>
+                        <p className="font-medium">
+                          {transaction.bankName || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Card Type</p>
+                        <p className="font-medium">
+                          {transaction.paymentTypeDescription || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Card Issuer</p>
+                        <p className="font-medium">
+                          {transaction.issuer || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Masked Card</p>
+                        <p className="font-medium">
+                          {transaction.maskedPan || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Destination</p>
+                        <p className="font-medium">
+                          {transaction.receiverAddress}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reference Numbers Grid */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">Transaction ID</p>
+                    <p className="font-medium text-sm truncate">
+                      {transaction.transactionId}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">Tuma Reference</p>
+                    <p className="font-medium text-sm">
+                      {transaction.transactionKey || "N/A"}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">Trust Payment Ref</p>
+                    <p className="font-medium text-sm break-all whitespace-normal">
+                      {transaction.tpReference || "N/A"}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">
+                      Settlement Reference
+                    </p>
+                    <p className="font-medium text-sm">
+                      {transaction.settlementReference || "N/A"}
+                    </p>
+                  </div>
+                  {/* Conditionally show MPESA Reference only if not "N/A" */}
+                  {transaction.mpesaReference &&
+                    transaction.mpesaReference !== "N/A" && (
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500">MPESA Reference</p>
+                        <p className="font-medium text-sm break-words">
+                          {transaction.mpesaReference}
+                        </p>
+                      </div>
+                    )}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">
+                      Transaction Reference
+                    </p>
+                    <p className="font-medium text-sm">
+                      {transaction.transactionReference || "N/A"}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">User ID</p>
+                    <p className="font-medium text-sm">
+                      {transaction.userId || "N/A"}
+                    </p>
+                  </div>
+                  {/* <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">Fraud Reference</p>
+                    <p className="font-medium text-sm">
+                      {transaction.fraudReference || "N/A"}
+                    </p>
+                  </div> */}
+                </div>
+
+                {/* Additional Information */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="bg-gray-50 p-5 rounded-xl">
+                    <h4 className="font-semibold text-gray-800 mb-3">
+                      Additional Information
+                    </h4>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500">Payment Purpose</p>
+                        <p className="font-medium">
+                          {transaction.paymentPurpose || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Source of Funds</p>
+                        <p className="font-medium">
+                          {transaction.fundsSource || "N/A"}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="bg-gray-100 p-3 rounded-lg mt-3">
-                    <h3 className="font-semibold text-gray-800 mb-2 flex justify-between items-center">
-                      Internal Comments
+                  <div className="bg-gray-50 p-5 rounded-xl">
+                    <h4 className="font-semibold text-gray-800 mb-3">
+                      Timing Information
+                    </h4>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500">Time Sent (GMT)</p>
+                        <p className="font-medium">
+                          {formatDateTime(transaction.date)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">
+                          Time Received (EAT)
+                        </p>
+                        <p className="font-medium">
+                          {formatDateEAT(transaction.date)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Comments Section */}
+                  <div className="bg-gray-50 p-5 rounded-xl">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="font-semibold text-gray-800">
+                        Internal Comments
+                      </h4>
                       <button
                         onClick={() => setIsAddingComment(true)}
-                        className="text-blue-600 text-xs underline cursor-pointer"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                       >
-                        Add Comment
+                        + Add Comment
                       </button>
-                    </h3>
+                    </div>
 
                     {isAddingComment && (
                       <div className="mb-4">
                         <textarea
                           rows={3}
                           placeholder="Type your comment here..."
-                          className="w-full border rounded p-2 text-sm"
+                          className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           value={comment}
                           onChange={(e) => setComment(e.target.value)}
                         />
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex gap-2 mt-3">
                           <button
                             onClick={handleAddComment}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded"
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg flex-1 transition-colors disabled:opacity-50"
                             disabled={isProcessing}
                           >
-                            Add Comment
+                            {isProcessing ? "Adding..." : "Add Comment"}
                           </button>
                           <button
                             onClick={() => {
                               setIsAddingComment(false);
                               setComment("");
                             }}
-                            className="border text-sm border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-100"
+                            className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             Cancel
                           </button>
@@ -611,349 +807,93 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                     )}
 
                     {isLoadingComments ? (
-                      <div className="flex justify-center py-4">
-                        <div
-                          className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
-                          style={{ borderTopColor: "transparent" }}
-                        ></div>
-                        <span className="ml-2">Loading comments...</span>
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                       </div>
                     ) : comments.length > 0 ? (
-                      <div className="space-y-3 text-sm">
+                      <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                         {comments.map((comment) => (
                           <div
                             key={comment.id}
-                            className="bg-white p-3 rounded-lg border"
+                            className="bg-white p-3 rounded-lg border border-gray-200"
                           >
-                            <p className="text-xs text-gray-500 font-semibold">
-                              {comment.author} •{" "}
-                              {new Date(comment.createdAt).toLocaleString(
-                                "en-GB",
-                                {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "2-digit",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: false,
-                                  timeZone: "GMT",
-                                }
-                              )}{" "}
-                              GMT
+                            <div className="flex justify-between items-start mb-2">
+                              <p className="text-sm font-medium text-gray-900">
+                                {comment.author}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(comment.createdAt).toLocaleString(
+                                  "en-GB",
+                                  {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: false,
+                                    timeZone: "GMT",
+                                  }
+                                )}{" "}
+                                GMT
+                              </p>
+                            </div>
+                            <p className="text-sm text-gray-700">
+                              {comment.text}
                             </p>
-                            <p className="mt-1">{comment.text}</p>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500 italic">
+                      <p className="text-sm text-gray-500 italic text-center py-6">
                         No comments yet
                       </p>
                     )}
                   </div>
                 </div>
-              </div>
 
-              <div className="sticky bottom-0 left-0 right-0 bg-white p-3 border-t flex justify-between items-center">
-                {isClient && transaction.status === "SUCCESS" && (
-                  <button
-                    onClick={async () => {
-                      const blob = await generateReceiptPDF(
-                        transaction,
-                        formatDateTime,
-                        formatDateEAT,
-                        formatChannelName
-                      );
-                      const url = URL.createObjectURL(blob);
-                      const link = document.createElement("a");
-                      link.href = url;
-                      link.download = `Receipt_${transaction.transactionId}.pdf`;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
-                    className="text-blue-600 font-medium text-sm flex items-center gap-1"
-                  >
-                    <img
-                      src="/backoffice/icons/download.svg"
-                      alt="download icon"
-                      className="w-4 h-4"
-                    />
-                    Download Receipt
-                  </button>
-                )}
-
-                <button
-                  onClick={onClose}
-                  className="px-3 py-1.5 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors text-sm"
-                >
-                  Close
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Desktop: Side panel */}
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="hidden md:flex fixed right-0 top-0 h-screen w-full max-w-md bg-white shadow-lg flex-col z-50"
-            >
-              <div className="flex justify-between items-center p-6 border-b flex-shrink-0">
-                <h2 className="text-lg font-bold text-gray-900">
-                  {transaction.transactionId}
-                </h2>
-                <div className="flex items-center gap-4">
-                  {transaction.status === "PENDING" && isAdmin && (
-                    <button
-                      onClick={handleRetryPayment}
-                      disabled={isRetrying || !transaction.transactionReference}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isRetrying ? "Processing..." : "Settle Payment"}
-                    </button>
-                  )}
-                  <button
-                    onClick={onClose}
-                    className="text-gray-500 hover:text-gray-700 text-xl"
-                  >
-                    &times;
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="flex flex-col items-center text-center">
-                  <img
-                    src={statusDetails.icon}
-                    alt="status icon"
-                    className="w-20 h-20"
-                  />
-                  <h3 className="text-xl font-bold mt-2">
-                    {statusDetails.title}
-                  </h3>
-                  <p className="text-gray-400 mt-2 max-w-xs">
-                    {statusDetails.reason}
-                  </p>
-                </div>
-
-                {/* Transaction Details */}
-                <div className="mt-4 space-y-2">
-                  <div className="bg-gray-100 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-800 mb-2">
-                      Transaction Details
-                    </h3>
-                    <div className="grid grid-cols-2 gap-y-2 text-gray-700">
-                      <p className="text-gray-400">Amount Sent:</p>
-                      <p className="font-semibold text-black">
-                        {transaction.senderAmount} {transaction.currencyIso3a}
-                      </p>
-                      <p className="text-gray-400">Amount Received:</p>
-                      <p className="font-semibold text-black">
-                        {Number(transaction.recipientAmount).toFixed(0)}{" "}
-                        {transaction.receiverCurrencyIso3a}
-                      </p>
-                      <p className="text-gray-400">Exchange Rate:</p>
-                      <p>{transaction.exchangeRate}</p>
-                      <p className="text-gray-400">Transfer Fee:</p>
-                      <p>0.00</p>
-                      <p className="text-gray-400">Payment Method:</p>
-                      <p>{formatChannelName(transaction.transactionType)}</p>
-                      <p className="text-gray-400">Bank Name:</p>
-                      <p>{transaction.bankName || "N/A"}</p>
-                      <p className="text-gray-400">Card Type:</p>
-                      <p>{transaction.paymentTypeDescription || "N/A"}</p>
-                      <p className="text-gray-400">Card Issuer:</p>
-                      <p>{transaction.issuer || "N/A"}</p>
-                      <p className="text-gray-400">Masked Card:</p>
-                      <p>{transaction.maskedPan || "N/A"}</p>
-                      <p className="text-gray-400">Transaction ID:</p>
-                      <p>{transaction.transactionId}</p>
-                      <p className="text-gray-400">User ID:</p>
-                      <p>{transaction.userId || "N/A"}</p>
-                      <p className="text-gray-400">Tuma Reference:</p>
-                      <p>{transaction.transactionKey || "N/A"}</p>
-                      <p className="text-gray-400">Trust Payment Reference:</p>
-                      <p>{transaction.tpReference || "N/A"}</p>
-                      <p className="text-gray-400">Fraud Reference:</p>
-                      <p>{transaction.fraudReference || "N/A"}</p>
-                      <p className="text-gray-400">Settlement Reference:</p>
-                      <p>{transaction.settlementReference || "N/A"}</p>
-                      <p className="text-gray-400">MPESA Reference:</p>
-                      <p>{transaction.mpesaReference || "N/A"}</p>
-                      <p className="text-gray-400">Transaction Reference:</p>
-                      <p>{transaction.transactionReference || "N/A"}</p>
-                      <p className="text-gray-400">Origin:</p>
-                      <p>UK</p>
-                      <p className="text-gray-400">Destination:</p>
-                      <p>{transaction.receiverAddress}</p>
-                      <p className="text-gray-400">Payment Purpose:</p>
-                      <p>{transaction.paymentPurpose}</p>
-                      <p className="text-gray-400">Source of Funds:</p>
-                      <p>{transaction.fundsSource}</p>
-                      <p className="text-gray-400">Time Sent:</p>
-                      <p>{formatDateTime(transaction.date)}</p>
-                      <p className="text-gray-400">Time Received:</p>
-                      <p>{formatDateEAT(transaction.date)}</p>
-                    </div>
-                  </div>
-
-                  {/* Sender Details */}
-                  <div className="bg-gray-100 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-800 mb-3">
-                      Sender Details
-                    </h3>
-                    <div className="grid grid-cols-2 gap-y-3 text-gray-700">
-                      <p className="text-gray-500">Name:</p>
-                      <p className="truncate">{transaction.senderName}</p>
-                      <p className="text-gray-500">Email:</p>
-                      <p className="break-all overflow-hidden text-ellipsis">
-                        {transaction.senderEmail}
-                      </p>
-                      <p className="text-gray-500">Number:</p>
-                      <p className="truncate">{transaction.senderPhone}</p>
-                    </div>
-                  </div>
-
-                  {/* Receiver Details */}
-                  <div className="bg-gray-100 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-800 mb-2">
-                      Receiver Details
-                    </h3>
-                    <div className="grid grid-cols-2 gap-y-2 text-gray-700">
-                      <p className="text-gray-400">Name:</p>
-                      <p>{transaction.receiverName}</p>
-                      <p className="text-gray-400">Number:</p>
-                      <p>{transaction.receiverPhone || "N/A"}</p>
-                      <p className="text-gray-400">Account Number:</p>
-                      <p>{transaction.accountNumber || "N/A"}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-100 p-4 rounded-lg mt-4">
-                    <h3 className="font-semibold text-gray-800 mb-3 flex justify-between items-center">
-                      Internal Comments
+                {/* Action Buttons */}
+                <div className="mt-8 flex justify-between items-center pt-6 border-t">
+                  <div>
+                    {isClient && transaction.status === "SUCCESS" && (
                       <button
-                        onClick={() => setIsAddingComment(true)}
-                        className="text-blue-600 text-sm underline cursor-pointer"
+                        onClick={async () => {
+                          const blob = await generateReceiptPDF(
+                            transaction,
+                            formatDateTime,
+                            formatDateEAT,
+                            formatChannelName
+                          );
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `Receipt_${transaction.transactionId}.pdf`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold"
                       >
-                        Add Comment
-                      </button>
-                    </h3>
-
-                    {isAddingComment && (
-                      <div className="mb-4">
-                        <textarea
-                          rows={3}
-                          placeholder="Type your comment here..."
-                          className="w-full border rounded p-2 text-sm"
-                          value={comment}
-                          onChange={(e) => setComment(e.target.value)}
+                        <img
+                          src="/backoffice/icons/download.svg"
+                          alt="download icon"
+                          className="w-5 h-5"
                         />
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={handleAddComment}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded"
-                            disabled={isProcessing}
-                          >
-                            Add Comment
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsAddingComment(false);
-                              setComment("");
-                            }}
-                            className="border text-sm border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-100"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
+                        Download Receipt
+                      </button>
                     )}
-
-                    {isLoadingComments ? (
-                      <div className="flex justify-center py-4">
-                        <div
-                          className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
-                          style={{ borderTopColor: "transparent" }}
-                        ></div>
-                        <span className="ml-2">Loading comments...</span>
-                      </div>
-                    ) : comments.length > 0 ? (
-                      <div className="space-y-3 text-sm">
-                        {comments.map((comment) => (
-                          <div
-                            key={comment.id}
-                            className="bg-white p-3 rounded-lg border"
-                          >
-                            <p className="text-xs text-gray-500 font-semibold">
-                              {comment.author} •{" "}
-                              {new Date(comment.createdAt).toLocaleString(
-                                "en-GB",
-                                {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "2-digit",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: false,
-                                  timeZone: "GMT",
-                                }
-                              )}{" "}
-                              GMT
-                            </p>
-                            <p className="mt-1">{comment.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500 italic">
-                        No comments yet
-                      </p>
-                    )}
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={onClose}
+                      className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
               </div>
-
-              <div className="flex-shrink-0 sticky bottom-0 left-0 right-0 bg-white p-4 border-t flex justify-between items-center">
-                {isClient && transaction.status === "SUCCESS" && (
-                  <button
-                    onClick={async () => {
-                      const blob = await generateReceiptPDF(
-                        transaction,
-                        formatDateTime,
-                        formatDateEAT,
-                        formatChannelName
-                      );
-                      const url = URL.createObjectURL(blob);
-                      const link = document.createElement("a");
-                      link.href = url;
-                      link.download = `Receipt_${transaction.transactionId}.pdf`;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
-                    className="text-blue-600 font-semibold flex items-center gap-2"
-                  >
-                    <img
-                      src="/backoffice/icons/download.svg"
-                      alt="download icon"
-                      className="w-4 h-4"
-                    />
-                    Download Receipt
-                  </button>
-                )}
-
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </motion.div>
-          </>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

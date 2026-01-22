@@ -3,6 +3,18 @@ export const sidebarMenuItems = [
     // { label: "Special Limits", href: "/backoffice/special-limits" },
     // { label: "Reconciliation", href: "/backoffice/reconciliation" },
     { label: "User & Accounts", href: "/backoffice/user-accounts" },
+       { 
+      label: "Financials", 
+      submenu: [
+        { 
+          label: "Revenue", 
+          href: "/backoffice/financials/transactions" 
+        }
+      
+      ]
+    }
+    
+
     // { label: "Fees & Commissions", href: "/backoffice/fees" },
     // { label: "Compliance & Security", href: "/backoffice/compliance-security" },
     // { label: "Reports & Analytics", href: "/backoffice/reports" },
