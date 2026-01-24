@@ -37,7 +37,7 @@ const allModulesData = [
     description:
       "Empower your support team to resolve customer issues faster and smarter — all in one unified dashboard designed for real-time conversations and seamless service.",
     path: "/omnisupport",
-    roles: ["ADMIN", "SUPPORT AGENT", "OMNISUPPORT"],
+    roles: ["ADMIN", "SUPPORT AGENT", "OMNISUPPORT", "COMPLIANCE"],
   },
   {
     name: "FX Navigator",
@@ -65,7 +65,7 @@ const allModulesData = [
     description:
       "Track merchant performance, payouts, and customer activity in real time. Give your partners the data they need to thrive with Tuma.",
     path: "/promitto/dashboard",
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "COMPLIANCE"],
   },
   {
     name: "Access Manager",
@@ -74,7 +74,7 @@ const allModulesData = [
     description:
       "Easily manage roles and permissions for your internal teams. From compliance to customer care, control who sees what — securely and efficiently.",
     path: "/access-manager",
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "COMPLIANCE"],
   },
 ];
 
