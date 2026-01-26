@@ -83,6 +83,8 @@ type RawTransaction = Partial<{
 const rowsPerPage = 10;
 
 const TransactionsPage = () => {
+  // REMOVED: const { get } = api(); -> We use the imported 'api' instance directly
+
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
@@ -114,6 +116,7 @@ const TransactionsPage = () => {
   const [showFraudModal, setShowFraudModal] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
 
+  // New state for filter dropdown
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<
@@ -179,6 +182,12 @@ const TransactionsPage = () => {
         currency: "BIF",
       },
       {
+        code: "TZ",
+        label: "Tanzania",
+        flag: "/backoffice/tz-flag.png",
+        currency: "TZS",
+      },
+      {
         code: "GH",
         label: "Ghana",
         flag: "/backoffice/ghana.png",
@@ -220,6 +229,7 @@ const TransactionsPage = () => {
   const countryDropdownRef = useRef<HTMLDivElement>(null);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -252,22 +262,17 @@ const TransactionsPage = () => {
     const fetchInitialPage = async () => {
       try {
         setLoading(true);
+        // CHANGED: Use relative path (baseURL is in apiService)
         const endpoint = userIdFromQuery
           ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
           : `/transfer/all-transactions?page=1&size=${rowsPerPage}`;
 
+        // CHANGED: Use api.get() and access .data
         const res = await api.get<RawTransaction[]>(endpoint);
         const formatted = res.data.map(mapApiTransactionToTransaction);
 
-        // FILTER: Remove TZS transactions (currency is NOT TZS)
-        const nonTzsTransactions = formatted.filter(
-          (tx) =>
-            tx.currencyIso3a?.toUpperCase() !== "TZS" &&
-            tx.receiverCurrencyIso3a?.toUpperCase() !== "TZS"
-        );
-
-        setAllTransactions(nonTzsTransactions);
-        setFilteredTransactions(nonTzsTransactions);
+        setAllTransactions(formatted);
+        setFilteredTransactions(formatted);
       } catch (err) {
         console.error("Fetch error:", err);
         setError("Failed to fetch transactions");
@@ -287,10 +292,12 @@ const TransactionsPage = () => {
       const fetchPage = async (page: number) => {
         if (loadedPages.has(page)) return null;
 
+        // CHANGED: Use relative path
         const endpoint = userIdFromQuery
           ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
           : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
         try {
+          // CHANGED: Use api.get() and access .data
           const res = await api.get<RawTransaction[]>(endpoint);
           setLoadedPages((prev) => new Set(prev).add(page));
           return res.data.length > 0 ? res.data : null;
@@ -311,16 +318,9 @@ const TransactionsPage = () => {
         const flattened = validResults.flat();
         const formatted = flattened.map(mapApiTransactionToTransaction);
 
-        // FILTER: Remove TZS transactions (currency is NOT TZS)
-        const nonTzsTransactions = formatted.filter(
-          (tx) =>
-            tx.currencyIso3a?.toUpperCase() !== "TZS" &&
-            tx.receiverCurrencyIso3a?.toUpperCase() !== "TZS"
-        );
-
         setAllTransactions((prev) => {
           const seen = new Set(prev.map((tx) => tx.transactionId));
-          const uniqueNew = nonTzsTransactions.filter(
+          const uniqueNew = formatted.filter(
             (tx) => !seen.has(tx.transactionId)
           );
           return [...prev, ...uniqueNew];
@@ -464,8 +464,9 @@ const TransactionsPage = () => {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
+  // Enhanced Export Functions
   const generateExportFileName = () => {
-    let fileName = "transactions_except_TZS";
+    let fileName = "transactions";
     if (searchQuery.trim())
       fileName += `_search_${searchQuery.trim().replace(/ /g, "_")}`;
     if (statusFilter !== "All")
@@ -482,10 +483,13 @@ const TransactionsPage = () => {
   const fetchTransactionDetails = async (
     transaction: Transaction
   ): Promise<ExportTransaction> => {
+    // CHANGED: Use api.get() and relative URL.
+    // Replaced native fetch with axios instance
     const response = await api.get(
       `/transfer/transaction-details?transactionId=${transaction.transactionId}`
     );
 
+    // Axios throws on 401/500 automatically, so strict error checking of response.ok is handled by interceptors or catch block
     const fullDetails = response.data;
     return mapToExportFormat(fullDetails);
   };
@@ -575,6 +579,7 @@ const TransactionsPage = () => {
         return await fetchTransactionDetails(transaction);
       } catch (error) {
         if (attempt === retries) throw error;
+        // Exponential backoff
         await new Promise((resolve) =>
           setTimeout(resolve, 1000 * (attempt + 1))
         );
@@ -599,6 +604,7 @@ const TransactionsPage = () => {
         batch.map((transaction) => fetchWithRetry(transaction, RETRY_ATTEMPTS))
       );
 
+      // Process batch results
       batchResults.forEach((result, index) => {
         if (result.status === "fulfilled") {
           results.push(result.value);
@@ -611,6 +617,7 @@ const TransactionsPage = () => {
         }
       });
 
+      // Update progress
       if (onProgress) {
         const progress = Math.round(
           ((i + BATCH_SIZE) / filteredTransactions.length) * 100
@@ -618,6 +625,7 @@ const TransactionsPage = () => {
         onProgress(Math.min(progress, 100));
       }
 
+      // Delay between batches to be API-friendly
       if (i + BATCH_SIZE < filteredTransactions.length) {
         await new Promise((resolve) =>
           setTimeout(resolve, DELAY_BETWEEN_BATCHES)
@@ -629,6 +637,7 @@ const TransactionsPage = () => {
   };
 
   const handleExport = async () => {
+    // Warn user for large exports
     if (filteredTransactions.length > 50) {
       const shouldProceed = window.confirm(
         `This will export ${filteredTransactions.length} transactions. This may take several minutes. Continue?`
@@ -641,6 +650,7 @@ const TransactionsPage = () => {
     try {
       const fileName = generateExportFileName();
 
+      // Show progress for large exports
       if (filteredTransactions.length > 20) {
         toast.loading(`Exporting... 0%`, { id: toastId });
       }
@@ -715,7 +725,7 @@ const TransactionsPage = () => {
             <div className="relative w-full md:w-[450px] md:mx-auto order-3 md:order-none">
               <input
                 type="text"
-                placeholder="Search transactions by ID, Sender and Recipient"
+                placeholder="Search by ID, Sender and Recipient"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-2 pl-2 border rounded-md shadow-sm focus:ring focus:ring-gray-100"
@@ -978,7 +988,7 @@ const TransactionsPage = () => {
             </div>
           </div>
 
-          {/* Date filter active indicator */}
+          {/* Date filter active indicator - Now only for date range */}
           {dateRange.startDate && (
             <div className="text-sm text-gray-500 mb-2">
               Showing transactions from{" "}
@@ -1186,7 +1196,7 @@ const TransactionsPage = () => {
                             colSpan={10}
                             className="px-6 py-4 text-center text-gray-500"
                           >
-                            No transactions found (TZS transactions excluded).
+                            No transactions found.
                           </td>
                         </tr>
                       )}
