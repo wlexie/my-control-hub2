@@ -71,7 +71,7 @@ export default function UserAccounts() {
         const res = await api.get(
           `/account/clients?page=${page}&size=${pageSize}`
         );
-        
+
         // CHANGED: Access .data directly
         const data = res.data;
 
@@ -109,10 +109,25 @@ export default function UserAccounts() {
 
     await fetchInBatches();
 
-    setAllUsers(allResults);
-    setFilteredUsers(allResults);
+    // FILTER: Remove Tanzanian users (country = Tanzania OR phone starts with +255/255)
+    const nonTanzanianUsers = allResults.filter((user) => {
+      // Check if country is NOT Tanzania (case-insensitive)
+      const isNotTanzanianCountry =
+        !user.country || !user.country.toLowerCase().includes("tanzania");
+
+      // Check if phone does NOT start with +255 or 255
+      const isNotTanzanianPhone =
+        !user.phone ||
+        (!user.phone.startsWith("+255") && !user.phone.startsWith("255"));
+
+      // Keep users that are NOT from Tanzania by country AND NOT by phone
+      return isNotTanzanianCountry && isNotTanzanianPhone;
+    });
+
+    setAllUsers(nonTanzanianUsers);
+    setFilteredUsers(nonTanzanianUsers);
     setCurrentPage(1);
-    setDisplayedUsers(allResults.slice(0, usersPerPage));
+    setDisplayedUsers(nonTanzanianUsers.slice(0, usersPerPage));
     setLoading(false);
   };
 
@@ -169,8 +184,6 @@ export default function UserAccounts() {
     setDisplayedUsers(filteredUsers.slice(startIndex, endIndex));
   }, [filteredUsers, currentPage]);
 
-  // clear any scroll-based logic (we're using pagination now)
-
   const totalPages = Math.max(
     1,
     Math.ceil(filteredUsers.length / usersPerPage)
@@ -189,7 +202,6 @@ export default function UserAccounts() {
       });
   };
 
-  // Export logic
   type ExportedUserRow = {
     [key: string]: string | number | undefined;
   };
@@ -206,7 +218,7 @@ export default function UserAccounts() {
           const res = await api.get(
             `/account/client-profile?userId=${u.accountId}`
           );
-          
+
           // CHANGED: Access .data directly
           const user = res.data;
 
@@ -309,7 +321,6 @@ export default function UserAccounts() {
         extendedData.push(...batchResults);
       }
 
-      // File naming
       let fileName = "User Accounts";
       if (searchQuery.trim()) {
         const safeQuery = searchQuery.trim().replace(/\s+/g, "_");
@@ -476,7 +487,7 @@ export default function UserAccounts() {
           data-users-table-top
         >
           <h2 className="text-xl md:text-2xl font-semibold text-black">
-            User & Accounts
+            Users & Accounts
           </h2>
 
           <div className="flex flex-col md:flex-row w-full md:w-auto gap-3">
@@ -487,7 +498,7 @@ export default function UserAccounts() {
                 placeholder={
                   isMobile
                     ? "Search..."
-                    : "Search by name, email, ID, phone, country, status, onfidoID ..."
+                    : "Search users by name, email, ID, phone, Onfido ID..."
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
