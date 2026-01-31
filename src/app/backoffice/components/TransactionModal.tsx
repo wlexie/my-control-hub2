@@ -690,12 +690,17 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                   {transaction.mpesaReference &&
                     transaction.mpesaReference !== "N/A" && (
                       <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-500">MPESA Reference</p>
+                        <p className="text-sm text-gray-500">
+                          {transaction.transactionType === "CARD_TO_BANK"
+                            ? "Bank Reference"
+                            : "MPESA Reference"}
+                        </p>
                         <p className="font-medium text-sm break-words">
                           {transaction.mpesaReference}
                         </p>
                       </div>
                     )}
+
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-500">
                       Transaction Reference
