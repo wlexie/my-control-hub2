@@ -124,15 +124,19 @@ const Modal3 = ({ isOpen, onClose, templateName, selectedChannel }) => {
           },
         });
 
-        // Format data based on the API response (accountId, firstName, lastName, phone)
-        const formattedContacts = response.data.map((contact, index) => ({
-          id: contact.accountId || `api-${index}-${contact.phone}`,
-          name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 'Unknown',
-          detail: contact.phone,
-          avatar: contact.firstName
-            ? contact.firstName.substring(0, 2).toUpperCase()
-            : '??',
-        }));
+        // ADD THE FILTER HERE
+          const formattedContacts = response.data
+            .filter(contact => contact.marketingSubscribed === true) // Only keep subscribed users
+            .map((contact, index) => ({
+              id: contact.accountId || `api-${index}-${contact.phone}`,
+              name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 'Unknown',
+              detail: contact.phone,
+              avatar: contact.firstName
+                ? contact.firstName.substring(0, 2).toUpperCase()
+                : '??',
+            }));
+
+       
 
         setAllContacts(formattedContacts);
       } catch (error) {

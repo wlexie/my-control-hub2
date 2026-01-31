@@ -417,7 +417,7 @@ console.log('🖼 Media URL:', mediaUrl);
 
     try {
       await axios.post(
-        `${API_BASE_URL}/api/sendTemplate`, 
+        `/api/sendTemplate`, 
         payload,
         { 
           headers: { 
@@ -557,7 +557,18 @@ console.log('🖼 Media URL:', mediaUrl);
                 )}
             </div>
             <div className="flex flex-col">
-                <h2 className="md:text-lg text-sm font-semibold text-gray-800">{userName}</h2>
+              <span className='flex'>
+
+                <h2 className="md:text-lg text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  {userName}
+                  </h2>
+                  <h2>
+                  {selectedChat?.tumaId && (
+                    <span className="text-lg text-purple-800 ml-6 font-medium">TumaId: <span className='font-bold'>{selectedChat.tumaId}</span> </span>
+                  )}
+                </h2>
+               </span>
+
                 <p className="text-[10px] md:text-[12px] text-gray-400 md:mt-0.5">{userPhoneNumber.replace('+', '')}</p>
                 <div className="md:flex hidden items-center gap-2 mt-0.5  flex-wrap">
                 {ticketId && ( <span className="text-xs md:text-sm font-medium text-gray-600">Ticket #{ticketId}</span> )}

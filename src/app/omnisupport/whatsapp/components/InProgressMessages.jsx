@@ -52,7 +52,6 @@ export default function InProgressMessages({ onSelectChat, activeChat, searchTer
   const { accessToken } = useSelector(state => state.auth);
   const [conversations, setConversations] = useState([]);
   const [unreadCounts, setUnreadCounts] = useState({});
-
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -71,6 +70,8 @@ export default function InProgressMessages({ onSelectChat, activeChat, searchTer
         headers: { Authorization: `Bearer ${accessToken}` },
         params: { page, size: 15 }
       });
+
+      console.log("Fetched in-progress conversations:", res.data);
 
       if (Array.isArray(res.data.content)) {
         setConversations(prev => [...prev, ...res.data.content]);
@@ -192,7 +193,10 @@ export default function InProgressMessages({ onSelectChat, activeChat, searchTer
               <div
                 key={conv.ticketId}
                 className={`cursor-pointer px-4 py-2 border-b flex justify-between items-center transition ${activeChat?.ticketId === conv.ticketId ? "bg-gray-100" : "bg-white hover:bg-gray-50"}`}
-                onClick={() => onSelectChat(conv)}
+                onClick={() => {
+                  console.log("Opening chat with Tuma ID:", conv.tumaId); // debug
+                  onSelectChat({ ...conv, tumaId: conv.tumaId });
+                }}
               >
                 <div className="flex items-start w-full">
                   <div className="relative mr-3 shrink-0">

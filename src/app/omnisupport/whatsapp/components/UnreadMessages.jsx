@@ -217,8 +217,10 @@ export default function UnreadMessages({ onSelectChat, searchTerm = "" }) {
               <div
                 key={conv.ticketId}
                 className="cursor-pointer px-4 py-2 border-b flex justify-between items-center transition bg-white hover:bg-gray-100"
-                onClick={() => onSelectChat(conv)}
-              >
+                onClick={() => {
+                  console.log("Opening chat with Tuma ID:", conv.tumaId); // debug
+                  onSelectChat({ ...conv, tumaId: conv.tumaId });
+                }}              >
                 <div className="flex items-start w-full">
                   <div className="relative mr-3 shrink-0">
                     <div className={`w-10 h-10 ${avatarColor} rounded-full flex items-center justify-center text-white font-semibold text-sm`}>
