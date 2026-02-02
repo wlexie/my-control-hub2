@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { X, Calendar as CalendarIcon } from 'lucide-react';
+import { X } from 'lucide-react';
 import api from '../../../../utils/apiAuth'; // Adjust the import path as needed
 
 // Initial empty state for data
@@ -18,7 +18,7 @@ export default function AssignTicketModal({ isOpen, onClose, onAssign, ticketId 
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
   const [selectedAgentId, setSelectedAgentId] = useState(null); // This will store the accountKey
   const [selectedAgentName, setSelectedAgentName] = useState(null); // This will store FirstName + LastName
-  const [dueDate, setDueDate] = useState('');
+  //const [dueDate, setDueDate] = useState('');
   const [assignmentNote, setAssignmentNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
