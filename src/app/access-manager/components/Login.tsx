@@ -70,7 +70,7 @@ const Login = () => {
             </h1>
             <p className="md:mb-8 mb-5 text-base font-medium text-gray-500">
               Don&apos;t have an account?{" "}
-              <Link href="/" className="text-blue-600 underline">
+              <Link href="/sign-up" className="text-blue-600 underline">
                 Request for Access
               </Link>
             </p>

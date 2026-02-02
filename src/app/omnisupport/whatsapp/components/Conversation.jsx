@@ -25,6 +25,8 @@ import TemplateModal from './TemplateModal';
 import MessageStatus from './MessageStatus';
 import Confirmation from './Confirmation';
 import AssignTicketModal from './AssignTicketModal'; 
+import ProfileSidePanel from './ProfileSidePanel';
+
 
 
 
@@ -144,6 +146,10 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const [lightboxImage, setLightboxImage] = useState(null);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   // --- FILE PREVIEW STATES ---
   const [pendingFile, setPendingFile] = useState(null);
@@ -313,6 +319,27 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
       console.error('Error sending message:', error.response?.data || error);
       setMessages(prev => prev.filter(m => m.id !== userMsg.id));
       alert('Failed to send message.');
+    }
+  };
+
+   // 3. Add the fetch function
+  const fetchUserProfile = async () => {
+    const userId = selectedChat?.tumaId; // Or whatever property holds the 1564 ID
+    if (!userId || !accessToken) return;
+
+    setIsProfileOpen(true); // Open panel immediately to show loader
+    setLoadingProfile(true);
+    
+    try {
+      const response = await axios.get(
+        `https://api.tuma-app.com/api/account/client-profile?userId=${userId}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      setProfileData(response.data);
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+    } finally {
+      setLoadingProfile(false);
     }
   };
 
@@ -522,6 +549,14 @@ console.log('🖼 Media URL:', mediaUrl);
 
   return (
     <div className="flex flex-col h-screen bg-white relative" onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
+           {/* 4. Render the new component */}
+      <ProfileSidePanel 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+        data={profileData} 
+        loading={loadingProfile} 
+      />
+       
        <Confirmation
         isOpen={isCloseConfirmOpen}
         onClose={() => setIsCloseConfirmOpen(false)}
@@ -540,7 +575,9 @@ console.log('🖼 Media URL:', mediaUrl);
       {!selectedChat ? ( <div className="text-gray-500 flex justify-center items-center h-full"> Select a chat to start a conversation </div> )
       : (
         <>
-      <header className="bg-white p-2 border-b border-gray-200">
+      <header 
+      onClick={fetchUserProfile}
+      className="bg-white p-2 border-b border-gray-200">
         <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-start gap-4 flex-wrap">
             <div className="relative flex-shrink-0">

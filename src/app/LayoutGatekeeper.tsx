@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import ProtectedLayout from './ProtectedLayout';
 
-const PUBLIC_PATHS = ['/login', '/'];
+const PUBLIC_PATHS = ['/login', '/', '/sign-up'];
 
 const LayoutGatekeeper = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
