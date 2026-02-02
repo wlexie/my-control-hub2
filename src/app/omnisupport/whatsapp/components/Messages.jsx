@@ -30,6 +30,9 @@ export default function Messages({ onSelectChat, activeChat }) {
       // Call the API to mark the conversation as "open"
       await axios.post(
         `https://com.tuma-app.com/api/conversations/${conversation.ticketId}/open`,
+
+       // `http://localhost:8081/api/conversations/${conversation.ticketId}/open`,
+
         {}, // No body is needed for this POST request
         {
           headers: {

@@ -26,6 +26,8 @@ import MessageStatus from './MessageStatus';
 import Confirmation from './Confirmation';
 import AssignTicketModal from './AssignTicketModal'; 
 import ProfileSidePanel from './ProfileSidePanel';
+import AssignmentHistoryPanel from './AssignmentHistoryPanel'; 
+
 
 
 
@@ -33,7 +35,9 @@ import ProfileSidePanel from './ProfileSidePanel';
 // =================================================================================
 // ---  CONFIGURATION CONSTANTS  ---
 // =================================================================================
-const API_BASE_URL = "https://com.tuma-app.com"; // Production URL
+const API_BASE_URL = "https://com.tuma-app.com"; 
+//const API_BASE_URL = "http://localhost:8081"; // Production URL
+
 const POLLING_INTERVAL = 60000;
 
 const TEMPLATE_MEDIA_URLS = {
@@ -175,6 +179,9 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
   const countryCode = useMemo(() => getCountryCode(userPhoneNumber), [userPhoneNumber]);
 
 
+const [history, setHistory] = useState([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
   const fetchFullConversation = useCallback(async (isBackgroundPoll = false) => {
     const currentTicketId = selectedChat?.ticketId;
     if (!currentTicketId || !accessToken) {
@@ -186,18 +193,37 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
     setErrorMessages(null);
 
     try {
-      const response = await axios.get(
+      // --- STEP 1: FETCH CONVERSATION DETAILS (History, TumaID, Assigned Agent) ---
+      const detailRes = await axios.get(
         `${API_BASE_URL}/api/conversations/${currentTicketId}`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
-      const conversationData = response.data;
-      const fetchedMessages = conversationData.history || [];
+      const conversationData = detailRes.data;
+      setHistory(conversationData.history || []);
+      
+      // Update Chat Details (Header Info)
+      setChatDetails({
+        name: conversationData.contactName || 'Unknown',
+        phone: conversationData.contactPhone || '',
+        ticketId: conversationData.ticketId,
+        status: conversationData.status,
+        assignedAgentId: conversationData.assignedAgentId,
+        assignedAgentName: conversationData.assignedAgentName,
+        tumaId: conversationData.tumaId
+      });
+
+      // --- STEP 2: FETCH MESSAGES ---
+      const msgRes = await axios.get(
+        `${API_BASE_URL}/api/conversations/${currentTicketId}/messages`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      const fetchedMessages = Array.isArray(msgRes.data) ? msgRes.data : [];
       const validMessages = fetchedMessages.filter(msg => msg.direction && msg.direction.trim() !== '');
 
       const processedMessages = validMessages.map(msg => {
-        const isMedia = (msg.messageType === 'image' || msg.messageType === 'file' || msg.messageType === 'video' || msg.messageType === 'document');
-        
+        const isMedia = ['image', 'file', 'video', 'document'].includes(msg.messageType);
         return {
           id: msg.id, 
           payload: isMedia ? parseMediaPayload(msg.content) : msg.content || "[No Content]", 
@@ -209,57 +235,35 @@ export default function Conversation({ selectedChat, setSelectedChat, onCloseMob
         };
       });
 
-      // --- DEDUPLICATION LOGIC START ---
-      // This prevents the "Double Agent Message" issue
+      // --- STEP 3: DEDUPLICATION LOGIC ---
       const statusPriority = { 'read': 3, 'delivered': 2, 'sent': 1, 'pending': 0 };
-
       const uniqueMessages = processedMessages.reduce((acc, current) => {
         const msgTime = new Date(current.createdAt).getTime();
         const contentStr = typeof current.payload === 'string' ? current.payload : current.payload.url;
-        
-        // We create a key based on Content and a 3-second time window
         const groupingKey = `${current.direction}-${contentStr}-${Math.floor(msgTime / 3000)}`;
 
         const existingIdx = acc.findIndex(item => {
           const itemTime = new Date(item.createdAt).getTime();
           const itemContent = typeof item.payload === 'string' ? item.payload : item.payload.url;
-          const itemKey = `${item.direction}-${itemContent}-${Math.floor(itemTime / 3000)}`;
-          return itemKey === groupingKey;
+          return `${item.direction}-${itemContent}-${Math.floor(itemTime / 3000)}` === groupingKey;
         });
 
         if (existingIdx > -1) {
-          // Compare status priorities. Keep the one that is 'Read' or 'Delivered'
-          const existingMsg = acc[existingIdx];
           const currentPrio = statusPriority[current.status?.toLowerCase()] || 0;
-          const existingPrio = statusPriority[existingMsg.status?.toLowerCase()] || 0;
-
-          if (currentPrio > existingPrio) {
-            acc[existingIdx] = current;
-          }
+          const existingPrio = statusPriority[acc[existingIdx].status?.toLowerCase()] || 0;
+          if (currentPrio > existingPrio) acc[existingIdx] = current;
         } else {
           acc.push(current);
         }
         return acc;
       }, []);
-      // --- DEDUPLICATION LOGIC END ---
 
       uniqueMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       setMessages(uniqueMessages);
 
-      setChatDetails({
-          name: conversationData.contactName,
-          phone: conversationData.contactPhone,
-          ticketId: conversationData.ticketId,
-          status: conversationData.status
-      });
-
     } catch (err) {
-      if (err.response?.status !== 404) {
-        console.error("Error fetching conversation:", err);
-        if (!isBackgroundPoll) setErrorMessages("Failed to load conversation history.");
-      } else {
-        if (!isBackgroundPoll) setMessages([]);
-      }
+      console.error("Error fetching full conversation:", err);
+      if (!isBackgroundPoll) setErrorMessages("Failed to load conversation history.");
     } finally {
       if (!isBackgroundPoll) setLoadingMessages(false);
     }
@@ -527,25 +531,41 @@ console.log('🖼 Media URL:', mediaUrl);
     } 
   };
 
-  const handleAssignTicket = async (assignmentDetails) => {
-    const { agentId, agentName, note, ticketId: ticketIdToAssign } = assignmentDetails;
-    if (!ticketIdToAssign || !agentId || !accessToken) { alert("Error: Missing assignment details."); return; }
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/conversations/${ticketIdToAssign}/assign`,
-        { agentId, agentName, reason: note },
-        { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
-      );
-      if (response.status === 200 || response.status === 201) {
-        alert("Ticket assigned successfully!");
-        setIsAssignModalOpen(false);
-        fetchFullConversation(false);
+ const handleAssignTicket = async (assignmentDetails) => {
+  // Destructure the fields we just prepared in the Modal
+  const { agentId, agentName, reason, ticketId: ticketIdToAssign } = assignmentDetails;
+  
+  if (!ticketIdToAssign || !agentId || !accessToken) { 
+    alert("Error: Missing assignment details."); 
+    return; 
+  }
+
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/conversations/${ticketIdToAssign}/assign`,
+      { 
+        agentId,    // This is the accountKey from the modal
+        agentName,  // Combined First + Last name
+        reason      // The internal note
+      },
+      { 
+        headers: { 
+          Authorization: `Bearer ${accessToken}`, 
+          'Content-Type': 'application/json' 
+        } 
       }
-    } catch (error) {
-      console.error('Error assigning ticket:', error.response?.data || error);
-      alert("Failed to assign ticket.");
+    );
+
+    if (response.status === 200 || response.status === 201) {
+      alert("Ticket assigned successfully!");
+      setIsAssignModalOpen(false);
+      fetchFullConversation(false);
     }
-  };
+  } catch (error) {
+    console.error('Error assigning ticket:', error.response?.data || error);
+    alert("Failed to assign ticket: " + (error.response?.data?.message || "Server Error"));
+  }
+};
 
   return (
     <div className="flex flex-col h-screen bg-white relative" onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
@@ -615,8 +635,24 @@ console.log('🖼 Media URL:', mediaUrl);
             </div>
 
             <div className="flex items-center gap-2 ml-auto">
-            <button onClick={() => setIsAssignModalOpen(true)} className="px-2 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">Assign</button>
-            <button onClick={() => setIsEscalateModalOpen(true)} className="px-2 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold text-orange-600 bg-white border border-orange-400 rounded-sm hover:bg-orange-50 transition-colors">Escalate</button>
+            {/* Dynamic Assign/Reassign Button */}
+
+             {/* View History Link (Only if history exists) */}
+            {history.length > 0 && (
+              <button 
+                onClick={() => setIsHistoryOpen(true)}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 underline transition-colors mr-3"
+              >
+                View Assignment History
+              </button>
+            )}
+            <button 
+              onClick={() => setIsAssignModalOpen(true)} 
+              className="px-2 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors"
+            >
+              {chatDetails.assignedAgentId ? 'Reassign' : 'Assign'}
+            </button>          
+    <button onClick={() => setIsEscalateModalOpen(true)} className="px-2 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold text-orange-600 bg-white border border-orange-400 rounded-sm hover:bg-orange-50 transition-colors">Escalate</button>
             <button onClick={() => setIsCloseConfirmOpen(true)} className="px-2 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold text-white bg-green-500 border border-green-500 rounded-sm hover:bg-green-600 transition-colors">Close Ticket</button>
             {isEscalateModalOpen && ( <EscalateIssueModal closeModal={() => setIsEscalateModalOpen(false)} goBackToModal1={() => { setIsEscalateModalOpen(false); setIsModalOpen(true); }} /> )}
             </div>
@@ -815,6 +851,12 @@ console.log('🖼 Media URL:', mediaUrl);
 </footer>
         </>
       )}
+      {/* Include the side panel at the bottom of the main div */}
+      <AssignmentHistoryPanel 
+        isOpen={isHistoryOpen} 
+        onClose={() => setIsHistoryOpen(false)} 
+        history={history} 
+      />
     </div>
   );
 }

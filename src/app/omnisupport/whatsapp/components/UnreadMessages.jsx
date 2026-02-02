@@ -77,6 +77,9 @@ export default function UnreadMessages({ onSelectChat, searchTerm = "" }) {
     setIsLoading(true);
     try {
       const res = await axios.get("https://com.tuma-app.com/api/conversations/unread", {
+
+         //     const res = await axios.get("http://localhost:8081/api/conversations/unread", {
+
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -123,9 +126,12 @@ export default function UnreadMessages({ onSelectChat, searchTerm = "" }) {
           // Avoid re-fetching counts we already have
           if (unreadCounts[conv.ticketId] === undefined) {
             try {
+              //const res = await axios.get(`http://localhost:8081/api/conversations/${conv.ticketId}/unread-count`, {
+
               const res = await axios.get(`https://com.tuma-app.com/api/conversations/${conv.ticketId}/unread-count`, {
                 headers: { Authorization: `Bearer ${accessToken}` }
               });
+
               counts[conv.ticketId] = res.data;
             } catch (err) {
               console.error(`Failed to fetch unread count for ${conv.ticketId}`, err);
