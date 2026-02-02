@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { X, Loader2, Copy, Check, FileText, CreditCard, Shield, User, Activity, ArrowUpRight } from 'lucide-react';
+import { X, Loader2, Copy, Check, FileText, Shield, User, ArrowUpRight } from 'lucide-react';
 
 // Define specific interfaces for your data structure
 interface TransactionTotals {
