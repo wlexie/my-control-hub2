@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   },
 
   experimental: {
-    serverExternalPackages: ["@react-pdf/renderer"],
+    serverComponentsExternalPackages: ["@react-pdf/renderer"],
   },
 
   images: {
@@ -26,11 +26,11 @@ const nextConfig: NextConfig = {
         destination:
           "http://tuma-dev-backend-auth-alb-2099885708.us-east-1.elb.amazonaws.com/api/:path*",
       },
-      {
-        source: "/api/:path*",
-        destination:
-          "http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/:path*",
-      },
+          {
+      source: '/api/:path*',
+      destination:
+        'http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/:path*',
+    },
     ];
   },
 };
