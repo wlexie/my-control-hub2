@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
-import api from '../../../../utils/apiAuth'; // Adjust the import path as needed
+import api from '../../../../utils/apiAuth'; 
 
 // Initial empty state for data
 const initialAgentsData = [];
