@@ -186,7 +186,7 @@ export default function InProgressMessages({ onSelectChat, activeChat, searchTer
                   <div className="flex justify-between items-start w-full">
                     <div>
                       <p className="font-medium text-gray-900 mb-1 text-sm">{conv.contactName || conv.contactPhone}</p>
-                      <p className="text-gray-500 text-xs truncate max-w-[150px]">{conv.lastMessage}</p>
+                      <p className="text-gray-500 text-xs truncate max-w-[152px]">{conv.lastMessage}</p>
                     </div>
                     <div className="flex flex-col items-end">
                       <div className="ml-auto flex items-center shrink-0 mb-2 pl-2">
