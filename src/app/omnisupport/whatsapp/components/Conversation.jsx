@@ -596,10 +596,10 @@ console.log('🖼 Media URL:', mediaUrl);
       : (
         <>
       <header 
-      onClick={fetchUserProfile}
       className="bg-white p-2 border-b border-gray-200">
         <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-start gap-4 flex-wrap">
+            <div       onClick={fetchUserProfile}
+               className="flex items-start gap-4 flex-wrap">
             <div className="relative flex-shrink-0">
                 <div className={`flex items-center justify-center w-7 h-7 md:w-10 md:h-10 ${userAvatarColor} rounded-full font-semibold text-white text-sm md:text-lg`}>
                 {userInitials}

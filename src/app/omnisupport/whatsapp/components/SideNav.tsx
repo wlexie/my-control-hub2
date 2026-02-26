@@ -23,6 +23,8 @@ const messageSources = [
   { name: 'In-App', href: '/omnisupport/in-app', icon: FiSmartphone, count: 8 },
   //{ name: 'Email', href: '/omnisupport/email', icon: FiMail, count: 3 },
   { name: 'SMS', href: '/omnisupport/sms', icon: BsChatDots, count: 0 },
+  { name: 'Escalation History', href: '/omnisupport/escalation', icon: FaWhatsapp, count: 3 },
+
 ];
 
 // Update component to accept an optional onClose prop for mobile view
