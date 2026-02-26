@@ -39,7 +39,7 @@ const EscalationDashboard: React.FC = () => {
   const fetchEscalations = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token'); // Adjust based on where you store your JWT
+      const token = localStorage.getItem('token'); 
       
       const response = await axios.get<Escalation[]>(API_BASE_URL, {
         headers: {
@@ -47,7 +47,6 @@ const EscalationDashboard: React.FC = () => {
         }
       });
       
-      // Sort: Unresolved first, then by ID descending
       const sortedData = response.data.sort((a, b) => {
         if (a.status === b.status) return b.id - a.id;
         return a.status === 'UNRESOLVED' ? -1 : 1;
@@ -75,7 +74,7 @@ const EscalationDashboard: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchEscalations();
-    } catch (error) {
+    } catch (_error) { // FIXED: Added underscore to indicate it's intentionally unused
       alert("Failed to resolve ticket. Check console for details.");
     } finally {
       setResolvingId(null);
@@ -201,7 +200,8 @@ const EscalationDashboard: React.FC = () => {
                   </td>
                   <td className="px-6 py-5">
                     <p className="text-sm text-gray-600 line-clamp-2 max-w-xs italic">
-                        "{item.notes || 'No notes'}"
+                        {/* FIXED: Replaced literal " with &quot; */}
+                        &quot;{item.notes || 'No notes'}&quot;
                     </p>
                   </td>
                   <td className="px-6 py-5 text-sm text-gray-500 font-medium">
