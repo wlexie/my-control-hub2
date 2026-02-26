@@ -11,8 +11,8 @@ import axios, {
   import type { RootState } from '../store/store';
     
   // API base 
-  //const API_BASE_URL = 'https://api.tuma-app.com/api';
-  const API_BASE_URL = '/api';
+  const API_BASE_URL = 'https://api.tuma-app.com/api';
+  //const API_BASE_URL = '/api';
   
   const api: AxiosInstance = axios.create({
         baseURL: API_BASE_URL,
@@ -34,7 +34,7 @@ import axios, {
   // Request interceptor
   api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-      // Initialize headers if they don't exist
+      // Initialize headers if they don't exi
       config.headers = config.headers || {} as AxiosRequestHeaders;
       
       if (store) {
