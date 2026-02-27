@@ -11,7 +11,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-// 1. Define the Interface to match your Spring Boot Entity
+// 1. Define the Interface to match 
 interface Escalation {
   id: number;
   ticketNumber: string;
@@ -77,7 +77,7 @@ const EscalationDashboard: React.FC = () => {
       fetchEscalations();
     } catch {
       // FIX: Removed unused error variable to satisfy linting
-      alert("Failed to resolve ticket. Check console for details.");
+      console.log("Failed to resolve ticket. Check console for details.");
     } finally {
       setResolvingId(null);
     }

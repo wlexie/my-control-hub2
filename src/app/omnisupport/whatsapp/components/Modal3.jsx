@@ -30,7 +30,7 @@ const TEMPLATE_MEDIA_URLS = {
   'test': 'https://tuma-website.s3.us-east-1.amazonaws.com/73834357-83cd-44f5-a1be-0fdc5fcd5b33.jpg', 
 };
 
-const groupCategories = ['All', 'Lead', 'Basic', 'Basic Pending', 'Active', 'Dormant'];
+const groupCategories = ['All', 'Lead', 'Basic', 'Basic Pending', 'Active', 'Dormant', 'Temporary_Blocked'];
 
 const Modal3 = ({ isOpen, onClose, templateName, selectedChannel }) => {
   const token = useSelector((state) => state.auth.accessToken);
