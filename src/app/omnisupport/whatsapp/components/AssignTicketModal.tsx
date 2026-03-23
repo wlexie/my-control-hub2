@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Search, UserCheck, ShieldCheck, Loader2, AlertCircle, Users, Building2 } from 'lucide-react';
+import { X, Search, UserCheck, ShieldCheck, Loader2, Users, Building2, AlertCircle } from 'lucide-react';
 import api from '../../../../utils/apiAuth';
+import axios from 'axios';
 
 // --- TypeScript Interfaces ---
 interface Role {
@@ -59,34 +60,25 @@ export default function AssignTicketModal({ isOpen, onClose, onAssign, ticketId 
         setIsLoading(true);
         setError(null);
         try {
-          /** 
-           * SHOTGUN APPROACH FOR PAGINATION: 
-           * We send all common keys in case the backend uses one specifically
-           */
+          // Sending multiple common pagination keys to force the backend to return all users
           const response = await api.get('/account/system-users-requests', {
             params: {
               limit: 100,
               pageSize: 100,
-              per_page: 100,
               size: 100,
-              page: 1 // Sometimes page is required for limit to work
+              per_page: 100
             }
           });
 
-          // Some APIs wrap the array in a "data" or "users" field if paginated
+          // Handle case where API might wrap data in a property
           let rawData: UserApiResponse[] = [];
-          
           if (Array.isArray(response.data)) {
             rawData = response.data;
           } else if (response.data && Array.isArray(response.data.data)) {
             rawData = response.data.data;
-          } else if (response.data && Array.isArray(response.data.users)) {
-            rawData = response.data.users;
           }
 
-          console.log(`FETCHED ${rawData.length} USERS FROM API`);
-
-          // 1. Role Filter: STRICT (Admin, Support Agent, Omnisupport)
+          // 1. Filter: ADMIN, SUPPORT AGENT, OMNISUPPORT
           const filteredData = rawData.filter((user) => {
             if (!user.accountKey || !user.role) return false;
             const role = user.role.roleName.toUpperCase().trim();
@@ -111,7 +103,7 @@ export default function AssignTicketModal({ isOpen, onClose, onAssign, ticketId 
 
           setAgents(transformedAgents);
 
-          // 3. Dynamic Department List (Unique names)
+          // 3. Dynamic Unique Department List
           const deptMap = new Map();
           transformedAgents.forEach(a => {
             if (!deptMap.has(a.departmentKey)) {
@@ -122,8 +114,14 @@ export default function AssignTicketModal({ isOpen, onClose, onAssign, ticketId 
           const uniqueDepts = Array.from(deptMap.values()).sort();
           setDepartments(['All Departments', ...uniqueDepts]);
 
-        } catch (e: any) {
-          setError(e.response?.data?.message || e.message || "Failed to load agents");
+        } catch (err: unknown) {
+          let message = "An unexpected error occurred";
+          if (axios.isAxiosError(err)) {
+            message = err.response?.data?.message || err.message;
+          } else if (err instanceof Error) {
+            message = err.message;
+          }
+          setError(message);
         } finally {
           setIsLoading(false);
         }
@@ -170,7 +168,7 @@ export default function AssignTicketModal({ isOpen, onClose, onAssign, ticketId 
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-300">
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-300 outline-none">
             <X size={24} />
           </button>
         </div>
@@ -178,6 +176,14 @@ export default function AssignTicketModal({ isOpen, onClose, onAssign, ticketId 
         {/* Body */}
         <div className="px-8 py-6 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
           
+          {/* Error Message UI - Uses the 'error' and 'AlertCircle' */}
+          {error && (
+            <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600">
+              <AlertCircle size={20} />
+              <p className="text-sm font-bold">{error}</p>
+            </div>
+          )}
+
           {/* Department Filter */}
           <div className="space-y-2">
             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -206,7 +212,7 @@ export default function AssignTicketModal({ isOpen, onClose, onAssign, ticketId 
                   <Loader2 className="animate-spin mb-4 text-blue-600" size={32} />
                   <span className="text-[10px] font-black uppercase tracking-widest">Accessing Directory...</span>
                 </div>
-              ) : availableAgents.length === 0 ? (
+              ) : availableAgents.length === 0 && !error ? (
                 <div className="text-center py-16 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100 text-slate-400 text-sm font-bold italic">
                   No agents matched your current filter.
                 </div>
@@ -264,14 +270,16 @@ export default function AssignTicketModal({ isOpen, onClose, onAssign, ticketId 
         </div>
 
         {/* Footer */}
-        <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-3 flex-shrink-0">
+        <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4 flex-shrink-0">
           <button
+            type="button"
             onClick={onClose}
             className="flex-1 px-4 py-4 text-xs font-black uppercase tracking-widest text-slate-400 bg-white border-2 border-slate-100 rounded-2xl hover:bg-slate-100 transition-all active:scale-95"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleAssignTicket}
             disabled={!selectedAgentId || !assignmentNote.trim() || isLoading}
             className="flex-1 px-4 py-4 text-xs font-black uppercase tracking-widest text-white bg-blue-600 rounded-2xl hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-all shadow-xl shadow-blue-100 active:scale-95"
