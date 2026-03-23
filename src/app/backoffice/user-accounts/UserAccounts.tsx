@@ -75,6 +75,8 @@ export default function UserAccounts() {
         // CHANGED: Access .data directly
         const data = res.data;
 
+        console.log('users fetched', data)
+
         const users = Array.isArray(data.content)
           ? data.content
           : Array.isArray(data)
