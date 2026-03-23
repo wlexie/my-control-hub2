@@ -264,7 +264,7 @@ export default function AssignTicketModal({ isOpen, onClose, onAssign, ticketId 
         </div>
 
         {/* Footer */}
-        <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4 flex-shrink-0">
+        <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-3 flex-shrink-0">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-4 text-xs font-black uppercase tracking-widest text-slate-400 bg-white border-2 border-slate-100 rounded-2xl hover:bg-slate-100 transition-all active:scale-95"
