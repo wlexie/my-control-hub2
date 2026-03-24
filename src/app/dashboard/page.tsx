@@ -55,7 +55,7 @@ const allModulesData = [
     description:
       "Create, launch, and manage in-app campaigns that connect with your customers. From promos to referral boosts — Campaign Manager helps you market like a pro.",
     path: "/campaign-manager/usage-tracking",
-    roles: ["ADMIN", "OMNISUPPORT", "COMPLIANCE"],
+    roles: ["OMNISUPPORT"],
   },
 
   {
