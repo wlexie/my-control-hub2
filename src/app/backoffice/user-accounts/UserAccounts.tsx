@@ -60,74 +60,72 @@ export default function UserAccounts() {
 
   const fetchAllUsers = async () => {
     setLoading(true);
-    const pageSize = 100;
-    const batchSize = 50;
+    const pageSize = 1000;
+    const batchSize = 10; // Smaller batches, but processed continuously
     let currentPageNum = 1;
-    let allResults: User[] = [];
+    let hasMore = true;
 
-    const fetchPage = async (page: number): Promise<User[]> => {
+    // 1. Helper to fetch and filter a single page
+    const fetchAndFilterPage = async (page: number): Promise<User[]> => {
       try {
-        // CHANGED: Use api.get with relative URL
         const res = await api.get(
           `/account/clients?page=${page}&size=${pageSize}`,
         );
-
-        // CHANGED: Access .data directly
         const data = res.data;
-
         const users = Array.isArray(data.content)
           ? data.content
           : Array.isArray(data)
             ? data
             : [];
 
-        return users;
+        // Apply the Tanzanian filter immediately at the source
+        return users.filter((user: User) => {
+          const isNotTanzanianCountry =
+            !user.country || !user.country.toLowerCase().includes("tanzania");
+          const isNotTanzanianPhone =
+            !user.phone ||
+            (!user.phone.startsWith("+255") && !user.phone.startsWith("255"));
+          return isNotTanzanianCountry && isNotTanzanianPhone;
+        });
       } catch (error) {
         console.error(`Error fetching page ${page}:`, error);
         return [];
       }
     };
 
-    const fetchInBatches = async () => {
-      while (true) {
-        const pages = Array.from(
-          { length: batchSize },
-          (_, i) => currentPageNum + i,
-        );
-        const results = await Promise.all(pages.map(fetchPage));
-        const combined = results.flat();
+    // 2. The Main Loop
+    while (hasMore) {
+      // Generate an array of page numbers for this batch (e.g., 1-10, 11-20)
+      const pageBatch = Array.from(
+        { length: batchSize },
+        (_, i) => currentPageNum + i,
+      );
 
-        if (combined.length === 0) break;
+      // Fetch multiple pages in parallel
+      const results = await Promise.all(
+        pageBatch.map((p) => fetchAndFilterPage(p)),
+      );
+      const flatResults = results.flat();
 
-        allResults = [...allResults, ...combined];
-        currentPageNum += batchSize;
-
-        // small delay to avoid hammering the API
-        await new Promise((res) => setTimeout(res, 100));
+      if (flatResults.length === 0) {
+        hasMore = false;
+        break;
       }
-    };
 
-    await fetchInBatches();
+      // 3. CRITICAL: Update state immediately so the UI populates while fetching continues
+      setAllUsers((prev) => {
+        const updated = [...prev, ...flatResults];
+        // Only set loading false on the first successful batch so the spinner disappears
+        if (currentPageNum === 1) setLoading(false);
+        return updated;
+      });
 
-    // FILTER: Remove Tanzanian users (country = Tanzania OR phone starts with +255/255)
-    const nonTanzanianUsers = allResults.filter((user) => {
-      // Check if country is NOT Tanzania (case-insensitive)
-      const isNotTanzanianCountry =
-        !user.country || !user.country.toLowerCase().includes("tanzania");
+      currentPageNum += batchSize;
 
-      // Check if phone does NOT start with +255 or 255
-      const isNotTanzanianPhone =
-        !user.phone ||
-        (!user.phone.startsWith("+255") && !user.phone.startsWith("255"));
+      // Optional: Safety break if you hit a ridiculous number of pages
+      if (currentPageNum > 500) break;
+    }
 
-      // Keep users that are NOT from Tanzania by country AND NOT by phone
-      return isNotTanzanianCountry && isNotTanzanianPhone;
-    });
-
-    setAllUsers(nonTanzanianUsers);
-    setFilteredUsers(nonTanzanianUsers);
-    setCurrentPage(1);
-    setDisplayedUsers(nonTanzanianUsers.slice(0, usersPerPage));
     setLoading(false);
   };
 
