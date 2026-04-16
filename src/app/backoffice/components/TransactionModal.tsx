@@ -163,12 +163,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     try {
       setIsLoadingComments(true);
       const res = await fetch(
-        `https://api.tuma-app.com/api/communication/transaction-comments/${transactionId}`,
+        `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/communication/transaction-comments/${transactionId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!res.ok) throw new Error("Failed to fetch comments");
@@ -187,10 +187,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
         internalUserKeys.map(async (accountKey) => {
           if (!nameMap[accountKey]) {
             const userRes = await fetch(
-              `https://api.tuma-app.com/api/account/client-profile?accountKey=${accountKey}`,
+              `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/account/client-profile?accountKey=${accountKey}`,
               {
                 headers: { Authorization: `Bearer ${token}` },
-              }
+              },
             );
 
             if (userRes.ok) {
@@ -198,7 +198,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               nameMap[accountKey] = `${data.firstName} ${data.lastName}`.trim();
             }
           }
-        })
+        }),
       );
 
       setUserMap(nameMap);
@@ -239,7 +239,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       }
 
       const response = await fetch(
-        "https://api.tuma-app.com/api/communication/add-transaction-comment",
+        "http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/communication/add-transaction-comment",
         {
           method: "POST",
           headers: {
@@ -251,7 +251,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
             text: comment.trim(),
             transactionId: transaction.transactionId,
           }),
-        }
+        },
       );
 
       const result = await response.json();
@@ -266,7 +266,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to add comment"
+        error instanceof Error ? error.message : "Failed to add comment",
       );
       console.error("Add comment error:", error);
     } finally {
@@ -293,7 +293,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     try {
       setLoading(true);
       const response = await fetch(
-        `https://api.tuma-app.com/api/transfer/transaction-details?transactionId=${transactionId}`
+        `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/transfer/transaction-details?transactionId=${transactionId}`,
       );
 
       if (!response.ok) {
@@ -360,7 +360,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
 
     return data; // always return, handle logic outside
@@ -391,7 +391,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
         onClose();
       } else {
         toast.error(
-          response.message || "We are unable to complete your payout request"
+          response.message || "We are unable to complete your payout request",
         );
 
         if (onRetrySuccess && transaction) {
@@ -450,7 +450,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
 
   const statusDetails = getStatusDetails(
     transaction.status === "ERROR" ? "FAILED" : transaction.status,
-    transaction.errorMessage
+    transaction.errorMessage,
   );
 
   return (
@@ -695,7 +695,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                             ? "Bank Reference"
                             : "MPESA Reference"}
                         </p>
-                        <p className="font-medium text-sm break-words">
+                        <p className="font-medium text-sm wrap-break-word">
                           {transaction.mpesaReference}
                         </p>
                       </div>
@@ -837,7 +837,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                                     minute: "2-digit",
                                     hour12: false,
                                     timeZone: "GMT",
-                                  }
+                                  },
                                 )}{" "}
                                 GMT
                               </p>
@@ -866,7 +866,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                             transaction,
                             formatDateTime,
                             formatDateEAT,
-                            formatChannelName
+                            formatChannelName,
                           );
                           const url = URL.createObjectURL(blob);
                           const link = document.createElement("a");
