@@ -5,10 +5,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Transaction } from "../types/transactions";
 import { generateReceiptPDF } from "./generateReceipt";
 import toast from "react-hot-toast";
-import Cookies from "js-cookie";
-import { authFetch } from "@/utils/authFetch";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../../store/store";
+import api from "../../../utils/apiService";
 
 type TransactionModalProps = {
   isOpen: boolean;
@@ -153,27 +152,14 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   const userRoles = useSelector((state: RootState) => state.auth.user?.roles);
   const isAdmin = userRoles?.includes("ADMIN");
 
-  const getAuthToken = () => {
-    return Cookies.get("accessToken");
-  };
   const fetchComments = async (transactionId: string) => {
-    const token = getAuthToken();
-    if (!token) return;
-
     try {
       setIsLoadingComments(true);
-      const res = await fetch(
-        `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/communication/transaction-comments/${transactionId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+      const response = await api.get<{ comments: RawComment[] }>(
+        `/communication/transaction-comments/${transactionId}`
       );
 
-      if (!res.ok) throw new Error("Failed to fetch comments");
-
-      const result: { comments: RawComment[] } = await res.json();
+      const result = response.data;
       const commentList = result.comments || [];
 
       const internalUserKeys = [
@@ -186,19 +172,16 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       await Promise.all(
         internalUserKeys.map(async (accountKey) => {
           if (!nameMap[accountKey]) {
-            const userRes = await fetch(
-              `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/account/client-profile?accountKey=${accountKey}`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              },
-            );
-
-            if (userRes.ok) {
-              const data: UserProfile = await userRes.json();
-              nameMap[accountKey] = `${data.firstName} ${data.lastName}`.trim();
+            try {
+              const userRes = await api.get<UserProfile>(
+                `/account/client-profile?accountKey=${accountKey}`
+              );
+              nameMap[accountKey] = `${userRes.data.firstName} ${userRes.data.lastName}`.trim();
+            } catch (err) {
+              console.error("Error fetching user profile:", err);
             }
           }
-        }),
+        })
       );
 
       setUserMap(nameMap);
@@ -232,41 +215,19 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
 
     try {
       setIsProcessing(true);
-      const token = getAuthToken();
+      const response = await api.post("/communication/add-transaction-comment", {
+        commentType: "INTERNAL_NOTE",
+        text: comment.trim(),
+        transactionId: transaction.transactionId,
+      });
 
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      const response = await fetch(
-        "http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/communication/add-transaction-comment",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            commentType: "INTERNAL_NOTE",
-            text: comment.trim(),
-            transactionId: transaction.transactionId,
-          }),
-        },
-      );
-
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success(result.message || "Comment added successfully");
-        setComment("");
-        setIsAddingComment(false);
-        await fetchComments(transaction.transactionId);
-      } else {
-        throw new Error(result.message || "Failed to add comment");
-      }
+      toast.success(response.data.message || "Comment added successfully");
+      setComment("");
+      setIsAddingComment(false);
+      await fetchComments(transaction.transactionId);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to add comment",
+        error instanceof Error ? error.message : "Failed to add comment"
       );
       console.error("Add comment error:", error);
     } finally {
@@ -287,26 +248,18 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     }
   }, [transactionId]);
 
-  console.log("Fetching with transactionKey:", transactionId);
-
   const fetchTransaction = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `http://tuma-dev-backend-alb-1553448571.us-east-1.elb.amazonaws.com/api/transfer/transaction-details?transactionId=${transactionId}`,
+      const response = await api.get<Transaction>(
+        `/transfer/transaction-details?transactionId=${transactionId}`
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch transaction");
-      }
-
-      const data = await response.json();
-      const mappedTransaction = mapApiTransactionToTransaction(data);
+      const mappedTransaction = mapApiTransactionToTransaction(response.data);
       setTransaction(mappedTransaction);
     } catch (error) {
       console.error("Error fetching transaction:", error);
       toast.error("Failed to load transaction details");
-      setTransaction(null); // prevent stale values
+      setTransaction(null);
     } finally {
       setLoading(false);
     }
@@ -326,7 +279,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
 
   const formatDateEAT = (dateString: string): string => {
     const date = new Date(dateString);
-    date.setHours(date.getHours() + 3); // Convert to East Africa Time
+    date.setHours(date.getHours() + 3);
     return date.toLocaleString("en-GB", {
       day: "2-digit",
       month: "2-digit",
@@ -355,15 +308,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       throw new Error("Transaction reference not available");
     }
 
-    const data = await authFetch(
-      `/transfer/settle-pending-payment?transactionReference=${transaction.transactionReference}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      },
+    const response = await api.post(
+      `/transfer/settle-pending-payment?transactionReference=${transaction.transactionReference}`
     );
-
-    return data; // always return, handle logic outside
+    return response.data;
   };
 
   const handleRetryPayment = async () => {
@@ -375,23 +323,20 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     setIsRetrying(true);
     try {
       const response = await retryPendingPayment();
-      console.log("Retry Payment API Response:", response);
 
       if (response.status === "ok" && response.success) {
         toast.success(response.message || "Payment settled successfully");
 
-        // refresh status
         await fetchTransaction();
 
         if (onRetrySuccess && transaction) {
           onRetrySuccess({ ...transaction, status: "SUCCESS" });
         }
 
-        // Close modal after success
         onClose();
       } else {
         toast.error(
-          response.message || "We are unable to complete your payout request",
+          response.message || "We are unable to complete your payout request"
         );
 
         if (onRetrySuccess && transaction) {
@@ -450,7 +395,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
 
   const statusDetails = getStatusDetails(
     transaction.status === "ERROR" ? "FAILED" : transaction.status,
-    transaction.errorMessage,
+    transaction.errorMessage
   );
 
   return (
@@ -686,7 +631,6 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       {transaction.settlementReference || "N/A"}
                     </p>
                   </div>
-                  {/* Conditionally show MPESA Reference only if not "N/A" */}
                   {transaction.mpesaReference &&
                     transaction.mpesaReference !== "N/A" && (
                       <div className="bg-gray-50 p-4 rounded-lg">
@@ -715,12 +659,6 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       {transaction.userId || "N/A"}
                     </p>
                   </div>
-                  {/* <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-500">Fraud Reference</p>
-                    <p className="font-medium text-sm">
-                      {transaction.fraudReference || "N/A"}
-                    </p>
-                  </div> */}
                 </div>
 
                 {/* Additional Information */}
@@ -837,7 +775,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                                     minute: "2-digit",
                                     hour12: false,
                                     timeZone: "GMT",
-                                  },
+                                  }
                                 )}{" "}
                                 GMT
                               </p>
@@ -866,7 +804,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                             transaction,
                             formatDateTime,
                             formatDateEAT,
-                            formatChannelName,
+                            formatChannelName
                           );
                           const url = URL.createObjectURL(blob);
                           const link = document.createElement("a");
