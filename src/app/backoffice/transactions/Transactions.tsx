@@ -5,8 +5,6 @@ import Sidebar from "../components/Sidebar";
 import { FaCalendarAlt, FaFileExport, FaFilter } from "react-icons/fa";
 import { Search } from "lucide-react";
 import DateFilter from "../components/DateFilter";
-import "react-date-range/dist/styles.css";
-import "react-date-range/dist/theme/default.css";
 import TransactionModal from "../components/TransactionModal";
 import FraudModal from "../compliance-security/components/FraudModal";
 import { Transaction } from "../types/transactions";
@@ -161,6 +159,12 @@ const TransactionsPage = () => {
         currency: "KES",
       },
       {
+        code: "TZ",
+        label: "Tanzania",
+        flag: "/backoffice/tanzania.png",
+        currency: "TZS",
+      },
+      {
         code: "MW",
         label: "Malawi",
         flag: "/backoffice/malawi.png",
@@ -259,15 +263,9 @@ const TransactionsPage = () => {
         const res = await api.get<RawTransaction[]>(endpoint);
         const formatted = res.data.map(mapApiTransactionToTransaction);
 
-        // FILTER: Remove TZS transactions (currency is NOT TZS)
-        const nonTzsTransactions = formatted.filter(
-          (tx) =>
-            tx.currencyIso3a?.toUpperCase() !== "TZS" &&
-            tx.receiverCurrencyIso3a?.toUpperCase() !== "TZS"
-        );
-
-        setAllTransactions(nonTzsTransactions);
-        setFilteredTransactions(nonTzsTransactions);
+        // SHOW ALL TRANSACTIONS - Including TZS
+        setAllTransactions(formatted);
+        setFilteredTransactions(formatted);
       } catch (err) {
         console.error("Fetch error:", err);
         setError("Failed to fetch transactions");
@@ -303,7 +301,7 @@ const TransactionsPage = () => {
       const fetchInBatches = async () => {
         const batchPages = Array.from(
           { length: batchSize },
-          (_, i) => currentBatch + i
+          (_, i) => currentBatch + i,
         );
         const results = await Promise.all(batchPages.map(fetchPage));
 
@@ -311,17 +309,11 @@ const TransactionsPage = () => {
         const flattened = validResults.flat();
         const formatted = flattened.map(mapApiTransactionToTransaction);
 
-        // FILTER: Remove TZS transactions (currency is NOT TZS)
-        const nonTzsTransactions = formatted.filter(
-          (tx) =>
-            tx.currencyIso3a?.toUpperCase() !== "TZS" &&
-            tx.receiverCurrencyIso3a?.toUpperCase() !== "TZS"
-        );
-
+        // SHOW ALL TRANSACTIONS - Including TZS
         setAllTransactions((prev) => {
           const seen = new Set(prev.map((tx) => tx.transactionId));
-          const uniqueNew = nonTzsTransactions.filter(
-            (tx) => !seen.has(tx.transactionId)
+          const uniqueNew = formatted.filter(
+            (tx) => !seen.has(tx.transactionId),
           );
           return [...prev, ...uniqueNew];
         });
@@ -348,17 +340,17 @@ const TransactionsPage = () => {
     }
     if (selectedCountry) {
       const country = availableCountries.find(
-        (c) => c.code === selectedCountry
+        (c) => c.code === selectedCountry,
       );
       if (country) {
         filtered = filtered.filter(
-          (t) => t.receiverCurrencyIso3a === country.currency
+          (t) => t.receiverCurrencyIso3a === country.currency,
         );
       }
     }
     if (transactionTypeFilter) {
       filtered = filtered.filter(
-        (t) => t.transactionType === transactionTypeFilter
+        (t) => t.transactionType === transactionTypeFilter,
       );
     }
 
@@ -372,7 +364,7 @@ const TransactionsPage = () => {
           t.currencyIso3a?.toLowerCase().includes(query) ||
           t.senderAmount?.toString().includes(query) ||
           t.transactionReference?.toLowerCase().includes(query) ||
-          t.settlementReference?.toLowerCase().includes(query)
+          t.settlementReference?.toLowerCase().includes(query),
       );
     }
 
@@ -448,7 +440,7 @@ const TransactionsPage = () => {
       case "REFUNDED":
         return "Refunded";
       case "ESCALATED":
-        return "Escalated";
+        return "Escalate";
       default:
         return "Unknown";
     }
@@ -465,7 +457,7 @@ const TransactionsPage = () => {
   };
 
   const generateExportFileName = () => {
-    let fileName = "transactions_except_TZS";
+    let fileName = "transactions";
     if (searchQuery.trim())
       fileName += `_search_${searchQuery.trim().replace(/ /g, "_")}`;
     if (statusFilter !== "All")
@@ -480,10 +472,10 @@ const TransactionsPage = () => {
   };
 
   const fetchTransactionDetails = async (
-    transaction: Transaction
+    transaction: Transaction,
   ): Promise<ExportTransaction> => {
     const response = await api.get(
-      `/transfer/transaction-details?transactionId=${transaction.transactionId}`
+      `/transfer/transaction-details?transactionId=${transaction.transactionId}`,
     );
 
     const fullDetails = response.data;
@@ -495,7 +487,7 @@ const TransactionsPage = () => {
       paymentTypeDescription?: string;
       issuer?: string;
       maskedPan?: string;
-    }
+    },
   ): ExportTransaction => ({
     "Transaction ID": Number(fullDetails.transactionId) || 0,
     "Transaction Key": fullDetails.transactionKey || "N/A",
@@ -524,7 +516,7 @@ const TransactionsPage = () => {
     Status: fullDetails.status || "N/A",
     "Error Message": fullDetails.errorMessage || "N/A",
     "Date & Time (GMT)": formatDateTime(
-      fullDetails.date || new Date().toISOString()
+      fullDetails.date || new Date().toISOString(),
     ),
     "Fraud Reference": fullDetails.fraudReference || "N/A",
     "Payment Purpose": fullDetails.paymentPurpose || "N/A",
@@ -532,7 +524,7 @@ const TransactionsPage = () => {
   });
 
   const createFallbackExportData = (
-    transaction: Transaction
+    transaction: Transaction,
   ): ExportTransaction => ({
     "Transaction ID": Number(transaction.transactionId) || 0,
     "Transaction Key": transaction.transactionKey || "N/A",
@@ -568,7 +560,7 @@ const TransactionsPage = () => {
 
   const fetchWithRetry = async (
     transaction: Transaction,
-    retries: number
+    retries: number,
   ): Promise<ExportTransaction> => {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -576,7 +568,7 @@ const TransactionsPage = () => {
       } catch (error) {
         if (attempt === retries) throw error;
         await new Promise((resolve) =>
-          setTimeout(resolve, 1000 * (attempt + 1))
+          setTimeout(resolve, 1000 * (attempt + 1)),
         );
       }
     }
@@ -584,7 +576,7 @@ const TransactionsPage = () => {
   };
 
   const prepareExportData = async (
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
   ): Promise<ExportTransaction[]> => {
     const BATCH_SIZE = 20;
     const RETRY_ATTEMPTS = 2;
@@ -596,7 +588,7 @@ const TransactionsPage = () => {
       const batch = filteredTransactions.slice(i, i + BATCH_SIZE);
 
       const batchResults = await Promise.allSettled(
-        batch.map((transaction) => fetchWithRetry(transaction, RETRY_ATTEMPTS))
+        batch.map((transaction) => fetchWithRetry(transaction, RETRY_ATTEMPTS)),
       );
 
       batchResults.forEach((result, index) => {
@@ -605,7 +597,7 @@ const TransactionsPage = () => {
         } else {
           console.error(
             `Failed to fetch transaction ${batch[index].transactionId}:`,
-            result.reason
+            result.reason,
           );
           results.push(createFallbackExportData(batch[index]));
         }
@@ -613,14 +605,14 @@ const TransactionsPage = () => {
 
       if (onProgress) {
         const progress = Math.round(
-          ((i + BATCH_SIZE) / filteredTransactions.length) * 100
+          ((i + BATCH_SIZE) / filteredTransactions.length) * 100,
         );
         onProgress(Math.min(progress, 100));
       }
 
       if (i + BATCH_SIZE < filteredTransactions.length) {
         await new Promise((resolve) =>
-          setTimeout(resolve, DELAY_BETWEEN_BATCHES)
+          setTimeout(resolve, DELAY_BETWEEN_BATCHES),
         );
       }
     }
@@ -631,7 +623,7 @@ const TransactionsPage = () => {
   const handleExport = async () => {
     if (filteredTransactions.length > 50) {
       const shouldProceed = window.confirm(
-        `This will export ${filteredTransactions.length} transactions. This may take several minutes. Continue?`
+        `This will export ${filteredTransactions.length} transactions. This may take several minutes. Continue?`,
       );
       if (!shouldProceed) return;
     }
@@ -675,15 +667,15 @@ const TransactionsPage = () => {
       prev.map((tx: Transaction) =>
         tx.transactionId === updatedTransaction.transactionId
           ? updatedTransaction
-          : tx
-      )
+          : tx,
+      ),
     );
     setFilteredTransactions((prev: Transaction[]) =>
       prev.map((tx: Transaction) =>
         tx.transactionId === updatedTransaction.transactionId
           ? updatedTransaction
-          : tx
-      )
+          : tx,
+      ),
     );
   };
 
@@ -707,12 +699,12 @@ const TransactionsPage = () => {
         <div className="p-6">
           {/* Header Section - All in one line on desktop */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-            <h2 className="text-2xl font-semibold text-black md:flex-shrink-0">
+            <h2 className="text-2xl font-semibold text-black md:shrink-0">
               Transactions
             </h2>
 
             {/* Search Bar - Centered in Desktop */}
-            <div className="relative w-full md:w-[450px] md:mx-auto order-3 md:order-none">
+            <div className="relative w-full md:w-[450px] md:mx-auto order-3 md:order-0">
               <input
                 type="text"
                 placeholder="Search transactions by ID, Sender and Recipient"
@@ -761,7 +753,7 @@ const TransactionsPage = () => {
             </div>
 
             {/* Export and Filters - Right side on desktop */}
-            <div className="flex gap-2 w-full md:w-auto order-2 md:order-none">
+            <div className="flex gap-2 w-full md:w-auto order-2 md:order-0">
               {/* Consolidated Filter Button */}
               <div className="relative" ref={filterDropdownRef}>
                 <button
@@ -779,7 +771,7 @@ const TransactionsPage = () => {
                       <button
                         onClick={() =>
                           setActiveFilter(
-                            activeFilter === "status" ? null : "status"
+                            activeFilter === "status" ? null : "status",
                           )
                         }
                         className="w-full text-left px-4 py-2 hover:bg-gray-200 flex justify-between items-center"
@@ -814,7 +806,7 @@ const TransactionsPage = () => {
                       <button
                         onClick={() =>
                           setActiveFilter(
-                            activeFilter === "country" ? null : "country"
+                            activeFilter === "country" ? null : "country",
                           )
                         }
                         className="w-full text-left px-4 py-2 hover:bg-gray-200 flex justify-between items-center"
@@ -861,7 +853,7 @@ const TransactionsPage = () => {
                       <button
                         onClick={() =>
                           setActiveFilter(
-                            activeFilter === "type" ? null : "type"
+                            activeFilter === "type" ? null : "type",
                           )
                         }
                         className="w-full text-left px-4 py-2 hover:bg-gray-200 flex justify-between items-center"
@@ -964,7 +956,7 @@ const TransactionsPage = () => {
                   Transaction Type:{" "}
                   {
                     TRANSACTION_TYPE_OPTIONS.find(
-                      (t) => t.value === transactionTypeFilter
+                      (t) => t.value === transactionTypeFilter,
                     )?.label
                   }
                   <button
@@ -1068,7 +1060,7 @@ const TransactionsPage = () => {
                         filteredTransactions
                           .slice(
                             (currentPage - 1) * rowsPerPage,
-                            currentPage * rowsPerPage
+                            currentPage * rowsPerPage,
                           )
                           .map((transaction) => (
                             <tr
@@ -1101,7 +1093,7 @@ const TransactionsPage = () => {
                               </td>
                               <td className="px-6 py-4 hidden lg:table-cell whitespace-nowrap">
                                 {formatTransactionType(
-                                  transaction.transactionType
+                                  transaction.transactionType,
                                 )}
                               </td>
                               <td className="px-6 py-4">
@@ -1145,7 +1137,7 @@ const TransactionsPage = () => {
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           toggleDropdown(
-                                            transaction.transactionId
+                                            transaction.transactionId,
                                           );
                                         }}
                                         className="text-gray-500 hover:text-gray-700"
@@ -1164,7 +1156,7 @@ const TransactionsPage = () => {
                                               e.stopPropagation();
                                               setShowFraudModal(true);
                                               setSelectedTransactionKey(
-                                                transaction.fraudReference
+                                                transaction.fraudReference,
                                               );
                                               setDropdownOpen(null);
                                             }}
@@ -1186,7 +1178,7 @@ const TransactionsPage = () => {
                             colSpan={10}
                             className="px-6 py-4 text-center text-gray-500"
                           >
-                            No transactions found (TZS transactions excluded).
+                            No transactions found.
                           </td>
                         </tr>
                       )}
