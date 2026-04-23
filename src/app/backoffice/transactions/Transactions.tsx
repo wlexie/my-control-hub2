@@ -261,9 +261,7 @@ const TransactionsPage = () => {
 
         // FILTER: Remove TZS transactions (currency is NOT TZS)
         const nonTzsTransactions = formatted.filter(
-          (tx) =>
-            tx.currencyIso3a?.toUpperCase() !== "TZS" &&
-            tx.receiverCurrencyIso3a?.toUpperCase() !== "TZS",
+          (tx) => tx.currencyIso3a?.toUpperCase() !== "TZS",
         );
 
         setAllTransactions(nonTzsTransactions);
@@ -313,9 +311,7 @@ const TransactionsPage = () => {
 
         // FILTER: Remove TZS transactions (currency is NOT TZS)
         const nonTzsTransactions = formatted.filter(
-          (tx) =>
-            tx.currencyIso3a?.toUpperCase() !== "TZS" &&
-            tx.receiverCurrencyIso3a?.toUpperCase() !== "TZS",
+          (tx) => tx.currencyIso3a?.toUpperCase() !== "TZS",
         );
 
         setAllTransactions((prev) => {
