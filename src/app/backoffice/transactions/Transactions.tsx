@@ -161,6 +161,12 @@ const TransactionsPage = () => {
         currency: "KES",
       },
       {
+        code: "TZ",
+        label: "Tanzania",
+        flag: "/backoffice/tz.png",
+        currency: "TZS",
+      },
+      {
         code: "MW",
         label: "Malawi",
         flag: "/backoffice/malawi.png",
