@@ -1,19 +1,21 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
-import axios from 'axios';
+"use client";
 
-// Define the interface for your API response data
+import React, { useState, FormEvent } from 'react'; // Removed ChangeEvent
+import api from '../../../../utils/apiService'; 
+import axios from 'axios';
+import { Bell, Send, User, Users, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+
 interface ApiResponse {
-  status: string;
+  status: string | number;
   message?: string;
   successCount?: number;
   failureCount?: number;
 }
 
-// Define the interface for the payload you send to the API
 interface NotificationPayload {
   notificationTitle: string;
   notificationBody: string;
-  targetUserId?: string; // Optional if sending to all
+  targetUserId?: string;
 }
 
 const NotificationSender: React.FC = () => {
@@ -21,182 +23,175 @@ const NotificationSender: React.FC = () => {
   const [notificationBody, setNotificationBody] = useState<string>('');
   const [targetUserId, setTargetUserId] = useState<string>('');
   const [sendToAll, setSendToAll] = useState<boolean>(false);
-  const [status, setStatus] = useState<string>('Idle');
-  const [successCount, setSuccessCount] = useState<number>(0);
-  const [failureCount, setFailureCount] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(false);
-
-  // IMPORTANT: Replace with your actual endpoint
-  const API_ENDPOINT: string = 'https://api.tuma-app.com/api/account/send-app-notification-to-all';
+  
+  const [status, setStatus] = useState<{ type: 'idle' | 'loading' | 'success' | 'error'; message: string }>({
+    type: 'idle',
+    message: ''
+  });
+  
+  const [counts, setCounts] = useState({ success: 0, failure: 0 });
 
   const handleSendNotification = async (e: FormEvent) => {
-    e.preventDefault(); // Prevent default form submission behavior
+    e.preventDefault();
 
-    setStatus('Sending...');
-    setLoading(true);
-    setSuccessCount(0); // Reset counts before new send attempt
-    setFailureCount(0); // Reset counts before new send attempt
+    setStatus({ type: 'loading', message: 'Sending notifications...' });
+    setCounts({ success: 0, failure: 0 });
 
     const payload: NotificationPayload = {
       notificationTitle,
       notificationBody,
     };
 
-    // Conditionally add targetUserId if not sending to all and a user ID is provided
     if (!sendToAll && targetUserId) {
       payload.targetUserId = targetUserId;
     }
 
     try {
-      const response = await axios.post<ApiResponse>(API_ENDPOINT, payload, {
-        headers: {
-          'Content-Type': 'application/json',
-          // Add any authorization headers if needed
-          // 'Authorization': 'Bearer YOUR_TOKEN_HERE',
-        },
-      });
+      const response = await api.post<ApiResponse>('/account/send-app-notification-to-all', payload);
 
-      // Console log the full API response
-      console.log('API Response:', response.data);
-
-      if (response.data.status === '200') {
-        // Set the success message from the API if available, otherwise a default
-        setStatus(`Sent successfully! ${response.data.message || ''}`);
-        setSuccessCount(response.data.successCount || 0);
-        setFailureCount(response.data.failureCount || 0);
-      } else {
-        // Set the failure message from the API
-        setStatus(`Failed: ${response.data.message || 'Unknown error'}`);
-        setFailureCount(response.data.failureCount || 0);
-        setSuccessCount(response.data.successCount || 0); // Still show success count if partially failed
+      if (response.data.status === '200' || response.status === 200) {
+        setStatus({ 
+          type: 'success', 
+          message: response.data.message || 'Notifications dispatched successfully!' 
+        });
+        setCounts({
+          success: response.data.successCount || 0,
+          failure: response.data.failureCount || 0
+        });
       }
-    } catch (error: unknown) { // FIX: Changed 'any' to 'unknown' and added robust error handling
-      console.error('Error sending notification:', error);
+    } catch (error: unknown) {
+      let errorMessage = 'Failed to connect to the server.';
 
-      let errorMessage = 'An unexpected error occurred.';
-
-      // Check if it's an Axios error to get more specific info
       if (axios.isAxiosError(error)) {
-        if (error.response) {
-          // The server responded with a status code outside the 2xx range
-          const responseData = error.response.data as ApiResponse;
-          errorMessage = responseData.message || `Request failed with status ${error.response.status}`;
-        } else if (error.request) {
-          // The request was made but no response was received
-          errorMessage = 'No response from server. Check network connection.';
-        } else {
-          // Something happened in setting up the request
-          errorMessage = error.message;
-        }
-      } else if (error instanceof Error) {
-        // A generic JavaScript error
-        errorMessage = error.message;
+        errorMessage = error.response?.data?.message || error.message;
       }
-      
-      setStatus(`Error: ${errorMessage}`);
-      setFailureCount(0);
-      setSuccessCount(0);
-    } finally {
-      setLoading(false);
+
+      setStatus({ type: 'error', message: errorMessage });
     }
   };
 
   return (
-    // Adjusted styling to fill the space
-    <div className="bg-black/20   items-center justify-center w-full h-screen flex flex-col border border-gray-700">
-        <div className='max-w-5xl w-3xl p-8 bg-white mx-auto'>
-
-      <h2 className="text-4xl font-semibold text-gray-500 mb-10 tracking-tight">Send In-App Notification</h2>
-
-      <form onSubmit={handleSendNotification} className="flex-grow flex flex-col"> {/* Wrap in a form tag */}
-        <div className="flex-grow overflow-y-auto pr-4 -mr-4 custom-scrollbar"> {/* Added flex-grow and overflow for scrollable content if it gets too long, custom-scrollbar for better aesthetics */}
-          
-          {/* Notification Title */}
-          <div className="mb-7">
-            <label htmlFor="notificationTitle" className="block text-gray-400 text-sm font-medium mb-2">
-              Notification Title
-            </label>
-            <input
-              type="text"
-              id="notificationTitle"
-              className="block w-full py-3 px-4 text-gray-950 bg-gray-50 text-2xl border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition duration-200 ease-in-out placeholder-gray-500 text-base"
-              placeholder="e.g., :alarm_clock: Sale This Friday!"
-              value={notificationTitle}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setNotificationTitle(e.target.value)}
-              required 
-            />
-          </div>
-
-          {/* Notification Body */}
-          <div className="mb-7">
-            <label htmlFor="notificationBody" className="block text-gray-400 text-sm font-medium mb-2">
-              Notification Body (Markdown supported)
-            </label>
-            <textarea
-              id="notificationBody"
-              rows={7} // Increased rows for more content
-              className="block w-full py-3 px-4 text-gray-950 bg-gray-50 text-2xl border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition duration-200 ease-in-out resize-y placeholder-gray-500 text-base"
-              placeholder="Type your message here"
-              value={notificationBody}
-              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNotificationBody(e.target.value)}
-              required // Added required attribute
-            ></textarea>
-          </div>
-
-          {/* Target User ID */}
-          <div className="mb-6">
-            <label htmlFor="targetUserId" className="block text-gray-400 text-lg font-medium mb-2">
-              Target User ID (optional)
-            </label>
-            <input
-              type="text"
-              id="targetUserId"
-              className="block w-full py-3 px-4 text-gray-950 text-2xl bg-gray-50 border border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition duration-200 ease-in-out placeholder-gray-500 text-base"
-              placeholder="Enter user ID for a specific user (e.g., 'ysid_abcdef123')"
-              value={targetUserId}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setTargetUserId(e.target.value)}
-              disabled={sendToAll} // Disable if 'send to all' is checked
-            />
-          </div>
-
-          {/* Send to All Checkbox */}
-          <div className="mb-10 flex items-center">
-            <input
-              type="checkbox"
-              id="sendToAll"
-              className="mr-3 h-5 w-5 text-blue-500 bg-gray-700 border-gray-600 rounded-md focus:ring-blue-500 cursor-pointer form-checkbox"
-              checked={sendToAll}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setSendToAll(e.target.checked)}
-            />
-            <label htmlFor="sendToAll" className="text-gray-900 text-base font-medium select-none">
-              Send to all users (leave Target User ID blank)
-            </label>
-          </div>
-        </div> {/* End of scrollable content area */}
-
-        {/* Action and Status Footer */}
-        <div className="mt-auto pt-8 border-t border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <button
-            type="submit" // Changed to type="submit" for form
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg  transition duration-200  disabled:cursor-not-allowed"
-            disabled={loading || !notificationTitle || !notificationBody || (!targetUserId && !sendToAll)}
-          >
-            {loading ? 'Sending...' : 'Send Notification'}
-          </button>
-          <div className="text-center sm:text-right">
-            <p className={`text-lg font-semibold ${status.startsWith('Error') ? 'text-red-400' : status.startsWith('Sent') ? 'text-green-400' : 'text-gray-400'}`}>
-              Status: <span className="font-bold">{status}</span>
-            </p>
-            <div className="flex gap-6 mt-2 text-gray-400 text-sm sm:justify-end">
-              <div>Success: <span className="font-bold text-green-400">{successCount}</span></div>
-              <div>Failed: <span className="font-bold text-red-400">{failureCount}</span></div>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
+      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden text-slate-900">
+        
+        {/* Header */}
+        <div className="bg-slate-900 p-8 text-white">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="bg-blue-500 p-2 rounded-lg text-white">
+              <Bell className="w-6 h-6" />
             </div>
+            <h2 className="text-2xl font-bold tracking-tight">Notification Center</h2>
           </div>
+          <p className="text-slate-400 text-sm font-medium">Push real-time updates to your application users.</p>
         </div>
-      </form>
-    </div>
+
+        <form onSubmit={handleSendNotification} className="p-8">
+          <div className="space-y-6">
+            
+            {/* Title Input */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Notification Title</label>
+              <input
+                type="text"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 text-slate-900 font-medium"
+                placeholder="e.g. System Maintenance Update"
+                value={notificationTitle}
+                onChange={(e) => setNotificationTitle(e.target.value)}
+                required
+              />
             </div>
 
+            {/* Body Input */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Message Body</label>
+              <textarea
+                rows={4}
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 text-slate-900 font-medium resize-none"
+                placeholder="What would you like to say?"
+                value={notificationBody}
+                onChange={(e) => setNotificationBody(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Targeting Section */}
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+              <div className="flex items-center justify-between mb-4">
+                <label className="flex items-center gap-2 font-bold text-slate-700 text-xs uppercase tracking-widest">
+                  <Users size={14} className="text-slate-400" />
+                  Target Audience
+                </label>
+                
+                <div className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="sendToAll"
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    checked={sendToAll}
+                    onChange={(e) => setSendToAll(e.target.checked)}
+                  />
+                  <label htmlFor="sendToAll" className="text-xs font-bold text-slate-600 select-none cursor-pointer">Send to all users</label>
+                </div>
+              </div>
+
+              {!sendToAll && (
+                <div className="relative">
+                  <User className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    className="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm font-bold shadow-sm"
+                    placeholder="Specific User ID (ysid_...)"
+                    value={targetUserId}
+                    onChange={(e) => setTargetUserId(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Status Messages */}
+          {status.type !== 'idle' && (
+            <div className={`mt-6 p-5 rounded-2xl flex items-start gap-4 ${
+              status.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 
+              status.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 
+              'bg-blue-50 text-blue-700 border border-blue-100'
+            }`}>
+              {status.type === 'loading' ? <Loader2 className="w-5 h-5 animate-spin mt-0.5" /> :
+               status.type === 'success' ? <CheckCircle className="w-5 h-5 mt-0.5" /> :
+               <AlertCircle className="w-5 h-5 mt-0.5" />}
+              <div>
+                <p className="text-sm font-bold tracking-tight">{status.message}</p>
+                {status.type === 'success' && (
+                  <div className="flex gap-4 mt-2 text-[10px] font-black uppercase tracking-widest opacity-70">
+                    <span>Success: {counts.success}</span>
+                    <span>Failed: {counts.failure}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action Button */}
+          <button
+            type="submit"
+            disabled={status.type === 'loading' || !notificationTitle || !notificationBody || (!targetUserId && !sendToAll)}
+            className="w-full mt-8 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-blue-100 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+          >
+            {status.type === 'loading' ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Dispatch Notification
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 };
 
