@@ -111,12 +111,14 @@ const TransactionsPage = () => {
   const [fetchProgress, setFetchProgress] = useState<{
     loaded: number;
     total: number | null;
-  }>({ loaded: 0, total: null });
+  }>({
+    loaded: 0,
+    total: null,
+  });
   const fetchAbortRef = useRef<(() => void) | null>(null);
   const dateFilterRef = useRef<HTMLDivElement>(null);
   const [showFraudModal, setShowFraudModal] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
-
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<
@@ -149,8 +151,8 @@ const TransactionsPage = () => {
 
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
-  const availableCountries = useMemo(() => {
-    return [
+  const availableCountries = useMemo(
+    () => [
       {
         code: "UK",
         label: "United Kingdom",
@@ -223,12 +225,14 @@ const TransactionsPage = () => {
         flag: "/backoffice/ethiopia.png",
         currency: "ETB",
       },
-    ];
-  }, []);
+    ],
+    [],
+  );
 
   const countryDropdownRef = useRef<HTMLDivElement>(null);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
 
+  // ── Click-outside handler ───────────────────────────────────────────────────
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -250,23 +254,20 @@ const TransactionsPage = () => {
         setShowDateFilter(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ── Fetch transactions ──────────────────────────────────────────────────────
   useEffect(() => {
-    // Cancel any previous fetch run
     if (fetchAbortRef.current) fetchAbortRef.current();
     let cancelled = false;
     fetchAbortRef.current = () => {
       cancelled = true;
     };
 
-    const CONCURRENCY = 8; // parallel requests at once
-    const PAGE_SIZE = 50; // rows per API page
+    const CONCURRENCY = 8;
+    const PAGE_SIZE = 50;
 
     const run = async () => {
       try {
@@ -276,7 +277,7 @@ const TransactionsPage = () => {
         setAllTransactions([]);
         setFilteredTransactions([]);
 
-        // ── Step 1: fetch page 1 to show data immediately ──────────────
+        // Step 1: fetch page 1 immediately
         const firstEndpoint = userIdFromQuery
           ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${PAGE_SIZE}`
           : `/transfer/all-transactions?page=1&size=${PAGE_SIZE}`;
@@ -292,7 +293,6 @@ const TransactionsPage = () => {
         setAllTransactions(firstFormatted);
         setLoading(false);
 
-        // If first page returned fewer rows than PAGE_SIZE, we're done
         if (firstPage.length < PAGE_SIZE) {
           setFetchProgress({
             loaded: firstFormatted.length,
@@ -301,7 +301,7 @@ const TransactionsPage = () => {
           return;
         }
 
-        // ── Step 2: fetch remaining pages with controlled concurrency ───
+        // Step 2: fetch remaining pages in parallel batches
         setIsFetchingMore(true);
         setFetchProgress({ loaded: firstFormatted.length, total: null });
 
@@ -309,7 +309,6 @@ const TransactionsPage = () => {
         let done = false;
 
         while (!done && !cancelled) {
-          // Build a batch of CONCURRENCY pages
           const batch = Array.from({ length: CONCURRENCY }, (_, i) => page + i);
           page += CONCURRENCY;
 
@@ -329,14 +328,12 @@ const TransactionsPage = () => {
 
           if (cancelled) return;
 
-          // If every response in the batch was empty, we've hit the end
           const allEmpty = results.every((r) => r.length === 0);
           if (allEmpty) {
             done = true;
             break;
           }
 
-          // If any page returned fewer than PAGE_SIZE rows, this is the last batch
           if (results.some((r) => r.length < PAGE_SIZE)) done = true;
 
           const newRows = results
@@ -367,12 +364,12 @@ const TransactionsPage = () => {
     };
 
     run();
-
     return () => {
       cancelled = true;
     };
   }, [userIdFromQuery]);
 
+  // ── Filter effect ───────────────────────────────────────────────────────────
   useEffect(() => {
     let filtered = [...allTransactions];
 
@@ -382,11 +379,9 @@ const TransactionsPage = () => {
     if (selectedCountry) {
       const country = availableCountries.find(
         (c) => c.code === selectedCountry,
-        (c) => c.code === selectedCountry,
       );
       if (country) {
         filtered = filtered.filter(
-          (t) => t.receiverCurrencyIso3a === country.currency,
           (t) => t.receiverCurrencyIso3a === country.currency,
         );
       }
@@ -394,10 +389,8 @@ const TransactionsPage = () => {
     if (transactionTypeFilter) {
       filtered = filtered.filter(
         (t) => t.transactionType === transactionTypeFilter,
-        (t) => t.transactionType === transactionTypeFilter,
       );
     }
-
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -409,10 +402,8 @@ const TransactionsPage = () => {
           t.senderAmount?.toString().includes(query) ||
           t.transactionReference?.toLowerCase().includes(query) ||
           t.settlementReference?.toLowerCase().includes(query),
-          t.settlementReference?.toLowerCase().includes(query),
       );
     }
-
     if (dateRange.startDate && dateRange.endDate) {
       filtered = filtered.filter((t) => {
         const txDate = new Date(t.date).getTime();
@@ -424,6 +415,7 @@ const TransactionsPage = () => {
     }
 
     setFilteredTransactions(filtered);
+    setCurrentPage(1);
   }, [
     searchQuery,
     statusFilter,
@@ -433,6 +425,7 @@ const TransactionsPage = () => {
     transactionTypeFilter,
   ]);
 
+  // ── Helpers ─────────────────────────────────────────────────────────────────
   const mapApiTransactionToTransaction = (tx: RawTransaction): Transaction => ({
     transactionId: tx.transactionId || "N/A",
     senderName: tx.senderName || "Unknown Sender",
@@ -485,7 +478,7 @@ const TransactionsPage = () => {
       case "REFUNDED":
         return "Refunded";
       case "ESCALATED":
-        return "Escalate";
+        return "Escalated";
       default:
         return "Unknown";
     }
@@ -518,15 +511,11 @@ const TransactionsPage = () => {
 
   const fetchTransactionDetails = async (
     transaction: Transaction,
-    transaction: Transaction,
   ): Promise<ExportTransaction> => {
     const response = await api.get(
       `/transfer/transaction-details?transactionId=${transaction.transactionId}`,
-      `/transfer/transaction-details?transactionId=${transaction.transactionId}`,
     );
-
-    const fullDetails = response.data;
-    return mapToExportFormat(fullDetails);
+    return mapToExportFormat(response.data);
   };
 
   const mapToExportFormat = (
@@ -534,7 +523,6 @@ const TransactionsPage = () => {
       paymentTypeDescription?: string;
       issuer?: string;
       maskedPan?: string;
-    },
     },
   ): ExportTransaction => ({
     "Transaction ID": Number(fullDetails.transactionId) || 0,
@@ -565,7 +553,6 @@ const TransactionsPage = () => {
     "Error Message": fullDetails.errorMessage || "N/A",
     "Date & Time (GMT)": formatDateTime(
       fullDetails.date || new Date().toISOString(),
-      fullDetails.date || new Date().toISOString(),
     ),
     "Fraud Reference": fullDetails.fraudReference || "N/A",
     "Payment Purpose": fullDetails.paymentPurpose || "N/A",
@@ -573,7 +560,6 @@ const TransactionsPage = () => {
   });
 
   const createFallbackExportData = (
-    transaction: Transaction,
     transaction: Transaction,
   ): ExportTransaction => ({
     "Transaction ID": Number(transaction.transactionId) || 0,
@@ -611,7 +597,6 @@ const TransactionsPage = () => {
   const fetchWithRetry = async (
     transaction: Transaction,
     retries: number,
-    retries: number,
   ): Promise<ExportTransaction> => {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -619,7 +604,6 @@ const TransactionsPage = () => {
       } catch (error) {
         if (attempt === retries) throw error;
         await new Promise((resolve) =>
-          setTimeout(resolve, 1000 * (attempt + 1)),
           setTimeout(resolve, 1000 * (attempt + 1)),
         );
       }
@@ -629,19 +613,15 @@ const TransactionsPage = () => {
 
   const prepareExportData = async (
     onProgress?: (progress: number) => void,
-    onProgress?: (progress: number) => void,
   ): Promise<ExportTransaction[]> => {
     const BATCH_SIZE = 20;
     const RETRY_ATTEMPTS = 2;
     const DELAY_BETWEEN_BATCHES = 100;
-
     const results: ExportTransaction[] = [];
 
     for (let i = 0; i < filteredTransactions.length; i += BATCH_SIZE) {
       const batch = filteredTransactions.slice(i, i + BATCH_SIZE);
-
       const batchResults = await Promise.allSettled(
-        batch.map((transaction) => fetchWithRetry(transaction, RETRY_ATTEMPTS)),
         batch.map((transaction) => fetchWithRetry(transaction, RETRY_ATTEMPTS)),
       );
 
@@ -652,23 +632,22 @@ const TransactionsPage = () => {
           console.error(
             `Failed to fetch transaction ${batch[index].transactionId}:`,
             result.reason,
-            result.reason,
           );
           results.push(createFallbackExportData(batch[index]));
         }
       });
 
       if (onProgress) {
-        const progress = Math.round(
-          ((i + BATCH_SIZE) / filteredTransactions.length) * 100,
-          ((i + BATCH_SIZE) / filteredTransactions.length) * 100,
+        onProgress(
+          Math.min(
+            Math.round(((i + BATCH_SIZE) / filteredTransactions.length) * 100),
+            100,
+          ),
         );
-        onProgress(Math.min(progress, 100));
       }
 
       if (i + BATCH_SIZE < filteredTransactions.length) {
         await new Promise((resolve) =>
-          setTimeout(resolve, DELAY_BETWEEN_BATCHES),
           setTimeout(resolve, DELAY_BETWEEN_BATCHES),
         );
       }
@@ -681,31 +660,25 @@ const TransactionsPage = () => {
     if (filteredTransactions.length > 50) {
       const shouldProceed = window.confirm(
         `This will export ${filteredTransactions.length} transactions. This may take several minutes. Continue?`,
-        `This will export ${filteredTransactions.length} transactions. This may take several minutes. Continue?`,
       );
       if (!shouldProceed) return;
     }
 
     const toastId = toast.loading("Preparing export...");
-
     try {
       const fileName = generateExportFileName();
-
-      if (filteredTransactions.length > 20) {
+      if (filteredTransactions.length > 20)
         toast.loading(`Exporting... 0%`, { id: toastId });
-      }
 
       const data = await prepareExportData((progress) => {
-        if (filteredTransactions.length > 20) {
+        if (filteredTransactions.length > 20)
           toast.loading(`Exporting... ${progress}%`, { id: toastId });
-        }
       });
 
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
       XLSX.writeFile(workbook, `${fileName}.xlsx`);
-
       toast.success(`Exported ${data.length} transactions successfully!!`, {
         id: toastId,
       });
@@ -721,21 +694,17 @@ const TransactionsPage = () => {
   };
 
   const handleRetrySuccess = (updatedTransaction: Transaction) => {
-    setAllTransactions((prev: Transaction[]) =>
-      prev.map((tx: Transaction) =>
+    setAllTransactions((prev) =>
+      prev.map((tx) =>
         tx.transactionId === updatedTransaction.transactionId
           ? updatedTransaction
-          : tx,
-      ),
           : tx,
       ),
     );
-    setFilteredTransactions((prev: Transaction[]) =>
-      prev.map((tx: Transaction) =>
+    setFilteredTransactions((prev) =>
+      prev.map((tx) =>
         tx.transactionId === updatedTransaction.transactionId
           ? updatedTransaction
-          : tx,
-      ),
           : tx,
       ),
     );
@@ -745,28 +714,26 @@ const TransactionsPage = () => {
     setDropdownOpen(dropdownOpen === transactionId ? null : transactionId);
   };
 
-  const formatTransactionType = (type?: string) => {
-    return (
-      TRANSACTION_TYPE_OPTIONS.find((t) => t.value === type)?.label ||
-      type ||
-      "N/A"
-    );
-  };
+  const formatTransactionType = (type?: string) =>
+    TRANSACTION_TYPE_OPTIONS.find((t) => t.value === type)?.label ||
+    type ||
+    "N/A";
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
 
       <div className="flex-1 md:ml-80 h-full overflow-y-auto bg-white">
         <div className="p-6">
-          {/* Header Section - All in one line on desktop */}
+          {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
             <h2 className="text-2xl font-semibold text-black md:shrink-0">
               Transactions
             </h2>
 
-            {/* Search Bar - Centered in Desktop */}
-            <div className="relative w-full md:w-[450px] md:mx-auto order-3 md:order-0">
+            {/* Search */}
+            <div className="relative w-full md:w-[450px] md:mx-auto order-3 md:order-none">
               <input
                 type="text"
                 placeholder="Search transactions by ID, Sender and Recipient"
@@ -779,6 +746,8 @@ const TransactionsPage = () => {
                 strokeWidth={2.5}
               />
             </div>
+
+            {/* Date filter */}
             <div className="relative" ref={dateFilterRef}>
               <button
                 onClick={() => setShowDateFilter(!showDateFilter)}
@@ -801,9 +770,9 @@ const TransactionsPage = () => {
                   className={`absolute z-50 ${isMobile ? "left-0" : "right-0"} top-12`}
                 >
                   <TransactionDateFilter
-                    onChange={(start, end) => {
-                      setDateRange({ startDate: start, endDate: end });
-                    }}
+                    onChange={(start, end) =>
+                      setDateRange({ startDate: start, endDate: end })
+                    }
                     onClear={() =>
                       setDateRange({ startDate: null, endDate: null })
                     }
@@ -814,9 +783,8 @@ const TransactionsPage = () => {
               )}
             </div>
 
-            {/* Export and Filters - Right side on desktop */}
-            <div className="flex gap-2 w-full md:w-auto order-2 md:order-0">
-              {/* Consolidated Filter Button */}
+            {/* Filters + Export */}
+            <div className="flex gap-2 w-full md:w-auto order-2 md:order-none">
               <div className="relative" ref={filterDropdownRef}>
                 <button
                   onClick={() => setShowFilterDropdown(!showFilterDropdown)}
@@ -828,21 +796,17 @@ const TransactionsPage = () => {
 
                 {showFilterDropdown && (
                   <div className="absolute left-0 md:left-auto md:right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
-                    {/* Status Filter */}
+                    {/* Status */}
                     <div className="relative">
                       <button
                         onClick={() =>
                           setActiveFilter(
                             activeFilter === "status" ? null : "status",
-                            activeFilter === "status" ? null : "status",
                           )
                         }
                         className="w-full text-left px-4 py-2 hover:bg-gray-200 flex justify-between items-center"
                       >
-                        Status
-                        <span>
-                          <IoIosArrowDropdownCircle />
-                        </span>
+                        Status <IoIosArrowDropdownCircle />
                       </button>
                       {activeFilter === "status" && (
                         <div className="absolute left-28 top-0 ml-1 w-48 bg-white border rounded-md shadow-lg z-50">
@@ -853,9 +817,7 @@ const TransactionsPage = () => {
                                 setStatusFilter(status);
                                 setActiveFilter(null);
                               }}
-                              className={`px-4 py-2 cursor-pointer hover:bg-gray-200 ${
-                                statusFilter === status ? "bg-blue-200" : ""
-                              }`}
+                              className={`px-4 py-2 cursor-pointer hover:bg-gray-200 ${statusFilter === status ? "bg-blue-200" : ""}`}
                             >
                               {status}
                             </div>
@@ -864,21 +826,17 @@ const TransactionsPage = () => {
                       )}
                     </div>
 
-                    {/* Country Filter */}
+                    {/* Country */}
                     <div className="relative border-t">
                       <button
                         onClick={() =>
                           setActiveFilter(
                             activeFilter === "country" ? null : "country",
-                            activeFilter === "country" ? null : "country",
                           )
                         }
                         className="w-full text-left px-4 py-2 hover:bg-gray-200 flex justify-between items-center"
                       >
-                        Country
-                        <span>
-                          <IoIosArrowDropdownCircle />
-                        </span>
+                        Country <IoIosArrowDropdownCircle />
                       </button>
                       {activeFilter === "country" && (
                         <div className="absolute left-28 top-0 ml-1 w-48 bg-white border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
@@ -912,21 +870,18 @@ const TransactionsPage = () => {
                       )}
                     </div>
 
-                    {/* Transaction Type Filter */}
+                    {/* Transaction Type */}
                     <div className="relative border-t">
                       <button
                         onClick={() =>
                           setActiveFilter(
                             activeFilter === "type" ? null : "type",
-                            activeFilter === "type" ? null : "type",
                           )
                         }
                         className="w-full text-left px-4 py-2 hover:bg-gray-200 flex justify-between items-center"
                       >
-                        Transaction Type
-                        <IoIosArrowDropdownCircle />
+                        Transaction Type <IoIosArrowDropdownCircle />
                       </button>
-
                       {activeFilter === "type" && (
                         <div className="absolute left-28 top-0 ml-1 w-56 bg-white border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
                           {TRANSACTION_TYPE_OPTIONS.map((type) => (
@@ -936,16 +891,11 @@ const TransactionsPage = () => {
                                 setTransactionTypeFilter(type.value);
                                 setActiveFilter(null);
                               }}
-                              className={`px-4 py-2 cursor-pointer hover:bg-gray-200 ${
-                                transactionTypeFilter === type.value
-                                  ? "bg-blue-200"
-                                  : ""
-                              }`}
+                              className={`px-4 py-2 cursor-pointer hover:bg-gray-200 ${transactionTypeFilter === type.value ? "bg-blue-200" : ""}`}
                             >
                               {type.label}
                             </div>
                           ))}
-
                           <div
                             onClick={() => {
                               setTransactionTypeFilter(null);
@@ -959,7 +909,7 @@ const TransactionsPage = () => {
                       )}
                     </div>
 
-                    {/* Clear All Filters */}
+                    {/* Clear all */}
                     <div
                       className="border-t px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
@@ -975,7 +925,6 @@ const TransactionsPage = () => {
                 )}
               </div>
 
-              {/* Export Button */}
               <button
                 onClick={handleExport}
                 className="flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-100 w-full md:w-auto"
@@ -985,58 +934,53 @@ const TransactionsPage = () => {
             </div>
           </div>
 
-          {/* Filters Row -Active filters display */}
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
-            {/* Active Filters Display - Below on desktop, like date range indicator */}
-            <div className="flex flex-wrap gap-2 items-center">
-              {statusFilter !== "All" && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                  Status: {statusFilter}
-                  <button
-                    onClick={() => setStatusFilter("All")}
-                    className="ml-1 hover:text-blue-900"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {selectedCountry && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                  Country:{" "}
-                  {
-                    availableCountries.find((c) => c.code === selectedCountry)
-                      ?.label
-                  }
-                  <button
-                    onClick={() => setSelectedCountry(null)}
-                    className="ml-1 hover:text-green-900"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-
-              {transactionTypeFilter && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 whitespace-nowrap">
-                  Transaction Type:{" "}
-                  {
-                    TRANSACTION_TYPE_OPTIONS.find(
-                      (t) => t.value === transactionTypeFilter,
-                      (t) => t.value === transactionTypeFilter,
-                    )?.label
-                  }
-                  <button
-                    onClick={() => setTransactionTypeFilter(null)}
-                    className="ml-1 hover:text-purple-900"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-            </div>
+          {/* Active filter chips */}
+          <div className="flex flex-wrap gap-2 items-center mb-4">
+            {statusFilter !== "All" && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                Status: {statusFilter}
+                <button
+                  onClick={() => setStatusFilter("All")}
+                  className="ml-1 hover:text-blue-900"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {selectedCountry && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                Country:{" "}
+                {
+                  availableCountries.find((c) => c.code === selectedCountry)
+                    ?.label
+                }
+                <button
+                  onClick={() => setSelectedCountry(null)}
+                  className="ml-1 hover:text-green-900"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {transactionTypeFilter && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 whitespace-nowrap">
+                Type:{" "}
+                {
+                  TRANSACTION_TYPE_OPTIONS.find(
+                    (t) => t.value === transactionTypeFilter,
+                  )?.label
+                }
+                <button
+                  onClick={() => setTransactionTypeFilter(null)}
+                  className="ml-1 hover:text-purple-900"
+                >
+                  ×
+                </button>
+              </span>
+            )}
           </div>
 
-          {/* Live fetch progress banner */}
+          {/* Loading banner */}
           {isFetchingMore && (
             <div className="flex items-center gap-3 mb-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
               <svg
@@ -1070,7 +1014,8 @@ const TransactionsPage = () => {
               </span>
             </div>
           )}
-          {/* Date filter active indicator */}
+
+          {/* Date range indicator */}
           {dateRange.startDate && (
             <div className="text-sm text-gray-500 mb-2">
               Showing transactions from{" "}
@@ -1079,7 +1024,7 @@ const TransactionsPage = () => {
             </div>
           )}
 
-          {/* Rest of your table and components remain exactly the same */}
+          {/* Table */}
           {loading ? (
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="overflow-x-auto">
@@ -1114,7 +1059,7 @@ const TransactionsPage = () => {
                       <tr key={i} className="animate-pulse border-b">
                         {Array.from({ length: 10 }).map((_, j) => (
                           <td key={j} className="px-6 py-4">
-                            <div className="h-4 bg-gray-200 rounded w-full"></div>
+                            <div className="h-4 bg-gray-200 rounded w-full" />
                           </td>
                         ))}
                       </tr>
@@ -1161,7 +1106,6 @@ const TransactionsPage = () => {
                           .slice(
                             (currentPage - 1) * rowsPerPage,
                             currentPage * rowsPerPage,
-                            currentPage * rowsPerPage,
                           )
                           .map((transaction) => (
                             <tr
@@ -1195,7 +1139,6 @@ const TransactionsPage = () => {
                               <td className="px-6 py-4 hidden lg:table-cell whitespace-nowrap">
                                 {formatTransactionType(
                                   transaction.transactionType,
-                                  transaction.transactionType,
                                 )}
                               </td>
                               <td className="px-6 py-4">
@@ -1227,51 +1170,49 @@ const TransactionsPage = () => {
                                   {transaction.status}
                                 </span>
                               </td>
-
                               <td
                                 className="px-6 py-4 relative"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <div className="relative">
-                                  {transaction.fraudReference && (
-                                    <>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleDropdown(
-                                            transaction.transactionId,
-                                            transaction.transactionId,
-                                          );
-                                        }}
-                                        className="text-gray-500 hover:text-gray-700"
-                                      >
-                                        <img
-                                          src={"/backoffice/fraud.png"}
-                                          className="h-4 w-4"
-                                          alt="fraud icon"
-                                        />
-                                      </button>
-                                      {dropdownOpen ===
-                                        transaction.transactionId && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setShowFraudModal(true);
-                                              setSelectedTransactionKey(
-                                                transaction.fraudReference,
-                                                transaction.fraudReference,
-                                              );
-                                              setDropdownOpen(null);
-                                            }}
-                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                          >
-                                            View Fraud Info
-                                          </button>
-                                        </div>
-                                      )}
-                                    </>
-                                  )}
+                                  {transaction.fraudReference &&
+                                    transaction.fraudReference !== "N/A" && (
+                                      <>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleDropdown(
+                                              transaction.transactionId,
+                                            );
+                                          }}
+                                          className="text-gray-500 hover:text-gray-700"
+                                        >
+                                          <img
+                                            src="/backoffice/fraud.png"
+                                            className="h-4 w-4"
+                                            alt="fraud icon"
+                                          />
+                                        </button>
+                                        {dropdownOpen ===
+                                          transaction.transactionId && (
+                                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowFraudModal(true);
+                                                setSelectedTransactionKey(
+                                                  transaction.fraudReference,
+                                                );
+                                                setDropdownOpen(null);
+                                              }}
+                                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                            >
+                                              View Fraud Info
+                                            </button>
+                                          </div>
+                                        )}
+                                      </>
+                                    )}
                                 </div>
                               </td>
                             </tr>
@@ -1279,10 +1220,10 @@ const TransactionsPage = () => {
                       ) : (
                         <tr>
                           <td
-                            colSpan={10}
+                            colSpan={11}
                             className="px-6 py-4 text-center text-gray-500"
                           >
-                            No transactions found .
+                            No transactions found.
                           </td>
                         </tr>
                       )}
@@ -1298,7 +1239,7 @@ const TransactionsPage = () => {
                       setCurrentPage((prev) => Math.max(prev - 1, 1))
                     }
                     disabled={currentPage === 1}
-                    className="px-4 py-2 border rounded-md bg-blue-600 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="px-4 py-2 border rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     Previous
                   </button>
@@ -1308,16 +1249,17 @@ const TransactionsPage = () => {
                   </span>
                   <button
                     onClick={() => {
-                      const hasMoreData =
-                        currentPage * rowsPerPage < filteredTransactions.length;
-                      if (hasMoreData) {
+                      if (
+                        currentPage * rowsPerPage <
+                        filteredTransactions.length
+                      ) {
                         setCurrentPage((prev) => prev + 1);
                       }
                     }}
                     disabled={
                       currentPage * rowsPerPage >= filteredTransactions.length
                     }
-                    className="px-4 py-2 border rounded-md bg-blue-600 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="px-4 py-2 border rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>
@@ -1352,4 +1294,3 @@ const TransactionsPage = () => {
 };
 
 export default TransactionsPage;
-
