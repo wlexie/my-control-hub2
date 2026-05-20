@@ -4,9 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import { FaCalendarAlt, FaFileExport, FaFilter } from "react-icons/fa";
 import { Search } from "lucide-react";
-import DateFilter from "../components/DateFilter";
-import "react-date-range/dist/styles.css";
-import "react-date-range/dist/theme/default.css";
+import TransactionDateFilter from "../components/TransactionDateFilter";
 import TransactionModal from "../components/TransactionModal";
 import FraudModal from "../compliance-security/components/FraudModal";
 import { Transaction } from "../types/transactions";
@@ -109,7 +107,12 @@ const TransactionsPage = () => {
   });
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const [loadedPages, setLoadedPages] = useState(new Set([1]));
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [fetchProgress, setFetchProgress] = useState<{
+    loaded: number;
+    total: number | null;
+  }>({ loaded: 0, total: null });
+  const fetchAbortRef = useRef<(() => void) | null>(null);
   const dateFilterRef = useRef<HTMLDivElement>(null);
   const [showFraudModal, setShowFraudModal] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
@@ -255,92 +258,120 @@ const TransactionsPage = () => {
   }, []);
 
   useEffect(() => {
-    const fetchInitialPage = async () => {
+    // Cancel any previous fetch run
+    if (fetchAbortRef.current) fetchAbortRef.current();
+    let cancelled = false;
+    fetchAbortRef.current = () => {
+      cancelled = true;
+    };
+
+    const CONCURRENCY = 8; // parallel requests at once
+    const PAGE_SIZE = 50; // rows per API page
+
+    const run = async () => {
       try {
         setLoading(true);
-        const endpoint = userIdFromQuery
-          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${rowsPerPage}`
-          : `/transfer/all-transactions?page=1&size=${rowsPerPage}`;
+        setIsFetchingMore(false);
+        setFetchProgress({ loaded: 0, total: null });
+        setAllTransactions([]);
+        setFilteredTransactions([]);
 
-        const res = await api.get<RawTransaction[]>(endpoint);
-        const formatted = res.data.map(mapApiTransactionToTransaction);
+        // ── Step 1: fetch page 1 to show data immediately ──────────────
+        const firstEndpoint = userIdFromQuery
+          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=1&size=${PAGE_SIZE}`
+          : `/transfer/all-transactions?page=1&size=${PAGE_SIZE}`;
 
-        // FILTER: Remove TZS transactions (currency is NOT TZS)
-        const nonTzsTransactions = formatted.filter(
-          (tx) => tx.currencyIso3a?.toUpperCase() !== "TZS",
-        );
+        const firstRes = await api.get<RawTransaction[]>(firstEndpoint);
+        if (cancelled) return;
 
-        setAllTransactions(nonTzsTransactions);
-        setFilteredTransactions(nonTzsTransactions);
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setError("Failed to fetch transactions");
-      } finally {
+        const firstPage = firstRes.data;
+        const firstFormatted = firstPage
+          .map(mapApiTransactionToTransaction)
+          .filter((tx) => tx.currencyIso3a?.toUpperCase() !== "TZS");
+
+        setAllTransactions(firstFormatted);
         setLoading(false);
+
+        // If first page returned fewer rows than PAGE_SIZE, we're done
+        if (firstPage.length < PAGE_SIZE) {
+          setFetchProgress({
+            loaded: firstFormatted.length,
+            total: firstFormatted.length,
+          });
+          return;
+        }
+
+        // ── Step 2: fetch remaining pages with controlled concurrency ───
+        setIsFetchingMore(true);
+        setFetchProgress({ loaded: firstFormatted.length, total: null });
+
+        let page = 2;
+        let done = false;
+
+        while (!done && !cancelled) {
+          // Build a batch of CONCURRENCY pages
+          const batch = Array.from({ length: CONCURRENCY }, (_, i) => page + i);
+          page += CONCURRENCY;
+
+          const results = await Promise.all(
+            batch.map(async (p) => {
+              const endpoint = userIdFromQuery
+                ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${p}&size=${PAGE_SIZE}`
+                : `/transfer/all-transactions?page=${p}&size=${PAGE_SIZE}`;
+              try {
+                const res = await api.get<RawTransaction[]>(endpoint);
+                return res.data as RawTransaction[];
+              } catch {
+                return [] as RawTransaction[];
+              }
+            }),
+          );
+
+          if (cancelled) return;
+
+          // If every response in the batch was empty, we've hit the end
+          const allEmpty = results.every((r) => r.length === 0);
+          if (allEmpty) {
+            done = true;
+            break;
+          }
+
+          // If any page returned fewer than PAGE_SIZE rows, this is the last batch
+          if (results.some((r) => r.length < PAGE_SIZE)) done = true;
+
+          const newRows = results
+            .flat()
+            .map(mapApiTransactionToTransaction)
+            .filter((tx) => tx.currencyIso3a?.toUpperCase() !== "TZS");
+
+          setAllTransactions((prev) => {
+            const seen = new Set(prev.map((tx) => tx.transactionId));
+            const unique = newRows.filter((tx) => !seen.has(tx.transactionId));
+            const next = [...prev, ...unique];
+            setFetchProgress({
+              loaded: next.length,
+              total: done ? next.length : null,
+            });
+            return next;
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Fetch error:", err);
+          setError("Failed to fetch transactions");
+          setLoading(false);
+        }
+      } finally {
+        if (!cancelled) setIsFetchingMore(false);
       }
     };
 
-    fetchInitialPage();
-  }, [userIdFromQuery]);
+    run();
 
-  useEffect(() => {
-    const fetchAllPagesRecursively = async () => {
-      const batchSize = 50;
-      let currentBatch = 2;
-
-      const fetchPage = async (page: number) => {
-        if (loadedPages.has(page)) return null;
-
-        const endpoint = userIdFromQuery
-          ? `/transfer/user-transactions?userId=${userIdFromQuery}&page=${page}&size=${rowsPerPage}`
-          : `/transfer/all-transactions?page=${page}&size=${rowsPerPage}`;
-        try {
-          const res = await api.get<RawTransaction[]>(endpoint);
-          setLoadedPages((prev) => new Set(prev).add(page));
-          return res.data.length > 0 ? res.data : null;
-        } catch (err) {
-          console.error(`Failed to load page ${page}:`, err);
-          return null;
-        }
-      };
-
-      const fetchInBatches = async () => {
-        const batchPages = Array.from(
-          { length: batchSize },
-          (_, i) => currentBatch + i,
-        );
-        const results = await Promise.all(batchPages.map(fetchPage));
-
-        const validResults = results.filter(Boolean) as RawTransaction[][];
-        const flattened = validResults.flat();
-        const formatted = flattened.map(mapApiTransactionToTransaction);
-
-        // FILTER: Remove TZS transactions (currency is NOT TZS)
-        const nonTzsTransactions = formatted.filter(
-          (tx) => tx.currencyIso3a?.toUpperCase() !== "TZS",
-        );
-
-        setAllTransactions((prev) => {
-          const seen = new Set(prev.map((tx) => tx.transactionId));
-          const uniqueNew = nonTzsTransactions.filter(
-            (tx) => !seen.has(tx.transactionId),
-          );
-          return [...prev, ...uniqueNew];
-        });
-
-        currentBatch += batchSize;
-
-        if (validResults.length > 0) {
-          await new Promise((res) => setTimeout(res, 100));
-          await fetchInBatches();
-        }
-      };
-
-      await fetchInBatches();
+    return () => {
+      cancelled = true;
     };
-
-    fetchAllPagesRecursively();
-  }, [loadedPages, userIdFromQuery]);
+  }, [userIdFromQuery]);
 
   useEffect(() => {
     let filtered = [...allTransactions];
@@ -748,7 +779,7 @@ const TransactionsPage = () => {
                 <div
                   className={`absolute z-50 ${isMobile ? "left-0" : "right-0"} top-12`}
                 >
-                  <DateFilter
+                  <TransactionDateFilter
                     onChange={(start, end) => {
                       setDateRange({ startDate: start, endDate: end });
                     }}
@@ -980,6 +1011,40 @@ const TransactionsPage = () => {
             </div>
           </div>
 
+          {/* Live fetch progress banner */}
+          {isFetchingMore && (
+            <div className="flex items-center gap-3 mb-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
+              <svg
+                className="animate-spin h-4 w-4 text-blue-500 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                />
+              </svg>
+              <span>
+                Loading more transactions…{" "}
+                <span className="font-semibold">
+                  {fetchProgress.loaded.toLocaleString()}
+                </span>
+                {fetchProgress.total
+                  ? ` of ${fetchProgress.total.toLocaleString()}`
+                  : ""}{" "}
+                loaded. You can filter now — results update as more arrive.
+              </span>
+            </div>
+          )}
           {/* Date filter active indicator */}
           {dateRange.startDate && (
             <div className="text-sm text-gray-500 mb-2">

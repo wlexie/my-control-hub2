@@ -48,7 +48,7 @@ const DateFilter: React.FC<DateFilterProps> = ({
           `${initialStartDate.getHours().toString().padStart(2, "0")}:${initialStartDate
             .getMinutes()
             .toString()
-            .padStart(2, "0")}`
+            .padStart(2, "0")}`,
         );
       }
 
@@ -57,7 +57,7 @@ const DateFilter: React.FC<DateFilterProps> = ({
           `${initialEndDate.getHours().toString().padStart(2, "0")}:${initialEndDate
             .getMinutes()
             .toString()
-            .padStart(2, "0")}`
+            .padStart(2, "0")}`,
         );
       }
     }

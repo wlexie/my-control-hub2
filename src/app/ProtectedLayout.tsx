@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useInactivityLogout } from "../hooks/useInactivityLogout";
-// 30 minutes in milliseconds
+// 24 hours in milliseconds
 const INACTIVITY_TIMEOUT = 24 * 60 * 60 * 1000;
 
 const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
