@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { Search } from "lucide-react";
 import { FaCalendarAlt, FaFileExport } from "react-icons/fa";
@@ -40,9 +40,8 @@ export default function UserAccounts() {
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const [sidebarOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [displayedUsers, setDisplayedUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -134,12 +133,27 @@ export default function UserAccounts() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Apply filters/search -> update filteredUsers and reset to page 1
+  // Debounce search: filtering runs against the whole in-memory dataset, so
+  // recomputing it on every keystroke gets janky as the dataset grows. Page
+  // resets to 1 here - when the committed search term changes - not as a
+  // side effect of new background data arriving.
   useEffect(() => {
-    const rawQuery = searchQuery.trim();
+    const timeout = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
+
+  // Apply filters/search -> derived, not stateful. Nothing about *computing*
+  // this can ever touch currentPage, so a new background batch landing in
+  // allUsers can never knock you back to page 1 - only actually changing a
+  // filter does that, via the handlers below.
+  const filteredUsers = useMemo(() => {
+    const rawQuery = debouncedSearchQuery.trim();
     const tokens = rawQuery.toLowerCase().split(/\s+/).filter(Boolean);
 
-    const filtered = allUsers.filter((user) => {
+    return allUsers.filter((user) => {
       // Risk filter
       const matchesRisk =
         !riskFilter || user.riskScore?.riskLevel === riskFilter;
@@ -170,17 +184,39 @@ export default function UserAccounts() {
 
       return matchesRisk && inDateRange && matchesAllTokens;
     });
+  }, [allUsers, debouncedSearchQuery, dateRange, riskFilter]);
 
-    setFilteredUsers(filtered);
-    setCurrentPage(1);
-  }, [searchQuery, dateRange, allUsers, riskFilter]);
-
-  // Update displayedUsers whenever filteredUser
-  useEffect(() => {
+  // Slice for the current page - also derived, not stateful.
+  const displayedUsers = useMemo(() => {
     const startIndex = (currentPage - 1) * usersPerPage;
     const endIndex = startIndex + usersPerPage;
-    setDisplayedUsers(filteredUsers.slice(startIndex, endIndex));
+    return filteredUsers.slice(startIndex, endIndex);
   }, [filteredUsers, currentPage]);
+
+  // Clamp currentPage only if it has literally fallen out of range (e.g. a
+  // filter shrank the result set) - never resets to 1 outright. Real filter
+  // changes reset to 1 explicitly in their own handlers.
+  useEffect(() => {
+    const totalPages = Math.max(
+      1,
+      Math.ceil(filteredUsers.length / usersPerPage),
+    );
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [filteredUsers.length]);
+
+  // ── Explicit filter handlers ─────────────────────────────────────────────
+  // Every filter change goes through one of these instead of setting state
+  // directly, so "go back to page 1" is an explicit, intentional action tied
+  // to the user's click - not a side effect of an effect that also happens
+  // to run when background data streams in.
+  const handleDateRangeChange = (start: Date | null, end: Date | null) => {
+    setDateRange({ startDate: start, endDate: end });
+    setCurrentPage(1);
+  };
+  const handleRiskFilterChange = (value: string | null) => {
+    setRiskFilter(value);
+    setCurrentPage(1);
+  };
 
   const totalPages = Math.max(
     1,
@@ -345,16 +381,6 @@ export default function UserAccounts() {
 
   const updateUserStatus = (userId: number, newStatus: Partial<User>) => {
     setAllUsers((prev) =>
-      prev.map((user) =>
-        user.accountId === userId ? { ...user, ...newStatus } : user,
-      ),
-    );
-    setFilteredUsers((prev) =>
-      prev.map((user) =>
-        user.accountId === userId ? { ...user, ...newStatus } : user,
-      ),
-    );
-    setDisplayedUsers((prev) =>
       prev.map((user) =>
         user.accountId === userId ? { ...user, ...newStatus } : user,
       ),
@@ -528,12 +554,10 @@ export default function UserAccounts() {
                   >
                     <DateFilter
                       onChange={(start, end) => {
-                        setDateRange({ startDate: start, endDate: end });
+                        handleDateRangeChange(start, end);
                         setShowDateFilter(false);
                       }}
-                      onClear={() =>
-                        setDateRange({ startDate: null, endDate: null })
-                      }
+                      onClear={() => handleDateRangeChange(null, null)}
                       initialStartDate={dateRange.startDate}
                       initialEndDate={dateRange.endDate}
                       isOpen={showDateFilter}
@@ -545,7 +569,7 @@ export default function UserAccounts() {
 
               <select
                 value={riskFilter || ""}
-                onChange={(e) => setRiskFilter(e.target.value || null)}
+                onChange={(e) => handleRiskFilterChange(e.target.value || null)}
                 className="px-4 py-2 border rounded-md text-sm shadow-sm"
               >
                 <option value="">Risk Score</option>

@@ -87,9 +87,6 @@ const TransactionsPage = () => {
   const userIdFromQuery = userIdParam ? Number(userIdParam) : null;
 
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<
-    Transaction[]
-  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showDateFilter, setShowDateFilter] = useState(false);
@@ -98,6 +95,20 @@ const TransactionsPage = () => {
     string | null
   >(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  // Debounce search: filtering runs against the whole in-memory dataset, so
+  // recomputing it on every keystroke gets janky as the dataset grows. Wait
+  // for a short pause in typing before actually filtering. The page only
+  // resets to 1 here - when the committed search term changes - never as a
+  // side-effect of new background data arriving.
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
   const [dateRange, setDateRange] = useState<{
     startDate: Date | null;
     endDate: Date | null;
@@ -259,6 +270,23 @@ const TransactionsPage = () => {
   }, []);
 
   // ── Fetch transactions ──────────────────────────────────────────────────────
+  // The backend only supports page/size right now (no server-side filters or
+  // total count), so we still have to pull everything client-side to make
+  // search/date/type/country filtering instant. Two things make this much
+  // less painful while we wait on a real filterable endpoint from Linus:
+  //   1. A sessionStorage cache: revisiting the page (nav away/back, tab
+  //      switch) paints the last-known dataset INSTANTLY, then silently
+  //      revalidates in the background instead of showing a blank loader.
+  //   2. A bigger PAGE_SIZE per request: since each API call is fast, fewer
+  //      round trips (larger pages) finishes the background sync quicker
+  //      than many small ones. Confirm with Linus what max `size` the
+  //      endpoint accepts (500 below is a starting guess - dial it to
+  //      whatever the API tolerates without slowing down per-call).
+  const CACHE_KEY = userIdFromQuery
+    ? `tuma_txns_cache_user_${userIdFromQuery}`
+    : "tuma_txns_cache_all";
+  const CACHE_TTL_MS = 5 * 60 * 1000; // treat cache as fresh-enough for 5 min
+
   useEffect(() => {
     if (fetchAbortRef.current) fetchAbortRef.current();
     let cancelled = false;
@@ -267,15 +295,39 @@ const TransactionsPage = () => {
     };
 
     const CONCURRENCY = 8;
-    const PAGE_SIZE = 50;
+    const PAGE_SIZE = 500;
+
+    // Try to paint instantly from cache while we revalidate over the network.
+    let hadCache = false;
+    try {
+      const cachedRaw = sessionStorage.getItem(CACHE_KEY);
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw) as {
+          data: Transaction[];
+          savedAt: number;
+        };
+        if (cached?.data?.length) {
+          setAllTransactions(cached.data);
+          setLoading(false);
+          hadCache = true;
+          // Still fetching fresh data below unless cache is very recent.
+          if (Date.now() - cached.savedAt < CACHE_TTL_MS) {
+            setIsFetchingMore(false);
+          }
+        }
+      }
+    } catch {
+      // sessionStorage unavailable (e.g. private mode) - just fetch normally
+    }
 
     const run = async () => {
       try {
-        setLoading(true);
+        if (!hadCache) {
+          setLoading(true);
+          setAllTransactions([]);
+        }
         setIsFetchingMore(false);
         setFetchProgress({ loaded: 0, total: null });
-        setAllTransactions([]);
-        setFilteredTransactions([]);
 
         // Step 1: fetch page 1 immediately
         const firstEndpoint = userIdFromQuery
@@ -298,6 +350,14 @@ const TransactionsPage = () => {
             loaded: firstFormatted.length,
             total: firstFormatted.length,
           });
+          try {
+            sessionStorage.setItem(
+              CACHE_KEY,
+              JSON.stringify({ data: firstFormatted, savedAt: Date.now() }),
+            );
+          } catch {
+            // ignore quota/availability errors - cache is best-effort
+          }
           return;
         }
 
@@ -349,6 +409,16 @@ const TransactionsPage = () => {
               loaded: next.length,
               total: done ? next.length : null,
             });
+            if (done) {
+              try {
+                sessionStorage.setItem(
+                  CACHE_KEY,
+                  JSON.stringify({ data: next, savedAt: Date.now() }),
+                );
+              } catch {
+                // ignore quota/availability errors - cache is best-effort
+              }
+            }
             return next;
           });
         }
@@ -369,8 +439,14 @@ const TransactionsPage = () => {
     };
   }, [userIdFromQuery]);
 
-  // ── Filter effect ───────────────────────────────────────────────────────────
-  useEffect(() => {
+  // ── Filtered transactions (derived, not stateful) ───────────────────────────
+  // This is the key change from before: filteredTransactions is no longer its
+  // own state kept in sync by an effect. It's just a computed value. Nothing
+  // about *computing* it can ever touch currentPage, so a new background
+  // batch landing in allTransactions can never knock you back to page 1 -
+  // only actually changing a filter does that, via the handlers below (same
+  // pattern as the client dashboard's `onPageReset`).
+  const filteredTransactions = useMemo(() => {
     let filtered = [...allTransactions];
 
     if (statusFilter !== "All") {
@@ -391,8 +467,8 @@ const TransactionsPage = () => {
         (t) => t.transactionType === transactionTypeFilter,
       );
     }
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter(
         (t) =>
           t.transactionId?.toString().includes(query) ||
@@ -414,16 +490,56 @@ const TransactionsPage = () => {
       });
     }
 
-    setFilteredTransactions(filtered);
-    setCurrentPage(1);
+    return filtered;
   }, [
-    searchQuery,
-    statusFilter,
-    dateRange,
     allTransactions,
+    statusFilter,
     selectedCountry,
     transactionTypeFilter,
+    debouncedSearchQuery,
+    dateRange,
+    availableCountries,
   ]);
+
+  // Clamp currentPage only if it has literally fallen out of range (e.g. a
+  // filter shrank the result set) - never resets to 1 outright. Real filter
+  // changes reset to 1 explicitly in their own handlers below.
+  useEffect(() => {
+    const totalPages = Math.max(
+      1,
+      Math.ceil(filteredTransactions.length / rowsPerPage),
+    );
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [filteredTransactions.length]);
+
+  // ── Explicit filter handlers ─────────────────────────────────────────────
+  // Every filter change goes through one of these instead of setting state
+  // directly, so "go back to page 1" is an explicit, intentional action tied
+  // to the user's click/keystroke - not an accidental side effect of a
+  // useEffect that also happens to run when data streams in.
+  const handleStatusFilterChange = (status: string) => {
+    setStatusFilter(status);
+    setCurrentPage(1);
+  };
+  const handleCountryFilterChange = (code: string | null) => {
+    setSelectedCountry(code);
+    setCurrentPage(1);
+  };
+  const handleTransactionTypeFilterChange = (type: string | null) => {
+    setTransactionTypeFilter(type);
+    setCurrentPage(1);
+  };
+  const handleDateRangeChange = (start: Date | null, end: Date | null) => {
+    setDateRange({ startDate: start, endDate: end });
+    setCurrentPage(1);
+  };
+  const handleClearAllFilters = () => {
+    setStatusFilter("All");
+    setSelectedCountry(null);
+    setTransactionTypeFilter(null);
+    setDateRange({ startDate: null, endDate: null });
+    setCurrentPage(1);
+  };
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const mapApiTransactionToTransaction = (tx: RawTransaction): Transaction => ({
@@ -701,13 +817,6 @@ const TransactionsPage = () => {
           : tx,
       ),
     );
-    setFilteredTransactions((prev) =>
-      prev.map((tx) =>
-        tx.transactionId === updatedTransaction.transactionId
-          ? updatedTransaction
-          : tx,
-      ),
-    );
   };
 
   const toggleDropdown = (transactionId: string) => {
@@ -770,12 +879,8 @@ const TransactionsPage = () => {
                   className={`absolute z-50 ${isMobile ? "left-0" : "right-0"} top-12`}
                 >
                   <TransactionDateFilter
-                    onChange={(start, end) =>
-                      setDateRange({ startDate: start, endDate: end })
-                    }
-                    onClear={() =>
-                      setDateRange({ startDate: null, endDate: null })
-                    }
+                    onChange={(start, end) => handleDateRangeChange(start, end)}
+                    onClear={() => handleDateRangeChange(null, null)}
                     isOpen={showDateFilter}
                     onClose={() => setShowDateFilter(false)}
                   />
@@ -814,7 +919,7 @@ const TransactionsPage = () => {
                             <div
                               key={status}
                               onClick={() => {
-                                setStatusFilter(status);
+                                handleStatusFilterChange(status);
                                 setActiveFilter(null);
                               }}
                               className={`px-4 py-2 cursor-pointer hover:bg-gray-200 ${statusFilter === status ? "bg-blue-200" : ""}`}
@@ -844,7 +949,7 @@ const TransactionsPage = () => {
                             <div
                               key={country.code}
                               onClick={() => {
-                                setSelectedCountry(country.code);
+                                handleCountryFilterChange(country.code);
                                 setActiveFilter(null);
                               }}
                               className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-200"
@@ -859,7 +964,7 @@ const TransactionsPage = () => {
                           ))}
                           <div
                             onClick={() => {
-                              setSelectedCountry(null);
+                              handleCountryFilterChange(null);
                               setActiveFilter(null);
                             }}
                             className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer border-t"
@@ -888,7 +993,7 @@ const TransactionsPage = () => {
                             <div
                               key={type.value}
                               onClick={() => {
-                                setTransactionTypeFilter(type.value);
+                                handleTransactionTypeFilterChange(type.value);
                                 setActiveFilter(null);
                               }}
                               className={`px-4 py-2 cursor-pointer hover:bg-gray-200 ${transactionTypeFilter === type.value ? "bg-blue-200" : ""}`}
@@ -898,7 +1003,7 @@ const TransactionsPage = () => {
                           ))}
                           <div
                             onClick={() => {
-                              setTransactionTypeFilter(null);
+                              handleTransactionTypeFilterChange(null);
                               setActiveFilter(null);
                             }}
                             className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer border-t"
@@ -913,9 +1018,7 @@ const TransactionsPage = () => {
                     <div
                       className="border-t px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
-                        setStatusFilter("All");
-                        setSelectedCountry(null);
-                        setTransactionTypeFilter(null);
+                        handleClearAllFilters();
                         setActiveFilter(null);
                       }}
                     >
@@ -940,7 +1043,7 @@ const TransactionsPage = () => {
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                 Status: {statusFilter}
                 <button
-                  onClick={() => setStatusFilter("All")}
+                  onClick={() => handleStatusFilterChange("All")}
                   className="ml-1 hover:text-blue-900"
                 >
                   ×
@@ -955,7 +1058,7 @@ const TransactionsPage = () => {
                     ?.label
                 }
                 <button
-                  onClick={() => setSelectedCountry(null)}
+                  onClick={() => handleCountryFilterChange(null)}
                   className="ml-1 hover:text-green-900"
                 >
                   ×
@@ -971,7 +1074,7 @@ const TransactionsPage = () => {
                   )?.label
                 }
                 <button
-                  onClick={() => setTransactionTypeFilter(null)}
+                  onClick={() => handleTransactionTypeFilterChange(null)}
                   className="ml-1 hover:text-purple-900"
                 >
                   ×

@@ -3,7 +3,7 @@
 import { useState, Suspense, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
-// REMOVED: import axios from "axios"; 
+// REMOVED: import axios from "axios";
 import api from "../../../utils/apiAuth";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../../../store/authSlice";
@@ -60,7 +60,7 @@ const VerifyOTPContent = () => {
 
   const handleKeyDown = (
     index: number,
-    event: React.KeyboardEvent<HTMLInputElement>
+    event: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (event.key === "Backspace") {
       const newOtp = [...otp];
@@ -100,7 +100,7 @@ const VerifyOTPContent = () => {
 
     const lastFilledIndex = Math.min(
       startIndex + pastedData.length,
-      otp.length - 1
+      otp.length - 1,
     );
     inputRefs.current[lastFilledIndex]?.focus();
   };
@@ -147,7 +147,7 @@ const VerifyOTPContent = () => {
             accessToken: response.data.accessToken,
             refreshToken: response.data.refreshToken,
             tokenExpiry,
-          })
+          }),
         );
 
         setIsVerified(true);
